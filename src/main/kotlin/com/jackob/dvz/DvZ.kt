@@ -1,4 +1,4 @@
-package com.jackob.dvZ
+package com.jackob.dvz
 
 import org.bukkit.plugin.java.JavaPlugin
 

@@ -1,5 +1,5 @@
 name: DvZ
 version: '1.0-SNAPSHOT'
-main: com.jackob.dvZ.DvZ
+main: com.jackob.dvz.DvZ
 api-version: '1.21'
-description: case opening plugin
+description: Dwarves vs Zombies minigame
