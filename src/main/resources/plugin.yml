@@ -1,0 +1,5 @@
+name: DvZ
+version: '1.0-SNAPSHOT'
+main: com.jackob.dvZ.DvZ
+api-version: '1.21'
+description: case opening plugin
