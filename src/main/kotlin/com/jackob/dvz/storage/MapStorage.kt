@@ -8,6 +8,8 @@ import java.io.IOException
 
 object MapStorage {
 
+    private const val LOBBY_PATH = "lobby-spawn"
+
     init {
         DvZ.INSTANCE.dataFolder.mkdir()
     }
@@ -20,8 +22,10 @@ object MapStorage {
 
     private val config = YamlConfiguration.loadConfiguration(file)
 
+    val LOBBY_SPAWN: Location? = config.getLocation(LOBBY_PATH)
+
     fun saveLobby(lobbyLocation: Location): Boolean {
-        config.set("lobby-spawn", lobbyLocation)
+        config.set(LOBBY_PATH, lobbyLocation)
         try {
             config.save(file)
         } catch (_: IOException) {
