@@ -17,4 +17,8 @@ class SaveLobbyCommand : BasicCommand {
             player.sendMessage("<red>Saving lobby location failed!".withPrefix().mm())
         }
     }
+
+    override fun permission(): String? {
+        return "dvz.save-lobby"
+    }
 }
