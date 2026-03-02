@@ -3,7 +3,7 @@ package com.jackob.dvz.util
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 
-const val PREFIX = "<gray><b>DvZ: <reset>"
+const val PREFIX = "<gold><b>DvZ: <reset>"
 
 fun String.mm(): Component {
     return MiniMessage.miniMessage().deserialize(this)
