@@ -1,5 +1,6 @@
 package com.jackob.dvz.setup
 
+import com.jackob.dvz.DvZ
 import com.jackob.dvz.storage.MapStorage
 import com.jackob.dvz.ui.Menu
 import com.jackob.dvz.util.createItem
@@ -16,6 +17,10 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerQuitEvent
 
 object MapSetupManager : Listener {
+
+    init {
+        DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+    }
 
     private val processes: MutableMap<Player, MapSetupProcess> = HashMap()
 
@@ -80,7 +85,7 @@ object MapSetupManager : Listener {
                     enchant(Enchantment.UNBREAKING, 10)
                 }
                 onClick = {
-                    BasicMapInfoForm.openMenuInfoForm(it)
+                    MapFormsManager.getForm(FormType.SETUP_FORM).openForm(it)
                 }
             }
 

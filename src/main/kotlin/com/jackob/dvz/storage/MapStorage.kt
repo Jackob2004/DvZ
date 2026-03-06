@@ -56,4 +56,15 @@ object MapStorage {
         return true
     }
 
+    fun deleteMap(mapKey: String): Boolean {
+        config.set("$MAPS_PATH.$mapKey", null)
+
+        try {
+            config.save(file)
+        } catch (_: IOException) {
+            return false
+        }
+
+        return true
+    }
 }
