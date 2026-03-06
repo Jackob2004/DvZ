@@ -2,6 +2,8 @@ package com.jackob.dvz.storage
 
 import com.jackob.dvz.DvZ
 import org.bukkit.Bukkit
+import org.bukkit.Difficulty
+import org.bukkit.GameRules
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.WorldCreator
@@ -35,6 +37,25 @@ object MapStorage {
         File(target, "session.lock").delete()
     }
 
+    private fun World.configureWorldSettings() : World {
+        this.apply {
+            setGameRule(GameRules.SPAWN_MOBS, false)
+            setGameRule(GameRules.ADVANCE_TIME, false)
+            setGameRule(GameRules.ADVANCE_WEATHER, false)
+            setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false)
+            setGameRule(GameRules.SHOW_DEATH_MESSAGES, false)
+
+            time = 6000
+            setStorm(false)
+            isThundering = false
+            difficulty = Difficulty.NORMAL
+
+            isAutoSave = false
+        }
+
+        return this
+    }
+
     fun resetMap(templateName: String): World? {
         val templateWorld = File(Bukkit.getWorldContainer(), templateName)
         val mapName = templateName.removeSuffix("-template")
@@ -50,7 +71,7 @@ object MapStorage {
         }
 
         copyWorld(templateWorld, mapWorld)
-        return Bukkit.createWorld(WorldCreator(mapName))
+        return Bukkit.createWorld(WorldCreator(mapName))?.configureWorldSettings()
     }
 
     fun saveLobby(lobbyLocation: Location): Boolean {
