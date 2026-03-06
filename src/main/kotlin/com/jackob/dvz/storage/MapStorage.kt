@@ -35,6 +35,24 @@ object MapStorage {
         File(target, "session.lock").delete()
     }
 
+    fun resetMap(templateName: String): World? {
+        val templateWorld = File(Bukkit.getWorldContainer(), templateName)
+        val mapName = templateName.removeSuffix("-template")
+        val mapWorld = File(Bukkit.getWorldContainer(), mapName)
+
+        Bukkit.getWorld(mapName)?.let { world ->
+            world.loadedChunks.forEach { it.unload(false) }
+            Bukkit.unloadWorld(world, false)
+        }
+
+        if (mapWorld.exists()) {
+            mapWorld.deleteRecursively()
+        }
+
+        copyWorld(templateWorld, mapWorld)
+        return Bukkit.createWorld(WorldCreator(mapName))
+    }
+
     fun saveLobby(lobbyLocation: Location): Boolean {
         config.set(LOBBY_PATH, lobbyLocation)
         try {
@@ -78,29 +96,29 @@ object MapStorage {
         return true
     }
 
-    fun getMapKeys() : List<String>? {
+    fun getMapKeys(): List<String>? {
         val configSection = config.getConfigurationSection(MAPS_PATH) ?: return null
 
         return configSection.getKeys(false).toList()
     }
 
-    fun resetMap(templateName: String): World? {
-        val templateWorld = File(Bukkit.getWorldContainer(), templateName)
-        val mapName = templateName.removeSuffix("-template")
-        val mapWorld = File(Bukkit.getWorldContainer(), mapName)
+    fun getMapData(templateName: String): GameMap? {
+        val worldCopy = resetMap(templateName) ?: return null
+        val name = config.getString("$MAPS_PATH.$templateName.name")!!
 
-        Bukkit.getWorld(mapName)?.let { world ->
-            world.loadedChunks.forEach { it.unload(false) }
-            Bukkit.unloadWorld(world, false)
+        val dwarfSpawn = config.getLocation("$MAPS_PATH.$templateName.dwarf-spawn")!!.apply {
+            world = worldCopy
+        }
+        val zombieSpawn = config.getLocation("$MAPS_PATH.$templateName.zombie-spawn")!!.apply {
+            world = worldCopy
+        }
+        val shrines = config.getConfigurationSection("$MAPS_PATH.$templateName.shrines")!!.getKeys(false).map {
+            config.getLocation("$MAPS_PATH.$templateName.shrines.$it")!!.apply {
+                world = worldCopy
+            }
         }
 
-        if (mapWorld.exists()) {
-            mapWorld.deleteRecursively()
-        }
-
-        copyWorld(templateWorld, mapWorld)
-        return Bukkit.createWorld(WorldCreator(mapName))
+        return GameMap(name, dwarfSpawn, zombieSpawn, shrines)
     }
-
 
 }
