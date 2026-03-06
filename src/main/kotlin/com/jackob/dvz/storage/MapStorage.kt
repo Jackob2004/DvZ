@@ -67,4 +67,11 @@ object MapStorage {
 
         return true
     }
+
+    fun getMapKeys() : List<String>? {
+        val configSection = config.getConfigurationSection(MAPS_PATH) ?: return null
+
+        return configSection.getKeys(false).toList()
+    }
+
 }

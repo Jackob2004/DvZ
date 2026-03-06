@@ -1,5 +1,6 @@
 package com.jackob.dvz
 
+import com.jackob.dvz.command.DeleteMapCommand
 import com.jackob.dvz.command.SaveLobbyCommand
 import com.jackob.dvz.command.SetupMapCommand
 import com.jackob.dvz.ui.CustomMenuListener
@@ -15,6 +16,7 @@ class DvZ : JavaPlugin() {
 
         registerCommand("dvz-set-lobby", SaveLobbyCommand())
         registerCommand("dvz-setup-map", SetupMapCommand())
+        registerCommand("dvz-delete-map", DeleteMapCommand())
         server.pluginManager.registerEvents(CustomMenuListener(), this)
         logger.info("DvZ is enabled!")
     }

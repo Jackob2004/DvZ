@@ -15,6 +15,7 @@ object MapFormsManager : Listener {
 
     init {
         forms[FormType.SETUP_FORM] = MapSetupForm()
+        forms[FormType.DELETE_MAP_FORM] = MapDeleteForm()
     }
 
     fun getForm(formType: FormType): CustomForm {
