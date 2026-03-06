@@ -1,7 +1,10 @@
 package com.jackob.dvz.storage
 
 import com.jackob.dvz.DvZ
+import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.World
+import org.bukkit.WorldCreator
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.io.IOException
@@ -24,6 +27,13 @@ object MapStorage {
     private val config = YamlConfiguration.loadConfiguration(file)
 
     val LOBBY_SPAWN: Location? = config.getLocation(LOBBY_PATH)
+
+    private fun copyWorld(source: File, target: File) {
+        source.copyRecursively(target, overwrite = true)
+
+        File(target, "uid.dat").delete()
+        File(target, "session.lock").delete()
+    }
 
     fun saveLobby(lobbyLocation: Location): Boolean {
         config.set(LOBBY_PATH, lobbyLocation)
@@ -73,5 +83,24 @@ object MapStorage {
 
         return configSection.getKeys(false).toList()
     }
+
+    fun resetMap(templateName: String): World? {
+        val templateWorld = File(Bukkit.getWorldContainer(), templateName)
+        val mapName = templateName.removeSuffix("-template")
+        val mapWorld = File(Bukkit.getWorldContainer(), mapName)
+
+        Bukkit.getWorld(mapName)?.let { world ->
+            world.loadedChunks.forEach { it.unload(false) }
+            Bukkit.unloadWorld(world, false)
+        }
+
+        if (mapWorld.exists()) {
+            mapWorld.deleteRecursively()
+        }
+
+        copyWorld(templateWorld, mapWorld)
+        return Bukkit.createWorld(WorldCreator(mapName))
+    }
+
 
 }

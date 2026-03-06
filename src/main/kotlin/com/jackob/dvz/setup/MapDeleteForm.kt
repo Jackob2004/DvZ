@@ -44,7 +44,7 @@ class MapDeleteForm : CustomForm {
                         )
                         .inputs(
                             listOf(
-                                DialogInput.singleOption(MAP_TO_DELETE_KEY, "Actual map folder name".mm(), entries)
+                                DialogInput.singleOption(MAP_TO_DELETE_KEY, "<red>Actual map folder name".mm(), entries)
                                     .width(250)
                                     .build()
                             )
