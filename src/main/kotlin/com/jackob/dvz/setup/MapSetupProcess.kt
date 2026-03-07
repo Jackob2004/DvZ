@@ -46,6 +46,9 @@ class MapSetupProcess(private val player: Player) : Listener {
         canGiveConfigTools() &&
                 dwarfSpawn != null &&
                 zombieSpawn != null &&
+                goldMine != null &&
+                sawmill != null &&
+                oil != null &&
                 shrines.size == totalShrines
     }
 
@@ -85,8 +88,35 @@ class MapSetupProcess(private val player: Player) : Listener {
             enchant(Enchantment.UNBREAKING, 10)
         }
 
+        val goldmineTool = createItem(Material.GOLD_BLOCK) {
+            name = "<gold>Set goldmine position"
+            description = """
+                <gray>Usage: <white><b>RIGHT
+                <dark_gray>Click to set goldmine position. Clicking again will just update.
+            """
+            enchant(Enchantment.UNBREAKING, 10)
+        }
+
+        val sawmillTool = createItem(Material.IRON_BARS) {
+            name = "<white><b>Set sawmill position"
+            description = """
+                <gray>Usage: <white><b>RIGHT
+                <dark_gray>Click to set sawmill position. Clicking again will just update.
+            """
+            enchant(Enchantment.UNBREAKING, 10)
+        }
+
+        val oilTool = createItem(Material.SPONGE) {
+            name = "<dark_purple><b>Set oil position"
+            description = """
+                <gray>Usage: <white><b>RIGHT
+                <dark_gray>Click to set oil position. Clicking again will just update.
+            """
+            enchant(Enchantment.UNBREAKING, 10)
+        }
+
         player.inventory.clear()
-        player.inventory.addItem(zombieSpawnTool, dwarfSpawnTool, shrinesTool)
+        player.inventory.addItem(zombieSpawnTool, dwarfSpawnTool, shrinesTool, goldmineTool, sawmillTool, oilTool)
         return true
     }
 
@@ -96,25 +126,41 @@ class MapSetupProcess(private val player: Player) : Listener {
         if (player.world.name != processWorldName) return
         val configTool = event.item ?: return
 
+        val action = event.action
         var message: String? = null
         var sound = Sound.BLOCK_WET_GRASS_PLACE
 
         when (configTool.type) {
-            Material.ZOMBIE_HEAD -> if (event.action == Action.RIGHT_CLICK_AIR || event.action == Action.RIGHT_CLICK_BLOCK) {
+            Material.ZOMBIE_HEAD -> if (action.isRightClick) {
                 gameMap.zombieSpawn = player.location
                 message = "<gray>Zombie spawn was set"
             }
 
-            Material.PLAYER_HEAD -> if (event.action == Action.RIGHT_CLICK_AIR || event.action == Action.RIGHT_CLICK_BLOCK) {
+            Material.PLAYER_HEAD -> if (action.isRightClick) {
                 gameMap.dwarfSpawn = player.location
                 message = "<gray>Dwarf spawn was set"
             }
 
+            Material.GOLD_BLOCK -> if (action.isRightClick) {
+                gameMap.goldMine = player.location
+                message = "<gray>Goldmine position was set"
+            }
+
+            Material.IRON_BARS -> if (action.isRightClick) {
+                gameMap.sawmill = player.location
+                message = "<gray>Sawmill position was set"
+            }
+
+            Material.SPONGE -> if (action.isRightClick) {
+                gameMap.oil = player.location
+                message = "<gray>Oil position was set"
+            }
+
             Material.ENCHANTING_TABLE -> {
-                if (event.action == Action.RIGHT_CLICK_BLOCK || event.action == Action.RIGHT_CLICK_AIR) {
+                if (action.isRightClick) {
                     gameMap.shrines[selectedShrine] = player.location
                     message = "<gray>Shrine (#$selectedShrine) position was set"
-                } else if (event.action == Action.LEFT_CLICK_BLOCK || event.action == Action.LEFT_CLICK_AIR) {
+                } else if (action.isLeftClick) {
                     selectNextShrine()
                     configTool.updateItem {
                         name = "<yellow><b>Set shrine position (#$selectedShrine)"

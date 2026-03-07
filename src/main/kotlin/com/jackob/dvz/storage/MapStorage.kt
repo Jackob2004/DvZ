@@ -98,6 +98,9 @@ object MapStorage {
         config.set("$MAPS_PATH.$worldName.name", mapDraft.name!!)
         config.set("$MAPS_PATH.$worldName.dwarf-spawn", mapDraft.dwarfSpawn!!)
         config.set("$MAPS_PATH.$worldName.zombie-spawn", mapDraft.zombieSpawn!!)
+        config.set("$MAPS_PATH.$worldName.goldmine", mapDraft.goldMine!!)
+        config.set("$MAPS_PATH.$worldName.sawmill", mapDraft.sawmill!!)
+        config.set("$MAPS_PATH.$worldName.oil", mapDraft.oil!!)
 
         mapDraft.shrines.toSortedMap().forEach {
             config.set("$MAPS_PATH.$worldName.shrines.${it.key}", it.value)
@@ -140,13 +143,24 @@ object MapStorage {
         val zombieSpawn = config.getLocation("$MAPS_PATH.$templateName.zombie-spawn")!!.apply {
             world = worldCopy
         }
+
+        val goldmine = config.getLocation("$MAPS_PATH.$templateName.goldmine")!!.apply {
+            world = worldCopy
+        }
+        val sawmill = config.getLocation("$MAPS_PATH.$templateName.sawmill")!!.apply {
+            world = worldCopy
+        }
+        val oil = config.getLocation("$MAPS_PATH.$templateName.oil")!!.apply {
+            world = worldCopy
+        }
+
         val shrines = config.getConfigurationSection("$MAPS_PATH.$templateName.shrines")!!.getKeys(false).map {
             config.getLocation("$MAPS_PATH.$templateName.shrines.$it")!!.apply {
                 world = worldCopy
             }
         }
 
-        return GameMap(name, dwarfSpawn, zombieSpawn, shrines)
+        return GameMap(name, dwarfSpawn, zombieSpawn, goldmine, sawmill, oil, shrines)
     }
 
 }
