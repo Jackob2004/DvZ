@@ -1,5 +1,6 @@
 package com.jackob.dvz.util
 
+import org.bukkit.GameMode
 import org.bukkit.Registry
 import org.bukkit.entity.Player
 
@@ -30,4 +31,5 @@ fun Player.resetAll() {
     walkSpeed = 0.2F
     flySpeed = 0.1F
     foodLevel = 20
+    gameMode = GameMode.SURVIVAL
 }
