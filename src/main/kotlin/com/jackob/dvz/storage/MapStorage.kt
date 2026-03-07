@@ -38,29 +38,27 @@ object MapStorage {
     }
 
     private fun World.configureWorldSettings() : World {
-        this.apply {
-            setGameRule(GameRules.ADVANCE_TIME, false)
-            setGameRule(GameRules.ADVANCE_WEATHER, false)
-            setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false)
-            setGameRule(GameRules.SHOW_DEATH_MESSAGES, false)
-            setGameRule(GameRules.IMMEDIATE_RESPAWN, true)
-            setGameRule(GameRules.ALLOW_ENTERING_NETHER_USING_PORTALS, false)
+        setGameRule(GameRules.ADVANCE_TIME, false)
+        setGameRule(GameRules.ADVANCE_WEATHER, false)
+        setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false)
+        setGameRule(GameRules.SHOW_DEATH_MESSAGES, false)
+        setGameRule(GameRules.IMMEDIATE_RESPAWN, true)
+        setGameRule(GameRules.ALLOW_ENTERING_NETHER_USING_PORTALS, false)
 
-            setGameRule(GameRules.SPAWN_MOBS, false)
-            setGameRule(GameRules.SPAWN_MONSTERS, false)
-            setGameRule(GameRules.SPAWN_PHANTOMS, false)
-            setGameRule(GameRules.SPAWN_PATROLS, false)
-            setGameRule(GameRules.SPAWN_WANDERING_TRADERS, false)
-            setGameRule(GameRules.SPAWN_WARDENS, false)
-            setGameRule(GameRules.RAIDS, false)
+        setGameRule(GameRules.SPAWN_MOBS, false)
+        setGameRule(GameRules.SPAWN_MONSTERS, false)
+        setGameRule(GameRules.SPAWN_PHANTOMS, false)
+        setGameRule(GameRules.SPAWN_PATROLS, false)
+        setGameRule(GameRules.SPAWN_WANDERING_TRADERS, false)
+        setGameRule(GameRules.SPAWN_WARDENS, false)
+        setGameRule(GameRules.RAIDS, false)
 
-            time = 6000
-            setStorm(false)
-            isThundering = false
-            difficulty = Difficulty.NORMAL
+        time = 6000
+        setStorm(false)
+        isThundering = false
+        difficulty = Difficulty.NORMAL
 
-            isAutoSave = false
-        }
+        isAutoSave = false
 
         return this
     }
