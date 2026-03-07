@@ -137,25 +137,25 @@ object MapStorage {
         val worldCopy = resetMap(templateName) ?: return null
         val name = config.getString("$MAPS_PATH.$templateName.name")!!
 
-        val dwarfSpawn = config.getLocation("$MAPS_PATH.$templateName.dwarf-spawn")!!.apply {
+        val dwarfSpawn = config.getLocation("$MAPS_PATH.$templateName.dwarf-spawn")!!.clone().apply {
             world = worldCopy
         }
-        val zombieSpawn = config.getLocation("$MAPS_PATH.$templateName.zombie-spawn")!!.apply {
+        val zombieSpawn = config.getLocation("$MAPS_PATH.$templateName.zombie-spawn")!!.clone().apply {
             world = worldCopy
         }
 
-        val goldmine = config.getLocation("$MAPS_PATH.$templateName.goldmine")!!.apply {
+        val goldmine = config.getLocation("$MAPS_PATH.$templateName.goldmine")!!.clone().apply {
             world = worldCopy
         }
-        val sawmill = config.getLocation("$MAPS_PATH.$templateName.sawmill")!!.apply {
+        val sawmill = config.getLocation("$MAPS_PATH.$templateName.sawmill")!!.clone().apply {
             world = worldCopy
         }
-        val oil = config.getLocation("$MAPS_PATH.$templateName.oil")!!.apply {
+        val oil = config.getLocation("$MAPS_PATH.$templateName.oil")!!.clone().apply {
             world = worldCopy
         }
 
         val shrines = config.getConfigurationSection("$MAPS_PATH.$templateName.shrines")!!.getKeys(false).map {
-            config.getLocation("$MAPS_PATH.$templateName.shrines.$it")!!.apply {
+            config.getLocation("$MAPS_PATH.$templateName.shrines.$it")!!.clone().apply {
                 world = worldCopy
             }
         }
