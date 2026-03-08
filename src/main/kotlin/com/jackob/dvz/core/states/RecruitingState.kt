@@ -47,6 +47,11 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         TODO("Implement this")
     }
 
+    fun changeMap(newMap: GameMap) {
+        gameMap = newMap
+        Bukkit.broadcast("<gray><i>Map was Changed!!!".withPrefix().mm())
+    }
+
     fun performMapReroll(rerolledMap: GameMap) {
         if (wasMapRerolled) return
         wasMapRerolled = true
