@@ -1,6 +1,7 @@
 package com.jackob.dvz
 
 import com.jackob.dvz.command.DeleteMapCommand
+import com.jackob.dvz.command.MapRerollCommand
 import com.jackob.dvz.command.SaveLobbyCommand
 import com.jackob.dvz.command.SetupMapCommand
 import com.jackob.dvz.core.GameManager
@@ -19,6 +20,7 @@ class DvZ : JavaPlugin() {
         registerCommand("dvz-set-lobby", SaveLobbyCommand())
         registerCommand("dvz-setup-map", SetupMapCommand())
         registerCommand("dvz-delete-map", DeleteMapCommand())
+        registerCommand("dvz-map-reroll", MapRerollCommand())
         server.pluginManager.registerEvents(CustomMenuListener(), this)
         logger.info("DvZ is enabled!")
     }

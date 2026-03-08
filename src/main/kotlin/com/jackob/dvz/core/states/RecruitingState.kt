@@ -4,8 +4,11 @@ import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
+import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.name
+import com.jackob.dvz.util.withPrefix
+import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -17,6 +20,9 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 
 class RecruitingState(var gameMap: GameMap) : GameState {
+
+    var wasMapRerolled = false
+
     override fun onEnter() {
         super.onEnter()
     }
@@ -39,6 +45,14 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     private fun openTeleportOptions(player: Player) {
         TODO("Implement this")
+    }
+
+    fun performMapReroll(rerolledMap: GameMap) {
+        if (wasMapRerolled) return
+        wasMapRerolled = true
+
+        gameMap = rerolledMap
+        Bukkit.broadcast("<gray><i>Map Rerolled!!!".withPrefix().mm())
     }
 
     @EventHandler

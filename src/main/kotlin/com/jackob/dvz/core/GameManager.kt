@@ -22,6 +22,18 @@ object GameManager {
         return MapStorage.getMapData(randomTemplateName)!!
     }
 
+    fun rerollMap(): Boolean {
+        val recruitingState = gameState as? RecruitingState ?: return false
+        if (recruitingState.wasMapRerolled) return false
+        val allMapNames = MapStorage.getMapKeys()!!.takeIf { it.size > 1 } ?: return false
+
+        val currentMapWorldName = recruitingState.gameMap.dwarfSpawn.world.name
+        val newMapName = allMapNames.dropWhile { it.contains(currentMapWorldName) }.shuffled().first()
+        recruitingState.performMapReroll(MapStorage.getMapData(newMapName)!!)
+
+        return true
+    }
+
     fun setGameState(gameState: GameState) {
         this.gameState.onLeave()
         this.gameState = gameState
