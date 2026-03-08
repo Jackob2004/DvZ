@@ -27,7 +27,7 @@ object GameManager {
         if (mapKey !in MapStorage.getMapKeys()!!) return false
         if (mapKey.contains(recruitingState.gameMap.dwarfSpawn.world.name)) return false
 
-        recruitingState.changeMap(MapStorage.getMapData(mapKey)!!)
+        recruitingState.performMapChange(MapStorage.getMapData(mapKey)!!)
 
         return true
     }

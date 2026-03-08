@@ -8,6 +8,7 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.withPrefix
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes.player
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -47,9 +48,23 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         TODO("Implement this")
     }
 
-    fun changeMap(newMap: GameMap) {
+    /**
+     * Applies behavior/options associated to the recruiting state
+     */
+    private fun refreshPlayer(player: Player) {
+        player.teleport(MapStorage.LOBBY_SPAWN!!)
+        player.resetAll()
+        player.closeInventory()
+        giveLobbyTools(player)
+    }
+
+    fun performMapChange(newMap: GameMap) {
         gameMap = newMap
+
         Bukkit.broadcast("<gray><i>Map was Changed!!!".withPrefix().mm())
+        Bukkit.getOnlinePlayers().forEach {
+            refreshPlayer(it)
+        }
     }
 
     fun performMapReroll(rerolledMap: GameMap) {
@@ -57,16 +72,18 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         wasMapRerolled = true
 
         gameMap = rerolledMap
+
         Bukkit.broadcast("<gray><i>Map Rerolled!!!".withPrefix().mm())
+        Bukkit.getOnlinePlayers().forEach {
+            refreshPlayer(it)
+        }
     }
 
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
         val player = event.player
 
-        player.teleport(MapStorage.LOBBY_SPAWN!!)
-        player.resetAll()
-        giveLobbyTools(player)
+        refreshPlayer(player)
     }
 
     @EventHandler
