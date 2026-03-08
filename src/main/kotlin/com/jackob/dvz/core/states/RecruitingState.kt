@@ -1,5 +1,6 @@
 package com.jackob.dvz.core.states
 
+import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
 import com.jackob.dvz.util.createItem
@@ -8,7 +9,7 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.withPrefix
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes.player
+import net.kyori.adventure.bossbar.BossBar
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -19,10 +20,23 @@ import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerQuitEvent
+
+private const val INFO_BAR_MAP = "<gray><b>Map: <reset><gradient:#11998e:#38ef7d><i>"
+private const val INFO_BAR_PLAYERS = "<reset><dark_gray><b>| <gray><b>Players: <reset><gradient:#38ef7d:#11998e><i>"
 
 class RecruitingState(var gameMap: GameMap) : GameState {
 
+    val gameInfoBar = BossBar.bossBar(
+        "$INFO_BAR_MAP${gameMap.name} ${INFO_BAR_PLAYERS}0/${ConfigStorage.REQUIRED_PLAYERS}".mm(),
+        0.0F,
+        BossBar.Color.GREEN,
+        BossBar.Overlay.NOTCHED_10
+    )
+
     var wasMapRerolled = false
+
+    var playersWaiting = 0
 
     override fun onEnter() {
         super.onEnter()
@@ -48,6 +62,11 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         TODO("Implement this")
     }
 
+    private fun updateInfoBar() {
+        gameInfoBar.name("$INFO_BAR_MAP${gameMap.name} $INFO_BAR_PLAYERS$playersWaiting/${ConfigStorage.REQUIRED_PLAYERS}".mm())
+        gameInfoBar.progress((playersWaiting * 100.0F / ConfigStorage.REQUIRED_PLAYERS) / 100.0F)
+    }
+
     /**
      * Applies behavior/options associated to the recruiting state
      */
@@ -56,11 +75,13 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         player.resetAll()
         player.closeInventory()
         giveLobbyTools(player)
+        player.showBossBar(gameInfoBar)
     }
 
     fun performMapChange(newMap: GameMap) {
         gameMap = newMap
 
+        updateInfoBar()
         Bukkit.broadcast("<gray><i>Map was Changed!!!".withPrefix().mm())
         Bukkit.getOnlinePlayers().forEach {
             refreshPlayer(it)
@@ -73,6 +94,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
         gameMap = rerolledMap
 
+        updateInfoBar()
         Bukkit.broadcast("<gray><i>Map Rerolled!!!".withPrefix().mm())
         Bukkit.getOnlinePlayers().forEach {
             refreshPlayer(it)
@@ -81,9 +103,17 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
+        playersWaiting++
+        updateInfoBar()
         val player = event.player
 
         refreshPlayer(player)
+    }
+
+    @EventHandler
+    fun onPlayerQuit(event: PlayerQuitEvent) {
+        playersWaiting--
+        updateInfoBar()
     }
 
     @EventHandler
