@@ -1,6 +1,5 @@
 package com.jackob.dvz.core
 
-import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.states.GameState
 import com.jackob.dvz.core.states.RecruitingState
 import com.jackob.dvz.storage.GameMap
@@ -39,7 +38,8 @@ object GameManager {
         val allMapNames = MapStorage.getMapKeys()!!.takeIf { it.size > 1 } ?: return false
 
         val currentMapWorldName = recruitingState.gameMap.dwarfSpawn.world.name
-        val newMapName = allMapNames.filterNot{ it.contains(currentMapWorldName) }.shuffled().first()
+        val newMapName = allMapNames
+            .filterNot { it.contains(currentMapWorldName) }[Random.nextInt(allMapNames.size - 1)]
         recruitingState.performMapReroll(MapStorage.getMapData(newMapName)!!)
 
         return true
