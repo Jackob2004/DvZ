@@ -1,1 +1,3 @@
 required-players: 4
+countdown: 20
+map-change-time-limit: 5

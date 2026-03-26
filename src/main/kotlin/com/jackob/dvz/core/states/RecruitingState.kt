@@ -5,15 +5,19 @@ import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
 import com.jackob.dvz.ui.Menu
+import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.name
+import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.withPrefix
 import net.kyori.adventure.bossbar.BossBar
+import net.kyori.adventure.title.Title
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -24,6 +28,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.InventoryHolder
+import org.bukkit.scheduler.BukkitTask
 
 private const val INFO_BAR_MAP = "<gray><b>Map: <reset><gradient:#11998e:#38ef7d><i>"
 private const val INFO_BAR_PLAYERS = "<reset><dark_gray><b>| <gray><b>Players: <reset><gradient:#38ef7d:#11998e><i>"
@@ -39,9 +44,13 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     var wasMapRerolled = false
 
-    var playersWaiting = 0
+    val playersWaiting: MutableSet<Player> = HashSet()
 
     var teleportOptionsMenu = recreateTeleportOptions()
+
+    var countdownTask: BukkitTask? = null
+
+    var countdownTimer = ConfigStorage.COUNTDOWN
 
     override fun onEnter() {
         loadKeyMapLocations()
@@ -53,8 +62,43 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         with(gameMap) {
             HotspotManager.removeHotspot(oil, sawmill, goldmine)
         }
+        playersWaiting.clear()
+        countdownTask = null
 
         super.onLeave()
+    }
+
+    private fun handleCountdownStart() {
+        if (countdownTask != null) return
+        if (playersWaiting.size < ConfigStorage.REQUIRED_PLAYERS) return
+
+        Bukkit.broadcast("<u><green>Game starts in ${ConfigStorage.COUNTDOWN} seconds!!!".withPrefix().mm())
+
+        countdownTask = sync(period = TimeUnit.SECONDS(1)) {
+            val messageSuffix = if (countdownTimer <= 5) "!!!" else ""
+            val sound = if (countdownTimer <= 5) Sound.BLOCK_BELL_USE else Sound.ENTITY_EXPERIENCE_ORB_PICKUP
+            playersWaiting.forEach {
+                it.showTitle(Title.title("<aqua>$countdownTimer$messageSuffix".mm(), "".mm()))
+                it.playSound(it.location, sound, 1f, 1f)
+            }
+            // start new phase
+
+            countdownTimer--
+            if (countdownTimer < 0) {
+                this.cancel()
+            }
+        }
+    }
+
+    private fun handleCountdownCancel() {
+        if (countdownTask == null) return
+        if (countdownTask!!.isCancelled) return
+        if (playersWaiting.size >= ConfigStorage.REQUIRED_PLAYERS) return
+
+        countdownTask!!.cancel()
+        countdownTask = null
+        countdownTimer = ConfigStorage.COUNTDOWN
+        Bukkit.broadcast("<u><yellow>Game start canceled, not enough players!!!".withPrefix().mm())
     }
 
     private fun loadKeyMapLocations() {
@@ -168,8 +212,8 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     }
 
     private fun updateInfoBar() {
-        gameInfoBar.name("$INFO_BAR_MAP${gameMap.name} $INFO_BAR_PLAYERS$playersWaiting/${ConfigStorage.REQUIRED_PLAYERS}".mm())
-        gameInfoBar.progress((playersWaiting * 100.0F / ConfigStorage.REQUIRED_PLAYERS) / 100.0F)
+        gameInfoBar.name("$INFO_BAR_MAP${gameMap.name} $INFO_BAR_PLAYERS${playersWaiting.size}/${ConfigStorage.REQUIRED_PLAYERS}".mm())
+        gameInfoBar.progress((playersWaiting.size * 100.0F / ConfigStorage.REQUIRED_PLAYERS) / 100.0F)
     }
 
     /**
@@ -214,16 +258,19 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
-        playersWaiting++
-        updateInfoBar()
         val player = event.player
+
+        playersWaiting.add(player)
+        handleCountdownStart()
+        updateInfoBar()
 
         refreshPlayer(player)
     }
 
     @EventHandler
     fun onPlayerQuit(event: PlayerQuitEvent) {
-        playersWaiting--
+        playersWaiting.remove(event.player)
+        handleCountdownCancel()
         updateInfoBar()
     }
 

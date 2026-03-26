@@ -2,6 +2,7 @@ package com.jackob.dvz.core
 
 import com.jackob.dvz.core.states.GameState
 import com.jackob.dvz.core.states.RecruitingState
+import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
 import kotlin.random.Random
@@ -25,6 +26,7 @@ object GameManager {
 
     fun setMap(mapKey: String): Boolean {
         val recruitingState = gameState as? RecruitingState ?: return false
+        if (recruitingState.countdownTimer <= ConfigStorage.MAP_CHANGE_TIME_LIMIT) return false
         if (mapKey !in MapStorage.getMapKeys()!!) return false
         if (mapKey.contains(recruitingState.gameMap.dwarfSpawn.world.name)) return false
 
@@ -35,6 +37,7 @@ object GameManager {
 
     fun rerollMap(): Boolean {
         val recruitingState = gameState as? RecruitingState ?: return false
+        if (recruitingState.countdownTimer <= ConfigStorage.MAP_CHANGE_TIME_LIMIT) return false
         if (recruitingState.wasMapRerolled) return false
         val allMapNames = MapStorage.getMapKeys()!!.takeIf { it.size > 1 } ?: return false
 
