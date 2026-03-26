@@ -101,18 +101,14 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         Bukkit.broadcast("<u><yellow>Game start canceled, not enough players!!!".withPrefix().mm())
     }
 
-    private fun loadKeyMapLocations() {
-        with(gameMap) {
-            shrines.forEach { HotspotManager.addHotspot(it) }
-            HotspotManager.addHotspot(dwarfSpawn, zombieSpawn, oil, sawmill, goldmine)
-        }
+    private fun loadKeyMapLocations() = with(gameMap) {
+        shrines.forEach { HotspotManager.addHotspot(it) }
+        HotspotManager.addHotspot(dwarfSpawn, zombieSpawn, oil, sawmill, goldmine)
     }
 
-    private fun unloadKeyMapLocations() {
-        with(gameMap) {
-            shrines.forEach { HotspotManager.removeHotspot(it) }
-            HotspotManager.removeHotspot(dwarfSpawn, zombieSpawn, oil, sawmill, goldmine)
-        }
+    private fun unloadKeyMapLocations() = with(gameMap) {
+        shrines.forEach { HotspotManager.removeHotspot(it) }
+        HotspotManager.removeHotspot(dwarfSpawn, zombieSpawn, oil, sawmill, goldmine)
     }
 
     private fun giveLobbyTools(player: Player) {
@@ -127,7 +123,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         player.inventory.addItem(teleportTool)
     }
 
-    private fun recreateTeleportOptions() : InventoryHolder {
+    private fun recreateTeleportOptions(): InventoryHolder {
         return Menu.create("<white><b>Teleport options") {
             val secondRow = (1..gameMap.shrines.size).joinToString("").padEnd(9, '_')
             pattern(
