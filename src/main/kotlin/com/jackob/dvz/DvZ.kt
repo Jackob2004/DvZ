@@ -7,6 +7,7 @@ import com.jackob.dvz.command.SaveLobbyCommand
 import com.jackob.dvz.command.SetupMapCommand
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.storage.ConfigStorage
+import com.jackob.dvz.storage.KitStorage
 import com.jackob.dvz.ui.CustomMenuListener
 import com.jackob.dvz.storage.MapStorage
 import org.bukkit.plugin.java.JavaPlugin
@@ -21,6 +22,7 @@ class DvZ : JavaPlugin() {
         ConfigStorage
         MapStorage
         GameManager
+        KitStorage
 
         registerCommand("dvz-set-lobby", SaveLobbyCommand())
         registerCommand("dvz-setup-map", SetupMapCommand())

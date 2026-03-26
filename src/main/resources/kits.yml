@@ -1,0 +1,6 @@
+warrior:
+  icon: COPPER_SWORD
+  name: Warrior
+  description:
+    - <red>line1
+    - line2
