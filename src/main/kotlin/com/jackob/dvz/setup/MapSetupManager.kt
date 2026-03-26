@@ -81,7 +81,7 @@ object MapSetupManager : Listener {
 
             button('P') {
                 icon = createItem(Material.PALE_OAK_HANGING_SIGN) {
-                    name = "<gray><i>Set name and number of shrines"
+                    name = "<gray><i>Set map name and number of shrines"
                     enchant(Enchantment.UNBREAKING, 10)
                 }
                 onClick = {

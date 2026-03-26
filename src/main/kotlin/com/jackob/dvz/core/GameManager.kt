@@ -13,6 +13,7 @@ object GameManager {
     init {
         gameState = RecruitingState(pickRandomMap())
         gameState.onEnter()
+        HotspotManager.addHotspot(MapStorage.LOBBY_SPAWN!!)
     }
 
     private fun pickRandomMap(): GameMap {

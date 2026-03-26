@@ -1,5 +1,6 @@
 package com.jackob.dvz.core.states
 
+import com.jackob.dvz.core.HotspotManager
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
@@ -43,11 +44,31 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     var teleportOptionsMenu = recreateTeleportOptions()
 
     override fun onEnter() {
+        loadKeyMapLocations()
+
         super.onEnter()
     }
 
     override fun onLeave() {
+        with(gameMap) {
+            HotspotManager.removeHotspot(oil, sawmill, goldmine)
+        }
+
         super.onLeave()
+    }
+
+    private fun loadKeyMapLocations() {
+        with(gameMap) {
+            shrines.forEach { HotspotManager.addHotspot(it) }
+            HotspotManager.addHotspot(dwarfSpawn, zombieSpawn, oil, sawmill, goldmine)
+        }
+    }
+
+    private fun unloadKeyMapLocations() {
+        with(gameMap) {
+            shrines.forEach { HotspotManager.removeHotspot(it) }
+            HotspotManager.removeHotspot(dwarfSpawn, zombieSpawn, oil, sawmill, goldmine)
+        }
     }
 
     private fun giveLobbyTools(player: Player) {
@@ -76,7 +97,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
                     icon = createItem(Material.ENCHANTING_TABLE) {
                         name = "<yellow>Shrine (#${index + 1})"
                         onClick = {
-                            it.teleportAsync(location)
+                            it.teleport(location)
                             it.closeInventory()
                         }
                     }
@@ -98,7 +119,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
                     name = "<dark_green>Dwarf spawn"
                 }
                 onClick = {
-                    it.teleportAsync(gameMap.dwarfSpawn)
+                    it.teleport(gameMap.dwarfSpawn)
                     it.closeInventory()
                 }
             }
@@ -107,7 +128,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
                 icon = createItem(Material.ZOMBIE_HEAD) {
                     name = "<dark_red>Zombie spawn"
                     onClick = {
-                        it.teleportAsync(gameMap.zombieSpawn)
+                        it.teleport(gameMap.zombieSpawn)
                         it.closeInventory()
                     }
                 }
@@ -117,7 +138,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
                 icon = createItem(Material.GOLD_BLOCK) {
                     name = "<gold>Goldmine"
                     onClick = {
-                        it.teleportAsync(gameMap.goldmine)
+                        it.teleport(gameMap.goldmine)
                         it.closeInventory()
                     }
                 }
@@ -127,7 +148,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
                 icon = createItem(Material.IRON_BARS) {
                     name = "<white>Sawmill"
                     onClick = {
-                        it.teleportAsync(gameMap.sawmill)
+                        it.teleport(gameMap.sawmill)
                         it.closeInventory()
                     }
                 }
@@ -137,7 +158,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
                 icon = createItem(Material.SPONGE) {
                     name = "<dark_purple>Oil"
                     onClick = {
-                        it.teleportAsync(gameMap.oil)
+                        it.teleport(gameMap.oil)
                         it.closeInventory()
                     }
                 }
@@ -155,7 +176,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
      * Applies behavior/options associated to the recruiting state
      */
     private fun refreshPlayer(player: Player) {
-        player.teleportAsync(MapStorage.LOBBY_SPAWN!!)
+        player.teleport(MapStorage.LOBBY_SPAWN!!)
         player.resetAll()
         player.closeInventory()
         giveLobbyTools(player)
@@ -163,7 +184,9 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     }
 
     fun performMapChange(newMap: GameMap) {
+        unloadKeyMapLocations()
         gameMap = newMap
+        loadKeyMapLocations()
 
         updateInfoBar()
         teleportOptionsMenu = recreateTeleportOptions()
@@ -177,7 +200,9 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         if (wasMapRerolled) return
         wasMapRerolled = true
 
+        unloadKeyMapLocations()
         gameMap = rerolledMap
+        loadKeyMapLocations()
 
         updateInfoBar()
         teleportOptionsMenu = recreateTeleportOptions()
