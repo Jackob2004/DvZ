@@ -6,6 +6,7 @@ import com.jackob.dvz.command.MapSetCommand
 import com.jackob.dvz.command.SaveLobbyCommand
 import com.jackob.dvz.command.SetupMapCommand
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.kits.KitConfigsCache
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.KitDisplaysStorage
 import com.jackob.dvz.ui.CustomMenuListener
@@ -23,6 +24,7 @@ class DvZ : JavaPlugin() {
         MapStorage
         GameManager
         KitDisplaysStorage
+        KitConfigsCache
 
         registerCommand("dvz-set-lobby", SaveLobbyCommand())
         registerCommand("dvz-setup-map", SetupMapCommand())
