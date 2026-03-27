@@ -10,7 +10,7 @@ object KitsManager {
         if (playerKits.containsKey(player)) return
 
         playerKits[player] =
-            type.kitClass.getConstructor(String::class.java, Player::class.java).newInstance(type.toString(), player)
+            type.kitClass.getConstructor(String::class.java, Player::class.java).newInstance(type.toString().lowercase(), player)
                 .apply {
                     onActivate()
                 }
