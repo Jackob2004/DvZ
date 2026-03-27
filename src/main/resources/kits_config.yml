@@ -24,3 +24,20 @@ kits:
           - type: "STRENGTH"
             durationSeconds: 120
             amplifier: 2
+  archer:
+    activateMessage:
+      message: "<green>You arrived to battle an archer!"
+      broadcast: false
+
+    attributes:
+      - type: "MAX_HEALTH"
+        amount: 4.0
+
+    items:
+      - material: "LEATHER_CHESTPLATE"
+        name: "<b><green>Light plate"
+        lore:
+          - "<gray>Light as feather."
+        enchantments:
+          protection: 4
+          unbreaking: 3

@@ -1,5 +1,10 @@
 warrior:
   icon: COPPER_SWORD
-  name: Warrior
+  name: <red>Warrior
   description:
-    - <gray>Good in male combat
+    - <gray>Good at male combat
+archer:
+  icon: BOW
+  name: <green>Archer
+  description:
+    - <gray>Good at shooting

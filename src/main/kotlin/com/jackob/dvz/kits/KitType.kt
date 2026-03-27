@@ -1,6 +1,7 @@
 package com.jackob.dvz.kits
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.kits.dwarf.Archer
 import com.jackob.dvz.kits.dwarf.Warrior
 import com.jackob.dvz.storage.KitDisplay
 import com.jackob.dvz.storage.KitDisplaysStorage
@@ -13,6 +14,7 @@ enum class KitType(
     val displayData: KitDisplay
 ) {
     WARRIOR(Warrior::class.java, Team.DWARF, false, KitDisplaysStorage.getKitDisplayData("warrior")),
+    ARCHER(Archer::class.java, Team.DWARF, false, KitDisplaysStorage.getKitDisplayData("archer")),
     ;
 
     val key: NamespacedKey by lazy {
