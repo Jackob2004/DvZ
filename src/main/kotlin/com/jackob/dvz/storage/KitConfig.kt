@@ -38,6 +38,7 @@ data class AttributeConfig(
 @Serializable
 data class ItemConfig(
     val material: String,
+    val amount: Int = 1,
     val name: String,
     val lore: List<String> = emptyList(),
     val enchantments: Map<String, Int> = emptyMap(),
@@ -93,7 +94,7 @@ fun ItemConfig.toItemStack(): ItemStack {
     val name = name.mm()
     val description = lore.map(String::mm)
 
-    val item = ItemStack(material)
+    val item = ItemStack(material, amount)
     val meta = item.itemMeta
     meta.displayName(name)
     meta.lore(description)
