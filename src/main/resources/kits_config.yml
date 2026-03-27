@@ -1,5 +1,8 @@
 kits:
   warrior:
+    activateMessage:
+      message: "<red>You arrived as a warrior!"
+      broadcast: false
     attributes:
       - type: "MAX_HEALTH"
         amount: 40.0

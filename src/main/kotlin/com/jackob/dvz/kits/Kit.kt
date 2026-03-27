@@ -1,5 +1,7 @@
 package com.jackob.dvz.kits
 
+import com.jackob.dvz.util.mm
+import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 
 interface Kit {
@@ -12,6 +14,7 @@ interface Kit {
         applyPotionEffects()
         applyAttributeModifiers()
         giveItems()
+        sendActivationMessage()
     }
 
     fun onDeactivate() { }
@@ -29,6 +32,16 @@ interface Kit {
     fun giveItems() {
         KitConfigsCache.retrieveKitItems(getName()).forEach {
             getPlayer().inventory.addItem(it)
+        }
+    }
+
+    fun sendActivationMessage() {
+        val message = KitConfigsCache.retrieveActivationMessages(getName())
+
+        if (message.second) {
+            Bukkit.broadcast(message.first.mm())
+        } else {
+            getPlayer().sendMessage(message.first.mm())
         }
     }
 }

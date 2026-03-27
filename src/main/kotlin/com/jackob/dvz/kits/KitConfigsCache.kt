@@ -25,4 +25,9 @@ object KitConfigsCache {
     fun retrieveKitItems(kitName: String) : List<ItemStack> {
         return kitsCache[kitName]!!.items.map { it.toItemStack() }
     }
+
+    fun retrieveActivationMessages(kitName: String) : Pair<String, Boolean> {
+        val serialized = kitsCache[kitName]!!.activateMessage
+        return Pair(serialized.message, serialized.broadcast)
+    }
 }
