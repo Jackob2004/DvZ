@@ -6,11 +6,11 @@ import org.bukkit.Material
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 
-object KitStorage {
+object KitDisplaysStorage {
 
-    private val file = File(DvZ.INSTANCE.dataFolder, "kits.yml").apply {
+    private val file = File(DvZ.INSTANCE.dataFolder, "kit_displays.yml").apply {
         if (!exists()) {
-            DvZ.INSTANCE.saveResource("kits.yml", false)
+            DvZ.INSTANCE.saveResource("kit_displays.yml", false)
         }
     }
 
