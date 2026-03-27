@@ -1,6 +1,8 @@
 package com.jackob.dvz.core.states
 
 import com.jackob.dvz.core.HotspotManager
+import com.jackob.dvz.kits.KitType
+import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
@@ -261,6 +263,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         updateInfoBar()
 
         refreshPlayer(player)
+        KitsManager.setKit(player, KitType.WARRIOR)
     }
 
     @EventHandler

@@ -2,6 +2,7 @@ package com.jackob.dvz.storage
 
 import com.charleskorn.kaml.Yaml
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.util.PREFIX
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.toAttribute
 import io.papermc.paper.registry.RegistryAccess
@@ -14,7 +15,9 @@ import org.bukkit.Registry
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.inventory.EquipmentSlotGroup
 import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ArmorMeta
 import org.bukkit.inventory.meta.PotionMeta
+import org.bukkit.inventory.meta.trim.ArmorTrim
 import org.bukkit.potion.PotionEffect
 import java.io.File
 
@@ -46,7 +49,10 @@ data class ItemConfig(
 
     val basePotionType: String? = "UNCRAFTABLE",
     val potionColor: String? = null,
-    val potionEffects: List<PotionConfig> = emptyList()
+    val potionEffects: List<PotionConfig> = emptyList(),
+
+    val trimMaterial: String? = null,
+    val trimPattern: String? = null,
 )
 
 @Serializable
@@ -118,6 +124,17 @@ fun ItemConfig.toItemStack(): ItemStack {
         potionEffects.forEach { pConfig ->
             meta.addCustomEffect(pConfig.toPotionEffect(), true)
         }
+    }
+
+    if (meta is ArmorMeta) {
+        val material = RegistryAccess.registryAccess().getRegistry(RegistryKey.TRIM_MATERIAL)
+            .get(NamespacedKey.minecraft(trimMaterial!!.lowercase()))!!
+        val pattern = RegistryAccess.registryAccess().getRegistry(RegistryKey.TRIM_PATTERN)
+            .get(NamespacedKey.minecraft(trimPattern!!.lowercase()))!!
+
+        val trim = ArmorTrim(material, pattern)
+
+        meta.trim = trim
     }
 
     item.itemMeta = meta

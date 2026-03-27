@@ -16,6 +16,8 @@ kits:
         enchantments:
           protection: 4
           unbreaking: 3
+        trimMaterial: "iron"
+        trimPattern: "sentry"
 
       - material: "POTION"
         name: "<red><u>Battle Potion"
