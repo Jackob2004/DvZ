@@ -1,41 +1,26 @@
 kits:
   warrior:
     activateMessage:
-      message: "<red>You arrived as a warrior!"
+      message: "<red>You arrived to battle as a warrior!"
       broadcast: false
+
     attributes:
       - type: "MAX_HEALTH"
-        amount: 40.0
-
-    potions:
-      - type: "SPEED"
-        durationSeconds: 99999
-        amplifier: 1
-      - type: "NIGHT_VISION"
-        durationSeconds: 99999
-        amplifier: 0
+        amount: 10.0
 
     items:
-      - material: "NETHERITE_CHESTPLATE"
-        name: "<rainbow>Experimental Powered Armor"
+      - material: "DIAMOND_CHESTPLATE"
+        name: "<b><red>Hardened plate"
         lore:
-          - "<gray>Testing slot-specific attributes."
+          - "<gray>Be proud wearing it."
         enchantments:
           protection: 4
-          thorns: 3
-        attributes:
-          - type: "KNOCKBACK_RESISTANCE"
-            amount: 1.0
-            slot: "CHEST"
+          unbreaking: 3
 
       - material: "POTION"
-        name: "<blue>The 'Everything' Juice"
-        basePotionType: "long_regeneration"
-        potionColor: "#00FBFF"
+        name: "<red><u>Battle Potion"
+        potionColor: "#BD1313"
         potionEffects:
           - type: "STRENGTH"
             durationSeconds: 120
             amplifier: 2
-          - type: "JUMP_BOOST"
-            durationSeconds: 60
-            amplifier: 1

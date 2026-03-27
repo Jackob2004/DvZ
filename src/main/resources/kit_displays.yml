@@ -2,5 +2,4 @@ warrior:
   icon: COPPER_SWORD
   name: Warrior
   description:
-    - <red>line1
-    - line2
+    - <gray>Good in male combat

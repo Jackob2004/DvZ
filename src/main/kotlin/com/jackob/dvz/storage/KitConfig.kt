@@ -43,7 +43,7 @@ data class ItemConfig(
     val enchantments: Map<String, Int> = emptyMap(),
     val attributes: List<AttributeConfig> = emptyList(),
 
-    val basePotionType: String? = null,
+    val basePotionType: String? = "UNCRAFTABLE",
     val potionColor: String? = null,
     val potionEffects: List<PotionConfig> = emptyList()
 )
