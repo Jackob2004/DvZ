@@ -4,7 +4,7 @@ import org.bukkit.entity.Player
 
 object KitsManager {
 
-    private val playerKits: MutableMap<Player, Kit> = HashMap()
+    private val playerKits: MutableMap<Player, BaseKit> = HashMap()
 
     fun setKit(player: Player, type: KitType) {
         if (playerKits.containsKey(player)) return

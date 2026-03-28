@@ -263,7 +263,6 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         updateInfoBar()
 
         refreshPlayer(player)
-        KitsManager.setKit(player, KitType.WARRIOR)
     }
 
     @EventHandler

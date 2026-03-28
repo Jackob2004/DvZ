@@ -1,19 +1,15 @@
 package com.jackob.dvz.kits.dwarf
 
 import com.jackob.dvz.DvZ
-import com.jackob.dvz.kits.Kit
+import com.jackob.dvz.kits.BaseKit
 import org.bukkit.entity.Player
 import org.bukkit.event.Listener
 
-class Warrior(val internalName: String, val owner: Player) : Kit {
+class Warrior(internalName: String, owner: Player) : BaseKit(internalName, owner) {
 
     init {
         WarriorListener
     }
-
-    override fun getName() = internalName
-
-    override fun getPlayer() = owner
 
     object WarriorListener : Listener {
         init {

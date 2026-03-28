@@ -8,7 +8,7 @@ import com.jackob.dvz.storage.KitDisplaysStorage
 import org.bukkit.NamespacedKey
 
 enum class KitType(
-    val kitClass: Class<out Kit>,
+    val kitClass: Class<out BaseKit>,
     val team: Team,
     val isHero: Boolean,
     val displayData: KitDisplay
