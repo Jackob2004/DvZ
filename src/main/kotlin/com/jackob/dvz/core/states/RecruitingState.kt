@@ -2,14 +2,16 @@ package com.jackob.dvz.core.states
 
 import com.jackob.dvz.core.HotspotManager
 import com.jackob.dvz.kits.KitType
-import com.jackob.dvz.kits.KitsManager
+import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
 import com.jackob.dvz.ui.Menu
+import com.jackob.dvz.ui.PagerMenu
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
+import com.jackob.dvz.util.enchant
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.name
@@ -20,6 +22,7 @@ import net.kyori.adventure.title.Title
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
+import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -30,6 +33,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.InventoryHolder
+import org.bukkit.persistence.PersistentDataType
 import org.bukkit.scheduler.BukkitTask
 
 private const val INFO_BAR_MAP = "<gray><b>Map: <reset><gradient:#11998e:#38ef7d><i>"
@@ -53,6 +57,8 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     var countdownTask: BukkitTask? = null
 
     var countdownTimer = ConfigStorage.COUNTDOWN
+
+    val selectedKits: MutableMap<Player, KitType> = HashMap()
 
     override fun onEnter() {
         loadKeyMapLocations()
@@ -113,6 +119,42 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         HotspotManager.removeHotspot(dwarfSpawn, zombieSpawn, oil, sawmill, goldmine)
     }
 
+    private fun openKitSelectionMenu(player: Player) {
+        val basicDwarfKits = KitType.entries
+            .filter { !it.isHero && it.team == Team.DWARF }
+            .map {
+                createItem(it.displayData.icon) {
+                    name = it.displayData.name
+                    lore(it.displayData.description.map(String::mm))
+                    persistentDataContainer.set(it.key, PersistentDataType.BOOLEAN, false)
+
+                    if (selectedKits[player] != null && selectedKits[player] == it) {
+                        enchant(Enchantment.UNBREAKING, 10)
+                    }
+                }
+            }
+
+        object : PagerMenu(basicDwarfKits, player, "<gray><b>Select kit") {
+            override fun handleClick(slot: Int, player: Player) {
+                super.handleClick(slot, player)
+
+                menu.getItem(slot)?.let { item ->
+                    val keys = item.persistentDataContainer.keys
+                    if (keys.isEmpty()) return@handleClick
+
+                    KitType.getByKey(keys.first())?.let { type ->
+                        player.closeInventory()
+                        selectedKits[player] = type
+                        player.sendMessage("${type.displayData.name} <gray>kit selected".withPrefix().mm())
+                        player.playSound(player.location, Sound.BLOCK_LEVER_CLICK, 1f, 1f)
+                    }
+                }
+
+            }
+        }
+
+    }
+
     private fun giveLobbyTools(player: Player) {
         val teleportTool = createItem(Material.COMPASS) {
             name = "<white><b>Teleport options"
@@ -122,7 +164,14 @@ class RecruitingState(var gameMap: GameMap) : GameState {
             """
         }
 
-        player.inventory.addItem(teleportTool)
+        val kitSelectionTool = createItem(Material.CHEST) {
+            name = "<dark_gray><b>Kit selection"
+            description = """
+                <gray>Use it to select your game kit
+            """
+        }
+
+        player.inventory.addItem(teleportTool, kitSelectionTool)
     }
 
     private fun recreateTeleportOptions(): InventoryHolder {
@@ -279,6 +328,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
         when (lobbyTool.type) {
             Material.COMPASS -> event.player.openInventory(teleportOptionsMenu.inventory)
+            Material.CHEST -> openKitSelectionMenu(event.player)
             else -> Unit
         }
     }
