@@ -20,4 +20,16 @@ enum class KitType(
     val key: NamespacedKey by lazy {
         NamespacedKey(DvZ.INSTANCE, this.name.lowercase())
     }
+
+    companion object {
+        fun getByKey(key: NamespacedKey): KitType? {
+            if (key.namespace != DvZ.INSTANCE.name.lowercase()) return null
+
+            return try {
+                KitType.valueOf(key.key.uppercase())
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+        }
+    }
 }
