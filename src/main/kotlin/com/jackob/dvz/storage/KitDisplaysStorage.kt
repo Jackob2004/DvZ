@@ -22,8 +22,8 @@ object KitDisplaysStorage {
         }
 
         val icon = Material.getMaterial(config.getString("$identifier.icon")!!)!!
-        val name = config.getString("$identifier.name")!!.mm()
-        val description = config.getStringList("$identifier.description").map(String::mm)
+        val name = config.getString("$identifier.name")!!
+        val description = config.getStringList("$identifier.description")
 
         return KitDisplay(icon, name, description)
     }
