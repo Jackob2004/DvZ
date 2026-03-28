@@ -18,7 +18,7 @@ private const val NEXT_PAGE_BTN_IDX = 44
 private const val PREV_PAGE_BTN_IDX = 43
 private const val INFO_IDX = 42
 
-class PagerMenu(
+open class PagerMenu(
     private val contents: List<ItemStack>,
     player: Player,
     title: String
@@ -28,7 +28,7 @@ class PagerMenu(
 
     private val allPages = contents.size / ITEMS_PER_PAGE + if (contents.size % ITEMS_PER_PAGE != 0) 1 else 0
 
-    private val menu = Bukkit.createInventory(this, SIZE, title.mm()).apply {
+    protected val menu = Bukkit.createInventory(this, SIZE, title.mm()).apply {
         val fillerIcon = createItem(Material.LIGHT_BLUE_STAINED_GLASS_PANE) {
             name = "<white>Use buttons at the bottom to navigate"
         }
@@ -114,10 +114,10 @@ class PagerMenu(
     }
 
     override fun handleClick(slot: Int, player: Player) {
-        var shouldRerender = false
-        when (slot) {
-            NEXT_PAGE_BTN_IDX -> shouldRerender = nextPage()
-            PREV_PAGE_BTN_IDX -> shouldRerender = prevPage()
+        val shouldRerender: Boolean = when (slot) {
+            NEXT_PAGE_BTN_IDX -> nextPage()
+            PREV_PAGE_BTN_IDX -> prevPage()
+            else -> return
         }
 
         if (shouldRerender) {
