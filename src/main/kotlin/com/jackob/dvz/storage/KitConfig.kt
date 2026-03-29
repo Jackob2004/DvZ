@@ -126,11 +126,11 @@ fun ItemConfig.toItemStack(): ItemStack {
         }
     }
 
-    if (meta is ArmorMeta) {
+    if (meta is ArmorMeta && trimMaterial != null && trimPattern != null) {
         val material = RegistryAccess.registryAccess().getRegistry(RegistryKey.TRIM_MATERIAL)
-            .get(NamespacedKey.minecraft(trimMaterial!!.lowercase()))!!
+            .get(NamespacedKey.minecraft(trimMaterial.lowercase()))!!
         val pattern = RegistryAccess.registryAccess().getRegistry(RegistryKey.TRIM_PATTERN)
-            .get(NamespacedKey.minecraft(trimPattern!!.lowercase()))!!
+            .get(NamespacedKey.minecraft(trimPattern.lowercase()))!!
 
         val trim = ArmorTrim(material, pattern)
 
