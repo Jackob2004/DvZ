@@ -1,3 +1,5 @@
 required-players: 4
-countdown: 20
+countdown: 20 # seconds
 map-change-time-limit: 5
+players-per-hero: 10
+hero-select-time: 5 # seconds
