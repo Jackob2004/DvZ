@@ -8,3 +8,8 @@ archer:
   name: <green>Archer
   description:
     - <gray>Good at shooting
+elf:
+  icon: BIRCH_SAPLING
+  name: <green>Elf
+  description:
+    - <gray>Force of nature

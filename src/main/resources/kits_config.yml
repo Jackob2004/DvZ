@@ -43,3 +43,20 @@ kits:
         enchantments:
           protection: 4
           unbreaking: 3
+
+  elf:
+    activateMessage:
+      message: "<green>Elf from Mirkwood has arrived"
+      broadcast: true
+
+    attributes:
+      - type: "MAX_HEALTH"
+        amount: 20.0
+
+    items:
+      - material: "BOW"
+        name: "<b><green>Nature's Wrath"
+        enchantments:
+          power: 5
+          punch: 2
+          unbreaking: 3
