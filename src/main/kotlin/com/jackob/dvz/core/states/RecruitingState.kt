@@ -1,7 +1,9 @@
 package com.jackob.dvz.core.states
 
 import com.jackob.dvz.core.HotspotManager
+import com.jackob.dvz.core.objects.HeroPricker
 import com.jackob.dvz.kits.KitType
+import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
@@ -17,6 +19,7 @@ import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.withPrefix
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes.players
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.title.Title
 import org.bukkit.Bukkit
@@ -60,6 +63,8 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     val selectedKits: MutableMap<Player, KitType> = HashMap()
 
+    var heroPicker: HeroPricker? = null
+
     override fun onEnter() {
         loadKeyMapLocations()
 
@@ -76,11 +81,22 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         super.onLeave()
     }
 
+    private fun includeHeroKits() {
+        heroPicker?.let {
+            it.retrieveHeroes().forEach { hero ->
+                selectedKits[hero.first] = hero.second
+            }
+        }
+    }
+
     private fun handleCountdownStart() {
         if (countdownTask != null) return
         if (playersWaiting.size < ConfigStorage.REQUIRED_PLAYERS) return
 
         Bukkit.broadcast("<u><green>Game starts in ${ConfigStorage.COUNTDOWN} seconds!!!".withPrefix().mm())
+        if (HeroPricker.canPickAnyHero(playersWaiting.size) && heroPicker == null) {
+            heroPicker = HeroPricker(playersWaiting)
+        }
 
         countdownTask = sync(period = TimeUnit.SECONDS(1)) {
             val messageSuffix = if (countdownTimer <= 5) "!!!" else ""
@@ -89,10 +105,11 @@ class RecruitingState(var gameMap: GameMap) : GameState {
                 it.showTitle(Title.title("<aqua>$countdownTimer$messageSuffix".mm(), "".mm()))
                 it.playSound(it.location, sound, 1f, 1f)
             }
-            // start new phase
 
             countdownTimer--
             if (countdownTimer < 0) {
+                includeHeroKits()
+                // start new phase
                 this.cancel()
             }
         }
@@ -307,11 +324,10 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     fun onPlayerJoin(event: PlayerJoinEvent) {
         val player = event.player
 
+        refreshPlayer(player)
         playersWaiting.add(player)
         handleCountdownStart()
         updateInfoBar()
-
-        refreshPlayer(player)
     }
 
     @EventHandler
