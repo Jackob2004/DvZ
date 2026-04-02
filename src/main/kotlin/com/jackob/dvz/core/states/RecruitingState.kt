@@ -3,7 +3,6 @@ package com.jackob.dvz.core.states
 import com.jackob.dvz.core.HotspotManager
 import com.jackob.dvz.core.objects.HeroPricker
 import com.jackob.dvz.kits.KitType
-import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
@@ -19,7 +18,6 @@ import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.withPrefix
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes.players
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.title.Title
 import org.bukkit.Bukkit
@@ -31,6 +29,8 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
+import org.bukkit.event.inventory.InventoryClickEvent
+import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
@@ -352,6 +352,14 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     @EventHandler(priority = EventPriority.HIGH)
     fun onLobbyInteract(event: PlayerInteractEvent) {
         if (!event.player.hasPermission("dvz.lobby.interact")) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    fun onLobbyEqInteract(event: InventoryClickEvent) {
+        val player = event.whoClicked as? Player ?: return
+        if (!player.hasPermission("dvz.lobby.interact")) {
             event.isCancelled = true
         }
     }
