@@ -23,12 +23,12 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
     }
 
     override fun onEnter() {
-        selectedKits.filter { (player, _) -> player.isOnline }.forEach { (player, kitType) ->
-            player.resetAll()
-            player.scoreboard = customBoard
-            dwarfTeam.addPlayer(player)
-            player.teleport(gameMap.dwarfSpawn)
-            KitsManager.setKit(player, kitType)
+        selectedKits.filter { (player, _) -> player.isOnline }.forEach { (onlinePlayer, kitType) ->
+            onlinePlayer.resetAll()
+            onlinePlayer.scoreboard = customBoard
+            dwarfTeam.addPlayer(onlinePlayer)
+            onlinePlayer.teleport(gameMap.dwarfSpawn)
+            KitsManager.setKit(onlinePlayer, kitType)
         }
 
         Bukkit.broadcast("<gray>Preparation phase has started, dwarfs prepare for battle!!!".withPrefix().mm())

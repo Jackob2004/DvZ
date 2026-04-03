@@ -1,5 +1,6 @@
 package com.jackob.dvz.core.states
 
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.HotspotManager
 import com.jackob.dvz.core.objects.HeroPricker
 import com.jackob.dvz.kits.KitType
@@ -107,9 +108,9 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
             countdownTimer--
             if (countdownTimer < 0) {
-                includeHeroKits()
-                // start new phase
                 this.cancel()
+                includeHeroKits()
+                GameManager.setGameState(PreparationState(gameMap, selectedKits))
             }
         }
     }
