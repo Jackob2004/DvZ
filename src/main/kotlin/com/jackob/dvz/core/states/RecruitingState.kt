@@ -30,7 +30,6 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
@@ -44,26 +43,26 @@ private const val INFO_BAR_PLAYERS = "<reset><dark_gray><b>| <gray><b>Players: <
 
 class RecruitingState(var gameMap: GameMap) : GameState {
 
-    val gameInfoBar = BossBar.bossBar(
+    private val gameInfoBar = BossBar.bossBar(
         "$INFO_BAR_MAP${gameMap.name} ${INFO_BAR_PLAYERS}0/${ConfigStorage.REQUIRED_PLAYERS}".mm(),
         0.0F,
         BossBar.Color.GREEN,
         BossBar.Overlay.NOTCHED_10
     )
 
-    var wasMapRerolled = false
+    private val playersWaiting: MutableSet<Player> = HashSet()
 
-    val playersWaiting: MutableSet<Player> = HashSet()
+    private var teleportOptionsMenu = recreateTeleportOptions()
 
-    var teleportOptionsMenu = recreateTeleportOptions()
+    private var countdownTask: BukkitTask? = null
 
-    var countdownTask: BukkitTask? = null
+    private val selectedKits: MutableMap<Player, KitType> = HashMap()
+
+    private var heroPicker: HeroPricker? = null
 
     var countdownTimer = ConfigStorage.COUNTDOWN
 
-    val selectedKits: MutableMap<Player, KitType> = HashMap()
-
-    var heroPicker: HeroPricker? = null
+    var wasMapRerolled = false
 
     override fun onEnter() {
         loadKeyMapLocations()
