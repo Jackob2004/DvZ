@@ -1,7 +1,11 @@
 package com.jackob.dvz.core.states
 
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.HotspotManager
+import com.jackob.dvz.core.LOBBY_PERMISSION
+import com.jackob.dvz.core.handleLobbyToolClick
 import com.jackob.dvz.core.objects.HeroPricker
+import com.jackob.dvz.core.refreshToLobbyState
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ConfigStorage
@@ -14,7 +18,6 @@ import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
 import com.jackob.dvz.util.enchant
 import com.jackob.dvz.util.mm
-import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.withPrefix
@@ -64,6 +67,14 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     var wasMapRerolled = false
 
+    private val teleportTool = createItem(Material.COMPASS) {
+        name = "<white><b>Teleport options"
+        description = """
+                <gray>Use it to switch between lobby and the current map.
+                <gray>Get to know the map better by exploring its key locations.
+            """
+    }
+
     override fun onEnter() {
         loadKeyMapLocations()
 
@@ -110,9 +121,9 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
             countdownTimer--
             if (countdownTimer < 0) {
-                includeHeroKits()
-                // start new phase
                 this.cancel()
+                includeHeroKits()
+                GameManager.setGameState(PreparationState(gameMap, selectedKits))
             }
         }
     }
@@ -172,25 +183,6 @@ class RecruitingState(var gameMap: GameMap) : GameState {
             }
         }
 
-    }
-
-    private fun giveLobbyTools(player: Player) {
-        val teleportTool = createItem(Material.COMPASS) {
-            name = "<white><b>Teleport options"
-            description = """
-                <gray>Use it to switch between lobby and the current map.
-                <gray>Get to know the map better by exploring its key locations.
-            """
-        }
-
-        val kitSelectionTool = createItem(Material.CHEST) {
-            name = "<dark_gray><b>Kit selection"
-            description = """
-                <gray>Use it to select your game kit
-            """
-        }
-
-        player.inventory.addItem(teleportTool, kitSelectionTool)
     }
 
     private fun recreateTeleportOptions(): InventoryHolder {
@@ -286,11 +278,9 @@ class RecruitingState(var gameMap: GameMap) : GameState {
      * Applies behavior/options associated to the recruiting state
      */
     private fun refreshPlayer(player: Player) {
-        player.teleport(MapStorage.LOBBY_SPAWN!!)
-        player.resetAll()
-        player.closeInventory()
-        giveLobbyTools(player)
+        refreshToLobbyState(player)
         player.showBossBar(gameInfoBar)
+        player.inventory.addItem(teleportTool)
     }
 
     fun performMapChange(newMap: GameMap) {
@@ -343,35 +333,30 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     }
 
     @EventHandler
-    fun onLobbyToolClick(event: PlayerInteractEvent) {
-        val lobbyTool = event.item ?: return
+    fun onToolClick(event: PlayerInteractEvent) {
+        handleLobbyToolClick(event, ::openKitSelectionMenu)
+
+        val tool = event.item ?: return
         if (!event.action.isRightClick) return
 
-        when (lobbyTool.type) {
-            Material.COMPASS -> event.player.openInventory(teleportOptionsMenu.inventory)
-            Material.CHEST -> openKitSelectionMenu(event.player)
-            else -> Unit
+        if (tool == teleportTool) {
+            event.player.openInventory(teleportOptionsMenu.inventory)
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    fun onLobbyInteract(event: PlayerInteractEvent) {
-        if (!event.player.hasPermission("dvz.lobby.interact")) {
+    fun onInteract(event: PlayerInteractEvent) {
+        if (!event.player.hasPermission(LOBBY_PERMISSION)) {
             event.isCancelled = true
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    fun onLobbyEqInteract(event: InventoryClickEvent) {
+    fun onEqInteract(event: InventoryClickEvent) {
         val player = event.whoClicked as? Player ?: return
-        if (!player.hasPermission("dvz.lobby.interact")) {
+        if (!player.hasPermission(LOBBY_PERMISSION)) {
             event.isCancelled = true
         }
-    }
-
-    @EventHandler
-    fun onFoodLevelChange(event: FoodLevelChangeEvent) {
-        event.foodLevel = 20
     }
 
     @EventHandler
@@ -383,9 +368,14 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     @EventHandler
     fun onItemDrop(event: PlayerDropItemEvent) {
-        if (!event.player.hasPermission("dvz.lobby.interact")) {
+        if (!event.player.hasPermission(LOBBY_PERMISSION)) {
             event.isCancelled = true
         }
+    }
+
+    @EventHandler
+    fun onFoodLevelChange(event: FoodLevelChangeEvent) {
+        event.foodLevel = 20
     }
 
 }
