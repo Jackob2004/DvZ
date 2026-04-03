@@ -74,6 +74,9 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         with(gameMap) {
             HotspotManager.removeHotspot(oil, sawmill, goldmine)
         }
+        playersWaiting.forEach {
+            it.hideBossBar(gameInfoBar)
+        }
         playersWaiting.clear()
         countdownTask = null
 
@@ -331,7 +334,10 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     @EventHandler
     fun onPlayerQuit(event: PlayerQuitEvent) {
-        playersWaiting.remove(event.player)
+        val player = event.player
+
+        playersWaiting.remove(player)
+        gameInfoBar.removeViewer(player)
         handleCountdownCancel()
         updateInfoBar()
     }
