@@ -1,5 +1,6 @@
 package com.jackob.dvz
 
+import com.github.retrooper.packetevents.PacketEvents
 import com.jackob.dvz.command.DeleteMapCommand
 import com.jackob.dvz.command.MapRerollCommand
 import com.jackob.dvz.command.MapSetCommand
@@ -11,11 +12,21 @@ import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.KitDisplaysStorage
 import com.jackob.dvz.ui.CustomMenuListener
 import com.jackob.dvz.storage.MapStorage
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
 import org.bukkit.plugin.java.JavaPlugin
 
 class DvZ : JavaPlugin() {
 
+    override fun onLoad() {
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
+        PacketEvents.getAPI().settings
+            .reEncodeByDefault(false)
+            .checkForUpdates(true)
+        PacketEvents.getAPI().load()
+    }
+
     override fun onEnable() {
+        PacketEvents.getAPI().init()
         INSTANCE = this
 
         saveDefaultConfig()
@@ -36,7 +47,7 @@ class DvZ : JavaPlugin() {
     }
 
     override fun onDisable() {
-        // Plugin shutdown logic
+        PacketEvents.getAPI().terminate()
     }
 
     companion object {
