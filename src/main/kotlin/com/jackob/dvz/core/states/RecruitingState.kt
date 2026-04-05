@@ -40,6 +40,7 @@ import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.InventoryHolder
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.scheduler.BukkitTask
+import kotlin.math.max
 
 private const val INFO_BAR_MAP = "<gray><b>Map: <reset><gradient:#11998e:#38ef7d><i>"
 private const val INFO_BAR_PLAYERS = "<reset><dark_gray><b>| <gray><b>Players: <reset><gradient:#38ef7d:#11998e><i>"
@@ -63,7 +64,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     private var heroPicker: HeroPricker? = null
 
-    var countdownTimer = ConfigStorage.COUNTDOWN
+    var countdownTimer = ConfigStorage.RECRUITING_COUNTDOWN
 
     var wasMapRerolled = false
 
@@ -106,7 +107,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         if (countdownTask != null) return
         if (playersWaiting.size < ConfigStorage.REQUIRED_PLAYERS) return
 
-        Bukkit.broadcast("<u><green>Game starts in ${ConfigStorage.COUNTDOWN} seconds!!!".withPrefix().mm())
+        Bukkit.broadcast("<u><green>Game starts in ${ConfigStorage.RECRUITING_COUNTDOWN} seconds!!!".withPrefix().mm())
         if (HeroPricker.canPickAnyHero(playersWaiting.size) && heroPicker == null) {
             heroPicker = HeroPricker(playersWaiting)
         }
@@ -135,7 +136,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
         countdownTask!!.cancel()
         countdownTask = null
-        countdownTimer = ConfigStorage.COUNTDOWN
+        countdownTimer = ConfigStorage.RECRUITING_COUNTDOWN
         Bukkit.broadcast("<u><yellow>Game start canceled, not enough players!!!".withPrefix().mm())
     }
 
@@ -270,8 +271,9 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     }
 
     private fun updateInfoBar() {
+        val barProgressLevel = max((playersWaiting.size * 100.0F / ConfigStorage.REQUIRED_PLAYERS) / 100.0F, 1.0F)
         gameInfoBar.name("$INFO_BAR_MAP${gameMap.name} $INFO_BAR_PLAYERS${playersWaiting.size}/${ConfigStorage.REQUIRED_PLAYERS}".mm())
-        gameInfoBar.progress((playersWaiting.size * 100.0F / ConfigStorage.REQUIRED_PLAYERS) / 100.0F)
+        gameInfoBar.progress(barProgressLevel)
     }
 
     /**
