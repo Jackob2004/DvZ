@@ -1,5 +1,6 @@
 required-players: 4
-countdown: 20 # seconds
+recruiting-countdown: 20 # seconds
+preparation-countdown: 500 # seconds
 map-change-time-limit: 5
 players-per-hero: 10
 hero-select-time: 5 # seconds
