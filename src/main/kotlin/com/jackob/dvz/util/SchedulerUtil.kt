@@ -21,3 +21,12 @@ fun sync(init: BukkitRunnable.() -> Unit): BukkitTask {
 
     }.runTask(DvZ.INSTANCE)
 }
+
+fun async(delay: Long = 0, period: Long, init: BukkitRunnable.() -> Unit): BukkitTask {
+    return object : BukkitRunnable() {
+        override fun run() {
+            init()
+        }
+
+    }.runTaskTimerAsynchronously(DvZ.INSTANCE, delay, period)
+}
