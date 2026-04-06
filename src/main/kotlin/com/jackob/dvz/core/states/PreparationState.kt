@@ -33,6 +33,8 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.persistence.PersistentDataType
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicInteger
 import org.bukkit.scoreboard.Team as BukkitTeam
@@ -138,6 +140,18 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
         }
     }
 
+    private fun onDwarfDeath(player: Player) {
+        player.addPotionEffect(PotionEffect(PotionEffectType.REGENERATION, 20 * 3, 3, false))
+        player.playSound(player.location, Sound.ITEM_BOTTLE_FILL, 1f, 1f)
+
+        val message = """
+            <rainbow>Dwarf gods saved you from certain death
+            <gray> Want to play as a <dark_red>zombie<reset> ?
+            <gray> Type <u><white>/settings<reset><gray> to opt in to die in the coming plague
+        """.trimIndent().mm()
+        player.sendMessage(message)
+    }
+
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
         val player = event.player
@@ -183,6 +197,13 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
     @EventHandler
     fun onDamage(event: EntityDamageEvent) {
         handleLobbyDamage(event)
+
+        val player = event.entity as? Player ?: return
+        val wouldDied = player.health - event.finalDamage <= 0
+        if (wouldDied) {
+            event.isCancelled = true
+            onDwarfDeath(player)
+        }
     }
 
     @EventHandler
