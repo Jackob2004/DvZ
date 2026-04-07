@@ -29,7 +29,7 @@ object GameManager {
 
     fun setMap(mapKey: String): Boolean {
         val recruitingState = gameState as? RecruitingState ?: return false
-        if (recruitingState.countdownTimer <= ConfigStorage.MAP_CHANGE_TIME_LIMIT) return false
+        if (!recruitingState.canChangeGameMap()) return false
         if (mapKey !in MapStorage.getMapKeys()!!) return false
         if (mapKey.contains(recruitingState.gameMap.dwarfSpawn.world.name)) return false
 
@@ -40,7 +40,7 @@ object GameManager {
 
     fun rerollMap(): Boolean {
         val recruitingState = gameState as? RecruitingState ?: return false
-        if (recruitingState.countdownTimer <= ConfigStorage.MAP_CHANGE_TIME_LIMIT) return false
+        if (!recruitingState.canChangeGameMap()) return false
         if (recruitingState.wasMapRerolled) return false
         val allMapNames = MapStorage.getMapKeys()!!.takeIf { it.size > 1 } ?: return false
 

@@ -22,9 +22,11 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.withPrefix
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes.player
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.title.Title
 import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.enchantments.Enchantment
@@ -69,7 +71,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
 
     private var heroPicker: HeroPricker? = null
 
-    var countdownTimer = ConfigStorage.RECRUITING_COUNTDOWN
+    private var countdownTimer = ConfigStorage.RECRUITING_COUNTDOWN
 
     var wasMapRerolled = false
 
@@ -95,6 +97,9 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
         }
         playersWaiting.forEach {
             it.hideBossBar(gameInfoBar)
+            if (it.world != MapStorage.LOBBY_SPAWN!!) {
+                it.teleport(MapStorage.LOBBY_SPAWN)
+            }
         }
         playersWaiting.clear()
         countdownTask = null
@@ -212,13 +217,21 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 "GSO______"
             )
 
+            val teleport: (Player, Location) -> Unit = { player, location ->
+                if (canChangeGameMap()) {
+                    player.teleport(location)
+                    player.closeInventory()
+                } else {
+                    player.sendMessage("<yellow>Too late to travel between worlds, wait for the countdown".mm())
+                }
+            }
+
             for ((index, location) in gameMap.shrines.withIndex()) {
                 button(index.plus(1).digitToChar()) {
                     icon = createItem(Material.ENCHANTING_TABLE) {
                         name = "<yellow>Shrine (#${index + 1})"
                         onClick = {
-                            it.teleport(location)
-                            it.closeInventory()
+                            teleport(it, location)
                         }
                     }
                 }
@@ -228,8 +241,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 icon = createItem(Material.DIRT) {
                     name = "<white>Lobby"
                     onClick = {
-                        it.teleport(MapStorage.LOBBY_SPAWN!!)
-                        it.closeInventory()
+                        teleport(it, MapStorage.LOBBY_SPAWN!!)
                     }
                 }
             }
@@ -239,8 +251,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                     name = "<dark_green>Dwarf spawn"
                 }
                 onClick = {
-                    it.teleport(gameMap.dwarfSpawn)
-                    it.closeInventory()
+                    teleport(it, gameMap.dwarfSpawn)
                 }
             }
 
@@ -248,8 +259,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 icon = createItem(Material.ZOMBIE_HEAD) {
                     name = "<dark_red>Zombie spawn"
                     onClick = {
-                        it.teleport(gameMap.zombieSpawn)
-                        it.closeInventory()
+                        teleport(it, gameMap.zombieSpawn)
                     }
                 }
             }
@@ -258,8 +268,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 icon = createItem(Material.GOLD_BLOCK) {
                     name = "<gold>Goldmine"
                     onClick = {
-                        it.teleport(gameMap.goldmine)
-                        it.closeInventory()
+                        teleport(it, gameMap.goldmine)
                     }
                 }
             }
@@ -268,8 +277,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 icon = createItem(Material.IRON_BARS) {
                     name = "<white>Sawmill"
                     onClick = {
-                        it.teleport(gameMap.sawmill)
-                        it.closeInventory()
+                        teleport(it, gameMap.sawmill)
                     }
                 }
             }
@@ -278,8 +286,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 icon = createItem(Material.SPONGE) {
                     name = "<dark_purple>Oil"
                     onClick = {
-                        it.teleport(gameMap.oil)
-                        it.closeInventory()
+                        teleport(it, gameMap.oil)
                     }
                 }
             }
@@ -308,6 +315,10 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
         if (clickedItem == teleportTool) {
             player.openInventory(teleportOptionsMenu.inventory)
         }
+    }
+
+    fun canChangeGameMap() : Boolean {
+        return countdownTimer > ConfigStorage.MAP_CHANGE_TIME_LIMIT
     }
 
     fun performMapChange(newMap: GameMap) {
