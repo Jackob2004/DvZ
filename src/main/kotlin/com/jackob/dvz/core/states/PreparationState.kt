@@ -1,12 +1,7 @@
 package com.jackob.dvz.core.states
 
-import com.jackob.dvz.DvZ
-import com.jackob.dvz.core.handleLobbyDamage
-import com.jackob.dvz.core.handleLobbyInteract
-import com.jackob.dvz.core.handleLobbyInvClick
-import com.jackob.dvz.core.handleLobbyItemDrop
-import com.jackob.dvz.core.handleLobbyToolClick
-import com.jackob.dvz.core.refreshToLobbyState
+import com.jackob.dvz.core.LobbyRulesHandler
+import com.jackob.dvz.core.LobbyStateManager
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.Team
@@ -26,12 +21,8 @@ import org.bukkit.Bukkit
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
-import org.bukkit.event.EventPriority
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
-import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.player.PlayerDropItemEvent
-import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.persistence.PersistentDataType
@@ -42,7 +33,12 @@ import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicInteger
 import org.bukkit.scoreboard.Team as BukkitTeam
 
-class PreparationState(private val gameMap: GameMap, private val selectedKits: Map<UUID, KitType>) : GameState {
+class PreparationState(
+    private val gameMap: GameMap,
+    private val selectedKits: Map<UUID, KitType>,
+    private val lobbyStateManager: LobbyStateManager,
+    private val lobbyRulesHandler: LobbyRulesHandler
+) : GameState {
 
     private val customBoard = Bukkit.getScoreboardManager().newScoreboard
 
@@ -83,6 +79,7 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
     }
 
     override fun onEnter() {
+        lobbyStateManager.onKitSelectorOpen = ::openKitSelectionMenu
         for ((uuid, kitType) in selectedKits) {
             uuid.toPlayer()?.let { player ->
                 if (player.isOnline) {
@@ -166,14 +163,12 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
         gameStatusSidebar.sendSidebar(listOf(player))
 
         if (!isActiveDwarf(player)) {
-            refreshToLobbyState(player)
+            lobbyStateManager.refreshToLobbyState(player)
         } else if (lastActiveInRecruiting(player)) {
             addDwarf(player, selectedKits[player.uniqueId]!!)
         } else {
             onlineDwarfs.incrementAndGet()
         }
-
-        DvZ.INSTANCE.logger.info("Test: ${onlinePlayers.size}")
     }
 
     @EventHandler
@@ -186,36 +181,14 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
         }
     }
 
-    @EventHandler
-    fun onToolClick(event: PlayerInteractEvent) {
-        handleLobbyToolClick(event, ::openKitSelectionMenu)
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    fun onInteract(event: PlayerInteractEvent) {
-        handleLobbyInteract(event)
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    fun onEqInteract(event: InventoryClickEvent) {
-        handleLobbyInvClick(event)
-    }
-
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onDamage(event: EntityDamageEvent) {
-        handleLobbyDamage(event)
-
         val player = event.entity as? Player ?: return
         val wouldDied = player.health - event.finalDamage <= 0
         if (wouldDied) {
             event.isCancelled = true
             onDwarfDeath(player)
         }
-    }
-
-    @EventHandler
-    fun onItemDrop(event: PlayerDropItemEvent) {
-        handleLobbyItemDrop(event)
     }
 
     @EventHandler

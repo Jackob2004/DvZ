@@ -2,10 +2,9 @@ package com.jackob.dvz.core.states
 
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.HotspotManager
-import com.jackob.dvz.core.LOBBY_PERMISSION
-import com.jackob.dvz.core.handleLobbyToolClick
+import com.jackob.dvz.core.LobbyRulesHandler
+import com.jackob.dvz.core.LobbyStateManager
 import com.jackob.dvz.core.objects.HeroPricker
-import com.jackob.dvz.core.refreshToLobbyState
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ConfigStorage
@@ -29,7 +28,7 @@ import org.bukkit.Sound
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
-import org.bukkit.event.EventPriority
+import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.inventory.InventoryClickEvent
@@ -38,15 +37,18 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.InventoryHolder
+import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
 import kotlin.math.max
 
+private const val RECRUITING_PERMISSION = "dvz.recruiting.interact"
+
 private const val INFO_BAR_MAP = "<gray><b>Map: <reset><gradient:#11998e:#38ef7d><i>"
 private const val INFO_BAR_PLAYERS = "<reset><dark_gray><b>| <gray><b>Players: <reset><gradient:#38ef7d:#11998e><i>"
 
-class RecruitingState(var gameMap: GameMap) : GameState {
+class RecruitingState(var gameMap: GameMap, private val lobbyStateManager: LobbyStateManager) : GameState {
 
     private val gameInfoBar = BossBar.bossBar(
         "$INFO_BAR_MAP${gameMap.name} ${INFO_BAR_PLAYERS}0/${ConfigStorage.REQUIRED_PLAYERS}".mm(),
@@ -79,6 +81,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     override fun onEnter() {
         loadKeyMapLocations()
+        lobbyStateManager.onKitSelectorOpen = ::openKitSelectionMenu
 
         super.onEnter()
     }
@@ -126,7 +129,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
             if (countdownTimer < 0) {
                 this.cancel()
                 includeHeroKits()
-                GameManager.setGameState(PreparationState(gameMap, selectedKits))
+                GameManager.setGameState(PreparationState(gameMap, selectedKits, lobbyStateManager, LobbyRulesHandler()))
             }
         }
     }
@@ -284,9 +287,17 @@ class RecruitingState(var gameMap: GameMap) : GameState {
      * Applies behavior/options associated to the recruiting state
      */
     private fun refreshPlayer(player: Player) {
-        refreshToLobbyState(player)
+        lobbyStateManager.refreshToLobbyState(player)
         player.showBossBar(gameInfoBar)
         player.inventory.addItem(teleportTool)
+    }
+
+    private fun handleTeleportToolClick(clickedItem: ItemStack?, action: Action, player: Player) {
+        if (!action.isRightClick) return
+
+        if (clickedItem == teleportTool) {
+            player.openInventory(teleportOptionsMenu.inventory)
+        }
     }
 
     fun performMapChange(newMap: GameMap) {
@@ -339,28 +350,19 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     }
 
     @EventHandler
-    fun onToolClick(event: PlayerInteractEvent) {
-        handleLobbyToolClick(event, ::openKitSelectionMenu)
-
-        val tool = event.item ?: return
-        if (!event.action.isRightClick) return
-
-        if (tool == teleportTool) {
-            event.player.openInventory(teleportOptionsMenu.inventory)
-        }
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
     fun onInteract(event: PlayerInteractEvent) {
-        if (!event.player.hasPermission(LOBBY_PERMISSION)) {
+        val player = event.player
+        handleTeleportToolClick(event.item, event.action, player)
+
+        if (!event.player.hasPermission(RECRUITING_PERMISSION)) {
             event.isCancelled = true
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler
     fun onEqInteract(event: InventoryClickEvent) {
         val player = event.whoClicked as? Player ?: return
-        if (!player.hasPermission(LOBBY_PERMISSION)) {
+        if (!player.hasPermission(RECRUITING_PERMISSION)) {
             event.isCancelled = true
         }
     }
@@ -374,7 +376,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     @EventHandler
     fun onItemDrop(event: PlayerDropItemEvent) {
-        if (!event.player.hasPermission(LOBBY_PERMISSION)) {
+        if (!event.player.hasPermission(RECRUITING_PERMISSION)) {
             event.isCancelled = true
         }
     }
