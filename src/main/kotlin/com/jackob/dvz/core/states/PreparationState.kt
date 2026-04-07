@@ -39,7 +39,8 @@ class PreparationState(
     private val gameMap: GameMap,
     private val selectedKits: Map<UUID, KitType>,
     private val lobbyStateHandler: LobbyStateHandler,
-    private val lobbyRulesHandler: LobbyRulesHandler
+    private val lobbyRulesHandler: LobbyRulesHandler,
+    private val gameplayHandler: GameplayMechanicsHandler
 ) : GameState {
 
     private val customBoard = Bukkit.getScoreboardManager().newScoreboard
@@ -83,6 +84,7 @@ class PreparationState(
     override fun onEnter() {
         lobbyStateHandler.onKitSelectorOpen = ::openKitSelectionMenu
         lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
+        gameplayHandler.registerHandler(DvZ.INSTANCE)
 
         for ((uuid, kitType) in selectedKits) {
             uuid.toPlayer()?.let { player ->

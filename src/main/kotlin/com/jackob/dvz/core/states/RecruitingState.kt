@@ -136,7 +136,8 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 includeHeroKits()
                 GameManager.setGameState(
                     PreparationState(
-                        gameMap, selectedKits, lobbyStateHandler, LobbyRulesHandler()
+                        gameMap, selectedKits, lobbyStateHandler, LobbyRulesHandler(),
+                        GameplayMechanicsHandler()
                     )
                 )
             }
