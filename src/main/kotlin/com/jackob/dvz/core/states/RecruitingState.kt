@@ -3,7 +3,7 @@ package com.jackob.dvz.core.states
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.HotspotManager
 import com.jackob.dvz.core.LobbyRulesHandler
-import com.jackob.dvz.core.LobbyStateManager
+import com.jackob.dvz.core.LobbyStateHandler
 import com.jackob.dvz.core.objects.HeroPricker
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.Team
@@ -48,7 +48,7 @@ private const val RECRUITING_PERMISSION = "dvz.recruiting.interact"
 private const val INFO_BAR_MAP = "<gray><b>Map: <reset><gradient:#11998e:#38ef7d><i>"
 private const val INFO_BAR_PLAYERS = "<reset><dark_gray><b>| <gray><b>Players: <reset><gradient:#38ef7d:#11998e><i>"
 
-class RecruitingState(var gameMap: GameMap, private val lobbyStateManager: LobbyStateManager) : GameState {
+class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: LobbyStateHandler) : GameState {
 
     private val gameInfoBar = BossBar.bossBar(
         "$INFO_BAR_MAP${gameMap.name} ${INFO_BAR_PLAYERS}0/${ConfigStorage.REQUIRED_PLAYERS}".mm(),
@@ -81,7 +81,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateManager: Lobby
 
     override fun onEnter() {
         loadKeyMapLocations()
-        lobbyStateManager.onKitSelectorOpen = ::openKitSelectionMenu
+        lobbyStateHandler.onKitSelectorOpen = ::openKitSelectionMenu
 
         super.onEnter()
     }
@@ -129,7 +129,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateManager: Lobby
             if (countdownTimer < 0) {
                 this.cancel()
                 includeHeroKits()
-                GameManager.setGameState(PreparationState(gameMap, selectedKits, lobbyStateManager, LobbyRulesHandler()))
+                GameManager.setGameState(PreparationState(gameMap, selectedKits, lobbyStateHandler, LobbyRulesHandler()))
             }
         }
     }
@@ -287,7 +287,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateManager: Lobby
      * Applies behavior/options associated to the recruiting state
      */
     private fun refreshPlayer(player: Player) {
-        lobbyStateManager.refreshToLobbyState(player)
+        lobbyStateHandler.refreshToLobbyState(player)
         player.showBossBar(gameInfoBar)
         player.inventory.addItem(teleportTool)
     }

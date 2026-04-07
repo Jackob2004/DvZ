@@ -1,7 +1,7 @@
 package com.jackob.dvz.core.states
 
 import com.jackob.dvz.core.LobbyRulesHandler
-import com.jackob.dvz.core.LobbyStateManager
+import com.jackob.dvz.core.LobbyStateHandler
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.Team
@@ -36,7 +36,7 @@ import org.bukkit.scoreboard.Team as BukkitTeam
 class PreparationState(
     private val gameMap: GameMap,
     private val selectedKits: Map<UUID, KitType>,
-    private val lobbyStateManager: LobbyStateManager,
+    private val lobbyStateHandler: LobbyStateHandler,
     private val lobbyRulesHandler: LobbyRulesHandler
 ) : GameState {
 
@@ -79,7 +79,7 @@ class PreparationState(
     }
 
     override fun onEnter() {
-        lobbyStateManager.onKitSelectorOpen = ::openKitSelectionMenu
+        lobbyStateHandler.onKitSelectorOpen = ::openKitSelectionMenu
         for ((uuid, kitType) in selectedKits) {
             uuid.toPlayer()?.let { player ->
                 if (player.isOnline) {
@@ -163,7 +163,7 @@ class PreparationState(
         gameStatusSidebar.sendSidebar(listOf(player))
 
         if (!isActiveDwarf(player)) {
-            lobbyStateManager.refreshToLobbyState(player)
+            lobbyStateHandler.refreshToLobbyState(player)
         } else if (lastActiveInRecruiting(player)) {
             addDwarf(player, selectedKits[player.uniqueId]!!)
         } else {

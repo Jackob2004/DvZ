@@ -12,7 +12,7 @@ object GameManager {
     private var gameState: GameState
 
     init {
-        gameState = RecruitingState(pickRandomMap(), LobbyStateManager())
+        gameState = RecruitingState(pickRandomMap(), LobbyStateHandler())
         gameState.onEnter()
         HotspotManager.addHotspot(MapStorage.LOBBY_SPAWN!!)
     }

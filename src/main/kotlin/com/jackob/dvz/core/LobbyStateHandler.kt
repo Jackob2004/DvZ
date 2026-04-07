@@ -22,7 +22,7 @@ private const val KIT_SELECTOR_ID = "kit_selector"
  *  - Handles lobby tools interactions.
  *  - Provides functionality for setting player to lobby state.
  */
-class LobbyStateManager : Listener {
+class LobbyStateHandler: Listener {
     lateinit var onKitSelectorOpen: (Player) -> Unit
 
     private val lobbyTools = listOf(
