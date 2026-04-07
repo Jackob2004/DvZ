@@ -8,6 +8,7 @@ import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.sync
+import com.jackob.dvz.util.toPlayer
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
@@ -17,9 +18,10 @@ import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.scheduler.BukkitTask
+import java.util.UUID
 import kotlin.random.Random
 
-class HeroPricker(players: Collection<Player>) : Listener {
+class HeroPricker(players: Collection<UUID>) : Listener {
 
     init {
         DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
@@ -33,7 +35,7 @@ class HeroPricker(players: Collection<Player>) : Listener {
 
     private val playerPools = players.chunked(heroesNumber)
 
-    private val selectedPlayers: MutableSet<Player> = HashSet(heroesNumber)
+    private val selectedPlayers: MutableSet<UUID> = HashSet(heroesNumber)
 
     private val selectionTasks: Array<BukkitTask> = Array(heroesNumber) { index ->
         startSelectionTask(index)
@@ -41,7 +43,7 @@ class HeroPricker(players: Collection<Player>) : Listener {
 
     private fun selectPlayer(player: Player) {
         player.inventory.remove(selectionItem)
-        selectedPlayers.add(player)
+        selectedPlayers.add(player.uniqueId)
         player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f)
     }
 
@@ -57,24 +59,26 @@ class HeroPricker(players: Collection<Player>) : Listener {
         val pool = playerPools[poolIndex].shuffled().toMutableSet()
         val waitTime = TimeUnit.SECONDS(ConfigStorage.HERO_SELECT_TIME.toLong())
 
-        var candidate = pool.first()
-        giveSelectionItem(candidate)
+        var candidateId = pool.first()
+        var candidate = candidateId.toPlayer()
+        candidate?.let { giveSelectionItem(it) }
         return sync(delay = waitTime, period = waitTime) {
-            pool.remove(candidate)
-            candidate.inventory.remove(selectionItem)
+            pool.remove(candidateId)
+            candidate?.inventory?.remove(selectionItem)
 
-            if (selectedPlayers.contains(candidate) || pool.isEmpty()) {
+            if (selectedPlayers.contains(candidateId) || pool.isEmpty()) {
                 cancel()
                 return@sync
             }
 
-            candidate = pool.first()
-            giveSelectionItem(candidate)
+            candidateId = pool.first()
+            candidate = candidateId.toPlayer()
+            candidate?.let { giveSelectionItem(it) }
         }
     }
 
-    private fun assignRandomHeroes(): Collection<Pair<Player, KitType>> {
-        val heroes = ArrayList<Pair<Player, KitType>>(heroesNumber)
+    private fun assignRandomHeroes(): Collection<Pair<UUID, KitType>> {
+        val heroes = ArrayList<Pair<UUID, KitType>>(heroesNumber)
         val availableTypes = KitType.entries.filter { it.isHero }
 
         if (availableTypes.size < heroesNumber) {
@@ -101,13 +105,13 @@ class HeroPricker(players: Collection<Player>) : Listener {
     }
 
     private fun startLastResortSelection() {
-        val onlinePlayers = Bukkit.getOnlinePlayers().filter { !selectedPlayers.contains(it) }.toMutableList()
+        val onlinePlayers = Bukkit.getOnlinePlayers().filter { !selectedPlayers.contains(it.uniqueId) }.toMutableList()
         while (selectedPlayers.size != heroesNumber && !onlinePlayers.isEmpty()) {
-            selectedPlayers.add(onlinePlayers.removeLast())
+            selectedPlayers.add(onlinePlayers.removeLast().uniqueId)
         }
     }
 
-    fun retrieveHeroes(): Collection<Pair<Player, KitType>> {
+    fun retrieveHeroes(): Collection<Pair<UUID, KitType>> {
         HandlerList.unregisterAll(this)
         stopSelectionTasks()
         startLastResortSelection()

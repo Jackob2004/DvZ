@@ -40,6 +40,7 @@ import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.InventoryHolder
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.scheduler.BukkitTask
+import java.util.UUID
 import kotlin.math.max
 
 private const val INFO_BAR_MAP = "<gray><b>Map: <reset><gradient:#11998e:#38ef7d><i>"
@@ -60,7 +61,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
     private var countdownTask: BukkitTask? = null
 
-    private val selectedKits: MutableMap<Player, KitType> = HashMap()
+    private val selectedKits: MutableMap<UUID, KitType> = HashMap()
 
     private var heroPicker: HeroPricker? = null
 
@@ -91,6 +92,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
         }
         playersWaiting.clear()
         countdownTask = null
+        heroPicker = null
 
         super.onLeave()
     }
@@ -109,7 +111,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
         Bukkit.broadcast("<u><green>Game starts in ${ConfigStorage.RECRUITING_COUNTDOWN} seconds!!!".withPrefix().mm())
         if (HeroPricker.canPickAnyHero(playersWaiting.size) && heroPicker == null) {
-            heroPicker = HeroPricker(playersWaiting)
+            heroPicker = HeroPricker(playersWaiting.map { it.uniqueId })
         }
 
         countdownTask = sync(period = TimeUnit.SECONDS(1)) {
@@ -151,6 +153,8 @@ class RecruitingState(var gameMap: GameMap) : GameState {
     }
 
     private fun openKitSelectionMenu(player: Player) {
+        val playerId = player.uniqueId
+
         val basicDwarfKits = KitType.entries
             .filter { !it.isHero && it.team == Team.DWARF }
             .map {
@@ -159,7 +163,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
                     lore(it.displayData.description.map(String::mm))
                     persistentDataContainer.set(it.key, PersistentDataType.BOOLEAN, false)
 
-                    if (selectedKits[player] != null && selectedKits[player] == it) {
+                    if (selectedKits[playerId] != null && selectedKits[playerId] == it) {
                         enchant(Enchantment.UNBREAKING, 10)
                     }
                 }
@@ -175,7 +179,7 @@ class RecruitingState(var gameMap: GameMap) : GameState {
 
                     KitType.getByKey(keys.first())?.let { type ->
                         player.closeInventory()
-                        selectedKits[player] = type
+                        selectedKits[playerId] = type
                         player.sendMessage("${type.displayData.name} <gray>kit selected".withPrefix().mm())
                         player.playSound(player.location, Sound.BLOCK_LEVER_CLICK, 1f, 1f)
                     }

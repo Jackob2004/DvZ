@@ -1,10 +1,12 @@
 package com.jackob.dvz.util
 
+import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Registry
 import org.bukkit.entity.Player
+import java.util.UUID
 
-fun Player.resetAllAttributes() {
+private fun Player.resetAllAttributes() {
     Registry.ATTRIBUTE.forEach { attribute ->
         getAttribute(attribute)?.let { instance ->
             instance.baseValue = instance.baseValue
@@ -33,3 +35,5 @@ fun Player.resetAll() {
     foodLevel = 20
     gameMode = GameMode.SURVIVAL
 }
+
+fun UUID.toPlayer() : Player? = Bukkit.getPlayer(this)

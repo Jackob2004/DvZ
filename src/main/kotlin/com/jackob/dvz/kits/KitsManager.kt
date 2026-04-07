@@ -1,15 +1,16 @@
 package com.jackob.dvz.kits
 
 import org.bukkit.entity.Player
+import java.util.UUID
 
 object KitsManager {
 
-    private val playerKits: MutableMap<Player, BaseKit> = HashMap()
+    private val playerKits: MutableMap<UUID, BaseKit> = HashMap()
 
     fun setKit(player: Player, type: KitType) {
-        if (playerKits.containsKey(player)) return
+        if (playerKits.containsKey(player.uniqueId)) return
 
-        playerKits[player] =
+        playerKits[player.uniqueId] =
             type.kitClass.getConstructor(String::class.java, Player::class.java).newInstance(type.toString().lowercase(), player)
                 .apply {
                     onActivate()
@@ -17,10 +18,10 @@ object KitsManager {
     }
 
     fun unsetKit(player: Player) {
-        playerKits[player]?.onDeactivate()
+        playerKits[player.uniqueId]?.onDeactivate()
     }
 
-    fun hasKit(player: Player) = playerKits.containsKey(player)
+    fun hasKit(player: Player) = playerKits.containsKey(player.uniqueId)
 
-    fun getKit(player: Player) = playerKits[player]
+    fun getKit(player: Player) = playerKits[player.uniqueId]
 }

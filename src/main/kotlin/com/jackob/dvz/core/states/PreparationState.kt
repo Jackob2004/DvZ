@@ -1,5 +1,6 @@
 package com.jackob.dvz.core.states
 
+import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.handleLobbyDamage
 import com.jackob.dvz.core.handleLobbyInteract
 import com.jackob.dvz.core.handleLobbyInvClick
@@ -19,6 +20,7 @@ import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.resetAll
+import com.jackob.dvz.util.toPlayer
 import com.jackob.dvz.util.withPrefix
 import org.bukkit.Bukkit
 import org.bukkit.Sound
@@ -35,11 +37,12 @@ import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import java.util.UUID
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicInteger
 import org.bukkit.scoreboard.Team as BukkitTeam
 
-class PreparationState(private val gameMap: GameMap, private val selectedKits: Map<Player, KitType>) : GameState {
+class PreparationState(private val gameMap: GameMap, private val selectedKits: Map<UUID, KitType>) : GameState {
 
     private val customBoard = Bukkit.getScoreboardManager().newScoreboard
 
@@ -80,9 +83,11 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
     }
 
     override fun onEnter() {
-        for ((player, kitType) in selectedKits) {
-            if (player.isOnline) {
-                addDwarf(player, kitType)
+        for ((uuid, kitType) in selectedKits) {
+            uuid.toPlayer()?.let { player ->
+                if (player.isOnline) {
+                    addDwarf(player, kitType)
+                }
             }
         }
         onlinePlayers.addAll(Bukkit.getOnlinePlayers())
@@ -100,7 +105,7 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
     }
 
     private fun lastActiveInRecruiting(player: Player): Boolean {
-        return !dwarfTeam.hasPlayer(player) && selectedKits.containsKey(player)
+        return !dwarfTeam.hasPlayer(player) && selectedKits.containsKey(player.uniqueId)
     }
 
     private fun addDwarf(player: Player, kitType: KitType) {
@@ -163,10 +168,12 @@ class PreparationState(private val gameMap: GameMap, private val selectedKits: M
         if (!isActiveDwarf(player)) {
             refreshToLobbyState(player)
         } else if (lastActiveInRecruiting(player)) {
-            addDwarf(player, selectedKits[player]!!)
+            addDwarf(player, selectedKits[player.uniqueId]!!)
         } else {
             onlineDwarfs.incrementAndGet()
         }
+
+        DvZ.INSTANCE.logger.info("Test: ${onlinePlayers.size}")
     }
 
     @EventHandler
