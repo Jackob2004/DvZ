@@ -1,10 +1,13 @@
 package com.jackob.dvz.core
 
+import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.states.GameState
 import com.jackob.dvz.core.states.RecruitingState
+import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
+import org.bukkit.entity.Player
 import kotlin.random.Random
 
 object GameManager {
@@ -47,6 +50,10 @@ object GameManager {
         recruitingState.performMapReroll(MapStorage.getMapData(newMapName)!!)
 
         return true
+    }
+
+    fun getPlayerTeam(player: Player) : Team? {
+        return gameState.getPlayerTeam(player)
     }
 
     fun setGameState(gameState: GameState) {

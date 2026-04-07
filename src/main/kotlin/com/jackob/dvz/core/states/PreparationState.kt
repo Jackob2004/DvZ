@@ -1,7 +1,9 @@
 package com.jackob.dvz.core.states
 
-import com.jackob.dvz.core.LobbyRulesHandler
-import com.jackob.dvz.core.LobbyStateHandler
+import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
+import com.jackob.dvz.core.handlers.LobbyRulesHandler
+import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.Team
@@ -80,6 +82,8 @@ class PreparationState(
 
     override fun onEnter() {
         lobbyStateHandler.onKitSelectorOpen = ::openKitSelectionMenu
+        lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
+
         for ((uuid, kitType) in selectedKits) {
             uuid.toPlayer()?.let { player ->
                 if (player.isOnline) {
@@ -95,6 +99,10 @@ class PreparationState(
         startCountdown()
 
         super.onEnter()
+    }
+
+    override fun getPlayerTeam(player: Player): Team? {
+        return if (isActiveDwarf(player)) Team.DWARF else null
     }
 
     private fun isActiveDwarf(player: Player): Boolean {

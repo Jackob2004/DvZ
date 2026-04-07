@@ -1,9 +1,11 @@
 package com.jackob.dvz.core.states
 
+import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.HotspotManager
-import com.jackob.dvz.core.LobbyRulesHandler
-import com.jackob.dvz.core.LobbyStateHandler
+import com.jackob.dvz.core.handlers.LobbyRulesHandler
+import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.HeroPricker
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.Team
@@ -82,6 +84,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
     override fun onEnter() {
         loadKeyMapLocations()
         lobbyStateHandler.onKitSelectorOpen = ::openKitSelectionMenu
+        lobbyStateHandler.registerHandler(DvZ.INSTANCE)
 
         super.onEnter()
     }
@@ -99,6 +102,8 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
 
         super.onLeave()
     }
+
+    override fun getPlayerTeam(player: Player): Team? = null
 
     private fun includeHeroKits() {
         heroPicker?.let {
@@ -129,7 +134,11 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
             if (countdownTimer < 0) {
                 this.cancel()
                 includeHeroKits()
-                GameManager.setGameState(PreparationState(gameMap, selectedKits, lobbyStateHandler, LobbyRulesHandler()))
+                GameManager.setGameState(
+                    PreparationState(
+                        gameMap, selectedKits, lobbyStateHandler, LobbyRulesHandler()
+                    )
+                )
             }
         }
     }
