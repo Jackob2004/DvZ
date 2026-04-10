@@ -6,8 +6,8 @@ import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 
-fun createItem(material: Material, init: ItemMeta.() -> Unit): ItemStack {
-    val item = ItemStack(material)
+fun createItem(material: Material, amount: Int = 1, init: ItemMeta.() -> Unit): ItemStack {
+    val item = ItemStack(material, amount)
 
     val meta = item.itemMeta ?: return item
     meta.apply(init)

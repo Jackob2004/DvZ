@@ -4,7 +4,9 @@ import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Registry
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import java.util.UUID
+import kotlin.math.min
 
 private fun Player.resetAllAttributes() {
     Registry.ATTRIBUTE.forEach { attribute ->
@@ -37,3 +39,11 @@ fun Player.resetAll() {
 }
 
 fun UUID.toPlayer() : Player? = Bukkit.getPlayer(this)
+
+fun Player.removeItem(item: ItemStack, amountToRemove: Int) {
+    if (item.amount - amountToRemove <= 0) {
+        inventory.remove(item)
+    } else {
+        item.amount -= amountToRemove
+    }
+}
