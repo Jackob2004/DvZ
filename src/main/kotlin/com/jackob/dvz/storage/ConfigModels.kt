@@ -2,12 +2,12 @@ package com.jackob.dvz.storage
 
 import com.charleskorn.kaml.Yaml
 import com.jackob.dvz.DvZ
-import com.jackob.dvz.util.PREFIX
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.toAttribute
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.serializer
 import org.bukkit.Color
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
@@ -20,8 +20,6 @@ import org.bukkit.inventory.meta.PotionMeta
 import org.bukkit.inventory.meta.trim.ArmorTrim
 import org.bukkit.potion.PotionEffect
 import java.io.File
-
-const val FILE_NAME = "kits_config.yml"
 
 @Serializable
 data class PotionConfig(
@@ -142,18 +140,26 @@ fun ItemConfig.toItemStack(): ItemStack {
     return item
 }
 
-fun getKitConfigs(): KitConfigRegistry? {
-    val file = File(DvZ.INSTANCE.dataFolder, FILE_NAME)
+/**
+ * Loads and deserializes a YAML file from the plugin's data folder into [T].
+ * If the file doesn't exist, it is copied from the plugin's resources.
+ *
+ * @param T The target type to deserialize into. Must be [@Serializable].
+ * @param fileName The name of the YAML file (e.g. "config.yml").
+ * @return The deserialized object, or null if parsing fails.
+ */
+inline fun <reified T> loadConfig(fileName: String): T? {
+    val file = File(DvZ.INSTANCE.dataFolder, fileName)
     if (!file.exists()) {
-        DvZ.INSTANCE.saveResource(FILE_NAME, false)
+        DvZ.INSTANCE.saveResource(fileName, false)
     }
 
     val yamlString = file.readText()
 
-    try {
-        return Yaml.default.decodeFromString(KitConfigRegistry.serializer(), yamlString)
+    return try {
+        Yaml.default.decodeFromString(serializer<T>(), yamlString)
     } catch (e: Exception) {
-        DvZ.INSTANCE.logger.severe("Failed to parse kits.yml! Check your syntax: ${e.message}")
-        return null
+        DvZ.INSTANCE.logger.severe("Failed to parse $fileName! Check your syntax: ${e.message}")
+        null
     }
 }
