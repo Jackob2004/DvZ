@@ -72,6 +72,18 @@ data class KitConfigRegistry(
     val kits: Map<String, KitConfig>
 )
 
+@Serializable
+data class Obtainable(
+    val rackType: String,
+    val pickUpSound: String,
+    val item: ItemConfig
+)
+
+@Serializable
+data class ObtainableRegistry(
+    val obtainables: List<Obtainable>
+)
+
 fun PotionConfig.toPotionEffect(): PotionEffect {
     val type = Registry.POTION_EFFECT_TYPE.get(NamespacedKey.minecraft(type.lowercase()))!!
 

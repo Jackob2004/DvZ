@@ -1,0 +1,50 @@
+obtainables:
+  - rackType: RAIL
+    pickUpSound: item.axe.wax_off
+    item:
+      material: IRON_AXE
+      name: "<dark_green>Lumberjack axe"
+      lore:
+        - "<white>[Right] <gray>click on any log to obtain planks"
+      enchantments:
+        UNBREAKING: 1
+
+  - rackType: ACTIVATOR_RAIL
+    pickUpSound: block.nether_gold_ore.break
+    item:
+      material: IRON_PICKAXE
+      name: "<dark_green>Dwarven pickaxe"
+      lore:
+        - "<gray>Find goldmine to get the gold rush going"
+      enchantments:
+        UNBREAKING: 1
+
+  - rackType: POWERED_RAIL
+    pickUpSound: block.suspicious_gravel.break
+    item:
+      material: IRON_SHOVEL
+      name: "<dark_green>Dwarven shovel"
+      lore:
+        - "<gray>Find gravel to acquire cobblestone"
+      enchantments:
+        UNBREAKING: 1
+
+  - rackType: DETECTOR_RAIL
+    pickUpSound: item.crossbow.shoot
+    item:
+      material: BOW
+      name: "<dark_green>Dwarven bow"
+      lore:
+        - "<gray>bullseye"
+      enchantments:
+        UNBREAKING: 1
+
+  - rackType: LADDER
+    pickUpSound: entity.player.attack.crit
+    item:
+      material: DIAMOND_AXE
+      name: "<dark_green>Dwarven blade"
+      lore:
+        - "<gray>Slice as many zombies as you can"
+      enchantments:
+        UNBREAKING: 1
