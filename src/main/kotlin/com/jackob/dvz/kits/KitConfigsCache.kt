@@ -1,6 +1,7 @@
 package com.jackob.dvz.kits
 
-import com.jackob.dvz.storage.getKitConfigs
+import com.jackob.dvz.storage.KitConfigRegistry
+import com.jackob.dvz.storage.loadConfig
 import com.jackob.dvz.storage.toAttributeModifier
 import com.jackob.dvz.storage.toItemStack
 import com.jackob.dvz.storage.toPotionEffect
@@ -12,7 +13,7 @@ import org.bukkit.potion.PotionEffect
 
 object KitConfigsCache {
 
-    private val kitsCache = getKitConfigs()!!.kits
+    private val kitsCache = loadConfig<KitConfigRegistry>("kits_config.yml")!!.kits
 
     fun retrieveKitPotions(kitName: String) : List<PotionEffect> {
         return kitsCache[kitName]!!.potions.map { it.toPotionEffect() }
