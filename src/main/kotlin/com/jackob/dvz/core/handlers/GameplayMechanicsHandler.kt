@@ -2,10 +2,14 @@ package com.jackob.dvz.core.handlers
 
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.kits.Team
+import com.jackob.dvz.storage.ObtainableRegistry
+import com.jackob.dvz.storage.loadConfig
+import com.jackob.dvz.storage.toItemStack
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.removeItem
+import com.jackob.dvz.util.toSound
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.Tag
@@ -30,6 +34,13 @@ class GameplayMechanicsHandler : CoreHandler {
 
     val equipmentCooldowns: MutableMap<UUID, Long> = HashMap()
 
+    val obtainables: Map<Material, Pair<ItemStack, Sound>> =
+        loadConfig<ObtainableRegistry>("obtainable_config.yml")!!.obtainables.associateTo(
+            HashMap()
+        ) {
+            Material.matchMaterial(it.rackType)!! to Pair(it.item.toItemStack(), it.pickUpSound.toSound()!!)
+        }
+
     private fun isOnCooldown(player: Player): Boolean {
         val playerId = player.uniqueId
 
@@ -44,15 +55,8 @@ class GameplayMechanicsHandler : CoreHandler {
         return true
     }
 
-    private fun handleObtainableItems(clickedBlock: Material): Pair<ItemStack, Sound>? = when (clickedBlock) {
-        Material.RAIL -> Pair(createItem(Material.IRON_AXE) {
-            name = "<dark_green>Lumberjack axe"
-            description = """
-                  <white> [Right] click on any wood log to obtain planks
-            """
-        }, Sound.ITEM_AXE_STRIP)
-
-        else -> null
+    private fun handleObtainableItems(clickedBlock: Material): Pair<ItemStack, Sound>? {
+        return obtainables[clickedBlock]
     }
 
     @EventHandler
@@ -154,18 +158,20 @@ class GameplayMechanicsHandler : CoreHandler {
                 }
                 soundEffect = Sound.BLOCK_STONE_HIT
             }
+
             Material.AIR -> {
                 val obtainable = handleObtainableItems(clickedBlock) ?: return
                 item = obtainable.first
                 soundEffect = obtainable.second
             }
+
             else -> return
         }
 
         event.isCancelled = true
         event.item?.let {
             if (it.type != Material.IRON_AXE)
-            player.removeItem(it, 1)
+                player.removeItem(it, 1)
         }
         player.playSound(player.location, soundEffect, 1f, 1f)
         player.inventory.addItem(item)
