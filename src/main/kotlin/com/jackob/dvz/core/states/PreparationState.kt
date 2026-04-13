@@ -4,6 +4,7 @@ import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
+import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.Team
@@ -40,7 +41,8 @@ class PreparationState(
     private val selectedKits: Map<UUID, KitType>,
     private val lobbyStateHandler: LobbyStateHandler,
     private val lobbyRulesHandler: LobbyRulesHandler,
-    private val gameplayHandler: GameplayMechanicsHandler
+    private val gameplayHandler: GameplayMechanicsHandler,
+    private val goldVault: GoldVault
 ) : GameState {
 
     private val customBoard = Bukkit.getScoreboardManager().newScoreboard
@@ -68,6 +70,7 @@ class PreparationState(
         var timer = ConfigStorage.PREPARATION_COUNTDOWN
         async(period = TimeUnit.SECONDS(1)) {
             with(gameStatusSidebar) {
+                updateLine(3, " <white>${goldVault.getGoldAmount()}")
                 updateLine(2, " <white>${onlineDwarfs.get()}")
                 updateLine(1, " <white>$timer")
                 sendSideBarUpdate(onlinePlayers)
