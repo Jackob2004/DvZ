@@ -1,21 +1,25 @@
 package com.jackob.dvz.core.handlers
 
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.events.DwarfGoldCollectEvent
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ObtainableRegistry
 import com.jackob.dvz.storage.loadConfig
 import com.jackob.dvz.storage.toItemStack
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
+import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.removeItem
 import com.jackob.dvz.util.toSound
+import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.Tag
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.block.Action
+import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent
 import org.bukkit.event.entity.EntityChangeBlockEvent
 import org.bukkit.event.inventory.CraftItemEvent
@@ -24,6 +28,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import java.util.UUID
+import kotlin.random.Random
 
 private const val EQUIPMENT_COOLDOWN = 500
 
@@ -60,7 +65,22 @@ class GameplayMechanicsHandler : CoreHandler {
     }
 
     @EventHandler
-    fun onItemCraftEvent(event: CraftItemEvent) {
+    fun onBlockBreak(event: BlockBreakEvent) {
+        val player = event.player
+        event.expToDrop = 0
+
+        if (GameManager.getPlayerTeam(player) != Team.DWARF) return
+
+        val blockType = event.block.type
+        if (blockType.name.endsWith("_ORE") || blockType == Material.GRAVEL) {
+            event.isDropItems = false
+            val goldAmount = if (blockType == Material.GRAVEL) 1 else Random.nextInt(3,6)
+            Bukkit.getPluginManager().callEvent(DwarfGoldCollectEvent(player, goldAmount))
+        }
+    }
+
+    @EventHandler
+    fun onItemCraft(event: CraftItemEvent) {
         event.isCancelled = true
     }
 
