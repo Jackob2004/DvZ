@@ -77,6 +77,10 @@ class GameplayMechanicsHandler : CoreHandler {
             val goldAmount = if (blockType == Material.GRAVEL) 1 else Random.nextInt(3,6)
             Bukkit.getPluginManager().callEvent(DwarfGoldCollectEvent(player, goldAmount))
         }
+
+        if (blockType == Material.GRAVEL) {
+            player.inventory.addItem(ItemStack(Material.COBBLESTONE))
+        }
     }
 
     @EventHandler
