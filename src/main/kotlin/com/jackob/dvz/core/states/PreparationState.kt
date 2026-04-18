@@ -4,6 +4,7 @@ import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
+import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
@@ -42,7 +43,8 @@ class PreparationState(
     private val lobbyStateHandler: LobbyStateHandler,
     private val lobbyRulesHandler: LobbyRulesHandler,
     private val gameplayHandler: GameplayMechanicsHandler,
-    private val goldVault: GoldVault
+    private val goldVault: GoldVault,
+    private val darknessTask: DarknessTask
 ) : GameState {
 
     private val customBoard = Bukkit.getScoreboardManager().newScoreboard
@@ -102,6 +104,7 @@ class PreparationState(
         Bukkit.broadcast("<gray>Preparation phase has started, dwarfs prepare for battle!!!".withPrefix().mm())
         gameMap.dwarfSpawn.world.playSound(gameMap.dwarfSpawn, Sound.ITEM_GOAT_HORN_SOUND_0, 1f, 1f)
         startCountdown()
+        darknessTask.startTask(onlinePlayers)
 
         super.onEnter()
     }
