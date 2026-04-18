@@ -1,6 +1,7 @@
 package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.enchantments.CustomEnchantmentRegistry
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.sync
@@ -32,8 +33,8 @@ class DarknessTask {
             for (player in players) {
                 if (GameManager.getPlayerTeam(player) != Team.DWARF) continue
 
-                val itemInPlayerHand = player.inventory.itemInMainHand.type
-                if (itemInPlayerHand == Material.TORCH) {
+                val itemInPlayerHand = player.inventory.itemInMainHand
+                if (itemInPlayerHand.containsEnchantment(CustomEnchantmentRegistry.RADIANCE)) {
                     player.removePotionEffect(PotionEffectType.BLINDNESS)
                     continue
                 }

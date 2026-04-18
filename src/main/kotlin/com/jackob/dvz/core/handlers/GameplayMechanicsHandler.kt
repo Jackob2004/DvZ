@@ -1,6 +1,7 @@
 package com.jackob.dvz.core.handlers
 
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.enchantments.CustomEnchantmentRegistry
 import com.jackob.dvz.core.events.DwarfGoldCollectEvent
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ObtainableRegistry
@@ -8,7 +9,7 @@ import com.jackob.dvz.storage.loadConfig
 import com.jackob.dvz.storage.toItemStack
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
-import com.jackob.dvz.util.mm
+import com.jackob.dvz.util.enchant
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.removeItem
 import com.jackob.dvz.util.toSound
@@ -169,6 +170,7 @@ class GameplayMechanicsHandler : CoreHandler {
                     description = """
                       <gray> Place to see in the darkness
                 """
+                    enchant(CustomEnchantmentRegistry.RADIANCE, 1)
                 }
                 soundEffect = Sound.BLOCK_FIRE_AMBIENT
             }
