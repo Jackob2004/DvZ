@@ -1,8 +1,0 @@
-name: DvZ
-version: '1.0-SNAPSHOT'
-main: com.jackob.dvz.DvZ
-api-version: '1.21'
-description: Dwarves vs Zombies minigame
-depend:
-  - packetevents
-  - Multiverse-Core

@@ -1,0 +1,14 @@
+name: DvZ
+version: '1.0-SNAPSHOT'
+main: com.jackob.dvz.DvZ
+bootstrapper: com.jackob.dvz.core.enchantments.EnchantmentBootstrap
+api-version: '1.21'
+description: Dwarves vs Zombies minigame
+dependencies:
+  server:
+    packetevents:
+      load: BEFORE
+      required: true
+    Multiverse-Core:
+      load: BEFORE
+      required: false
