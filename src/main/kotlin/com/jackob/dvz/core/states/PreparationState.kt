@@ -1,6 +1,7 @@
 package com.jackob.dvz.core.states
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.equipment.Compass
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
@@ -22,6 +23,7 @@ import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.toPlayer
 import com.jackob.dvz.util.withPrefix
 import org.bukkit.Bukkit
+import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -58,6 +60,21 @@ class PreparationState(
     private val onlinePlayers = CopyOnWriteArraySet<Player>()
 
     private val onlineDwarfs = AtomicInteger()
+
+    private val dwarvenCompass = Compass(generateCompassLocations())
+
+    private fun generateCompassLocations() : List<Compass.NamedLocation> {
+        val list = mutableListOf<Compass.NamedLocation>()
+        list.add(Compass.NamedLocation("Goldmine", Material.GOLD_BLOCK, gameMap.goldmine))
+        list.add(Compass.NamedLocation("Sawmill", Material.IRON_BARS, gameMap.sawmill))
+        list.add(Compass.NamedLocation("Oil", Material.SPONGE, gameMap.oil))
+
+        for ((idx, shrine) in gameMap.shrines.withIndex()) {
+            list.add(Compass.NamedLocation("Shrine #${idx + 1}", Material.ENCHANTING_TABLE, shrine))
+        }
+
+        return list
+    }
 
     private val gameStatusSidebar =
         Sidebar.create("<shadow:#000000:0.5><b><gradient:#1b4332:#2d6a4f:#74c69d>DWARVES VS ZOMBIES</gradient></b>") {
@@ -105,6 +122,7 @@ class PreparationState(
         gameMap.dwarfSpawn.world.playSound(gameMap.dwarfSpawn, Sound.ITEM_GOAT_HORN_SOUND_0, 1f, 1f)
         startCountdown()
         darknessTask.startTask(onlinePlayers)
+        DvZ.INSTANCE.server.pluginManager.registerEvents(dwarvenCompass, DvZ.INSTANCE)
 
         super.onEnter()
     }
@@ -127,6 +145,7 @@ class PreparationState(
         dwarfTeam.addPlayer(player)
         player.teleport(gameMap.dwarfSpawn)
         KitsManager.setKit(player, kitType)
+        player.inventory.addItem(dwarvenCompass.retrieveItem())
         onlineDwarfs.incrementAndGet()
     }
 

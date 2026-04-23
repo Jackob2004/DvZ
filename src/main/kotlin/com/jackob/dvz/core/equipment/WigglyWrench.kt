@@ -50,5 +50,6 @@ class WigglyWrench : CustomItem(), Listener {
         val player = event.player
         player.removeItem(item, 1)
         repairArmor(player)
+        event.isCancelled = true
     }
 }
