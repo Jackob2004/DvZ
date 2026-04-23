@@ -7,8 +7,7 @@ import com.jackob.dvz.command.MapSetCommand
 import com.jackob.dvz.command.SaveLobbyCommand
 import com.jackob.dvz.command.SetupMapCommand
 import com.jackob.dvz.core.GameManager
-import com.jackob.dvz.core.enchantments.CustomEnchantmentListener
-import com.jackob.dvz.core.enchantments.CustomEnchantmentRegistry
+import com.jackob.dvz.core.equipment.EquipmentRegister
 import com.jackob.dvz.kits.KitConfigsCache
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.KitDisplaysStorage
@@ -46,8 +45,7 @@ class DvZ : JavaPlugin() {
         registerCommand("dvz-map-set", MapSetCommand())
 
         server.pluginManager.registerEvents(CustomMenuListener(), this)
-        server.pluginManager.registerEvents(CustomEnchantmentListener(), this)
-        CustomEnchantmentRegistry.init()
+        EquipmentRegister.initRegister()
         logger.info("DvZ is enabled!")
     }
 

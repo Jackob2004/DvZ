@@ -1,11 +1,11 @@
 package com.jackob.dvz.core.objects
 
+import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
-import com.jackob.dvz.core.enchantments.CustomEnchantmentRegistry
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.sync
-import org.bukkit.Material
+import org.bukkit.NamespacedKey
 import org.bukkit.entity.Player
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
@@ -17,6 +17,7 @@ class DarknessTask {
 
     companion object {
         private val BLINDNESS_EFFECT = PotionEffect(PotionEffectType.BLINDNESS, 20 * 2, 3)
+        val RADIANCE = NamespacedKey(DvZ.INSTANCE, "radiance")
     }
 
     fun stopTask() {
@@ -34,7 +35,7 @@ class DarknessTask {
                 if (GameManager.getPlayerTeam(player) != Team.DWARF) continue
 
                 val itemInPlayerHand = player.inventory.itemInMainHand
-                if (itemInPlayerHand.containsEnchantment(CustomEnchantmentRegistry.RADIANCE)) {
+                if (itemInPlayerHand.persistentDataContainer.has(RADIANCE)) {
                     player.removePotionEffect(PotionEffectType.BLINDNESS)
                     continue
                 }

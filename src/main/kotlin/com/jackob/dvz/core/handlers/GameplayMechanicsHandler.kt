@@ -1,15 +1,14 @@
 package com.jackob.dvz.core.handlers
 
 import com.jackob.dvz.core.GameManager
-import com.jackob.dvz.core.enchantments.CustomEnchantmentRegistry
 import com.jackob.dvz.core.events.DwarfGoldCollectEvent
+import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.kits.Team
 import com.jackob.dvz.storage.ObtainableRegistry
 import com.jackob.dvz.storage.loadConfig
 import com.jackob.dvz.storage.toItemStack
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
-import com.jackob.dvz.util.enchant
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.removeItem
 import com.jackob.dvz.util.toSound
@@ -28,6 +27,7 @@ import org.bukkit.event.inventory.PrepareAnvilEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
+import org.bukkit.persistence.PersistentDataType
 import java.util.UUID
 import kotlin.random.Random
 
@@ -170,7 +170,7 @@ class GameplayMechanicsHandler : CoreHandler {
                     description = """
                       <gray> Place to see in the darkness
                 """
-                    enchant(CustomEnchantmentRegistry.RADIANCE, 1)
+                    persistentDataContainer.set(DarknessTask.RADIANCE, PersistentDataType.BOOLEAN, true)
                 }
                 soundEffect = Sound.BLOCK_FIRE_AMBIENT
             }
