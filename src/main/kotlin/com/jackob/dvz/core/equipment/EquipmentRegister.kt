@@ -8,7 +8,8 @@ object EquipmentRegister {
 
     private val items: List<CustomItem> = listOf(
         RadianceShroom(),
-        RadianceTorch()
+        RadianceTorch(),
+        WigglyWrench()
     )
 
     private val itemMap: Map<CustomItemType, CustomItem> = items.associateBy {
