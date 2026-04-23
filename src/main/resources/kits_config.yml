@@ -26,6 +26,10 @@ kits:
           - type: "STRENGTH"
             durationSeconds: 120
             amplifier: 2
+
+    customItems:
+      - id: RADIANCE_SHROOM
+
   archer:
     activateMessage:
       message: "<green>You arrived to battle an archer!"

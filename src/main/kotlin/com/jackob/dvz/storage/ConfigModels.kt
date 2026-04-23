@@ -54,6 +54,12 @@ data class ItemConfig(
 )
 
 @Serializable
+data class CustomItemConfig(
+    val id: String,
+    val amount: Int = 1,
+)
+
+@Serializable
 data class ActivationMessage(
     val message: String,
     val broadcast: Boolean
@@ -64,6 +70,7 @@ data class KitConfig(
     val potions: List<PotionConfig> = emptyList(),
     val attributes: List<AttributeConfig> = emptyList(),
     val items: List<ItemConfig> = emptyList(),
+    val customItems: List<CustomItemConfig> = emptyList(),
     val activateMessage: ActivationMessage
 )
 

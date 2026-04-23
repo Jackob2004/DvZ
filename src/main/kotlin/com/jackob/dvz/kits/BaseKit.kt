@@ -32,6 +32,10 @@ abstract class BaseKit(val internalName: String, val owner: Player) {
         KitConfigsCache.retrieveKitItems(internalName).forEach {
             owner.inventory.addItem(it)
         }
+
+        KitConfigsCache.retrieveKitCustomItems(internalName).forEach {
+            owner.inventory.addItem(it)
+        }
     }
 
     protected fun sendActivationMessage() {
