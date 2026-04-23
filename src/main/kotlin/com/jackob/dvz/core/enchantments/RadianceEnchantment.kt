@@ -50,7 +50,8 @@ class RadianceEnchantment : CustomEnchantment(), PlacementEnchantment, Listener 
         applyCommonConfig(b)
     }
 
-    fun spawnProtectedLightBlock(placedBlockLocation: Location, player: Player, durationInSeconds: Int) {
+    fun spawnProtectedLightBlock(placedBlock: Block, player: Player, durationInSeconds: Int) {
+        val placedBlockLocation = placedBlock.location
         protectedBlocks.add(placedBlockLocation)
 
         var timeLeft = durationInSeconds
@@ -63,7 +64,7 @@ class RadianceEnchantment : CustomEnchantment(), PlacementEnchantment, Listener 
 
         sync(period = TimeUnit.SECONDS(1)) {
             timeLeft--
-            if (timeLeft <= 0) {
+            if (timeLeft <= 0 || placedBlock.isEmpty) {
                 protectedBlocks.remove(placedBlockLocation)
                 timeDisplay.remove()
                 this.cancel()
@@ -120,14 +121,21 @@ class RadianceEnchantment : CustomEnchantment(), PlacementEnchantment, Listener 
 
         when (level) {
             3 -> playLightBlastEffect(placedBlock, player, 15)
-            2 -> spawnProtectedLightBlock(placedBlockLocation, player, 60)
+            2 -> spawnProtectedLightBlock(placedBlock, player, 60)
             1 -> player.playSound(placedBlockLocation, Sound.BLOCK_FIRE_AMBIENT, 1f, 1f)
         }
     }
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
-        if (protectedBlocks.contains(event.block.location)) {
+        if (event.block.location in protectedBlocks) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onBlockPlace(event: BlockPlaceEvent) {
+        if (event.blockReplacedState.type == Material.LIGHT) {
             event.isCancelled = true
         }
     }
