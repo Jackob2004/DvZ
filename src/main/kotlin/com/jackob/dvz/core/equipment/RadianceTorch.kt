@@ -78,6 +78,8 @@ class RadianceTorch : CustomItem(), Listener {
             return
         }
 
-        playLightBlastEffect(event.block, event.player)
+        if(isCustomItem(event.itemInHand)) {
+            playLightBlastEffect(event.block, event.player)
+        }
     }
 }
