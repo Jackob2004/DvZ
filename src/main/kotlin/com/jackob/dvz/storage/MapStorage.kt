@@ -1,17 +1,16 @@
 package com.jackob.dvz.storage
 
 import com.jackob.dvz.DvZ
-import org.bukkit.Bukkit
-import org.bukkit.Difficulty
-import org.bukkit.GameRules
-import org.bukkit.Location
-import org.bukkit.World
-import org.bukkit.WorldCreator
+import com.sk89q.worldedit.bukkit.BukkitAdapter
+import com.sk89q.worldguard.WorldGuard
+import org.bukkit.*
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.io.IOException
+import kotlin.jvm.Throws
 
 private const val MAP_TEMPLATE_SUFFIX = "-template"
+
 object MapStorage {
 
     private const val LOBBY_PATH = "lobby-spawn"
@@ -64,10 +63,38 @@ object MapStorage {
         return this
     }
 
-    fun resetMap(templateName: String): World? {
-        val templateWorld = File(Bukkit.getWorldContainer(), templateName)
+    @Throws(MapLoadException::class)
+    fun copyTemplateRegions(templateName: String, gameMapWorld: World) {
+        val templateWorld = Bukkit.getWorld(templateName)
+            ?: throw MapLoadException(templateName, "Template world is not loaded!")
+
+        val container = WorldGuard.getInstance().platform.regionContainer
+
+        val templateManager = container.get(BukkitAdapter.adapt(templateWorld))
+            ?: throw MapLoadException(templateName, "WorldGuard RegionManager for template missing.")
+        val gameManager = container.get(BukkitAdapter.adapt(gameMapWorld))
+            ?: throw MapLoadException(gameMapWorld.name, "WorldGuard RegionManager for game map missing.")
+
+        for (templateRegion in templateManager.getRegions().values) {
+            if (templateRegion.id == "__global__") {
+                val gameGlobal = gameManager.getRegion("__global__")
+                gameGlobal?.setFlags(templateRegion.flags)
+                continue
+            }
+
+            gameManager.addRegion(templateRegion)
+        }
+    }
+
+    @Throws(MapLoadException::class)
+    fun resetMap(templateName: String): World {
+        val templateFolder = File(Bukkit.getWorldContainer(), templateName)
         val mapName = templateName.removeSuffix(MAP_TEMPLATE_SUFFIX)
         val mapWorld = File(Bukkit.getWorldContainer(), mapName)
+
+        if (!templateFolder.exists()) {
+            throw MapLoadException(templateName, "Template world directory does not exist on disk!")
+        }
 
         Bukkit.getWorld(mapName)?.let { world ->
             world.loadedChunks.forEach { it.unload(false) }
@@ -78,8 +105,12 @@ object MapStorage {
             mapWorld.deleteRecursively()
         }
 
-        copyWorld(templateWorld, mapWorld)
-        return Bukkit.createWorld(WorldCreator(mapName))?.configureWorldSettings()
+        copyWorld(templateFolder, mapWorld)
+        val copiedWorld = Bukkit.createWorld(WorldCreator(mapName))?.configureWorldSettings()
+            ?: throw MapLoadException(mapName, "Failed to create the copied world!")
+        copyTemplateRegions(templateName, copiedWorld)
+
+        return copiedWorld
     }
 
     fun saveLobby(lobbyLocation: Location): Boolean {
@@ -134,8 +165,8 @@ object MapStorage {
         return configSection.getKeys(false).toList()
     }
 
-    fun getMapData(templateName: String): GameMap? {
-        val worldCopy = resetMap(templateName) ?: return null
+    fun getMapData(templateName: String): GameMap {
+        val worldCopy = resetMap(templateName)
         val name = config.getString("$MAPS_PATH.$templateName.name")!!
 
         val dwarfSpawn = config.getLocation("$MAPS_PATH.$templateName.dwarf-spawn")!!.clone().apply {
@@ -190,4 +221,5 @@ object MapStorage {
         }
     }
 
+    class MapLoadException(mapName: String, message: String) : Exception("[$mapName] $message")
 }

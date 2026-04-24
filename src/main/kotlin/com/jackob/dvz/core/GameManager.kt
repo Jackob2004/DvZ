@@ -4,7 +4,6 @@ import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.states.GameState
 import com.jackob.dvz.core.states.RecruitingState
 import com.jackob.dvz.kits.Team
-import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
 import org.bukkit.entity.Player
@@ -33,7 +32,7 @@ object GameManager {
         if (mapKey !in MapStorage.getMapKeys()!!) return false
         if (mapKey.contains(recruitingState.gameMap.dwarfSpawn.world.name)) return false
 
-        recruitingState.performMapChange(MapStorage.getMapData(mapKey)!!)
+        recruitingState.performMapChange(MapStorage.getMapData(mapKey))
 
         return true
     }
@@ -47,7 +46,7 @@ object GameManager {
         val currentMapWorldName = recruitingState.gameMap.dwarfSpawn.world.name
         val newMapName = allMapNames
             .filterNot { it.contains(currentMapWorldName) }[Random.nextInt(allMapNames.size - 1)]
-        recruitingState.performMapReroll(MapStorage.getMapData(newMapName)!!)
+        recruitingState.performMapReroll(MapStorage.getMapData(newMapName))
 
         return true
     }
