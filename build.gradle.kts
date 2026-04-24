@@ -16,6 +16,8 @@ repositories {
 
     maven { url = uri("https://repo.codemc.io/repository/maven-releases/") }
     maven { url = uri("https://repo.codemc.io/repository/maven-snapshots/") }
+
+    maven("https://maven.enginehub.org/repo/")
 }
 
 dependencies {
@@ -24,6 +26,9 @@ dependencies {
     implementation("com.charleskorn.kaml:kaml:0.56.0")
 
     compileOnly("com.github.retrooper:packetevents-spigot:2.11.2")
+
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.16")
+    compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.4.0")
 }
 
 tasks {
