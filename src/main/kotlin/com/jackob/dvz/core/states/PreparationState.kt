@@ -105,8 +105,10 @@ class PreparationState(
 
     override fun onEnter() {
         lobbyStateHandler.onKitSelectorOpen = ::openKitSelectionMenu
+        lobbyStateHandler.registerHandler(DvZ.INSTANCE)
         lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
         gameplayHandler.registerHandler(DvZ.INSTANCE)
+        DvZ.INSTANCE.server.pluginManager.registerEvents(dwarvenCompass, DvZ.INSTANCE)
 
         for ((uuid, kitType) in selectedKits) {
             uuid.toPlayer()?.let { player ->
@@ -122,7 +124,6 @@ class PreparationState(
         gameMap.dwarfSpawn.world.playSound(gameMap.dwarfSpawn, Sound.ITEM_GOAT_HORN_SOUND_0, 1f, 1f)
         startCountdown()
         darknessTask.startTask(onlinePlayers)
-        DvZ.INSTANCE.server.pluginManager.registerEvents(dwarvenCompass, DvZ.INSTANCE)
 
         super.onEnter()
     }

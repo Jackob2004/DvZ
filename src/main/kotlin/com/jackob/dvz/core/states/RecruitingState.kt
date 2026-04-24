@@ -106,6 +106,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
         playersWaiting.clear()
         countdownTask = null
         heroPicker = null
+        lobbyStateHandler.unregisterHandler()
 
         super.onLeave()
     }
