@@ -31,9 +31,9 @@ class DvZ : JavaPlugin() {
         INSTANCE = this
 
         saveDefaultConfig()
+        MapStorage.cleanMapCopies()
 
         ConfigStorage
-        MapStorage
         GameManager
         KitDisplaysStorage
         KitConfigsCache

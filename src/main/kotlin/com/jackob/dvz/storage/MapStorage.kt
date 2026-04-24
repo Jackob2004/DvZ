@@ -37,7 +37,7 @@ object MapStorage {
         File(target, "session.lock").delete()
     }
 
-    private fun World.configureWorldSettings() : World {
+    private fun World.configureWorldSettings(): World {
         setGameRule(GameRules.ADVANCE_TIME, false)
         setGameRule(GameRules.ADVANCE_WEATHER, false)
         setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false)
@@ -161,6 +161,32 @@ object MapStorage {
         }
 
         return GameMap(name, dwarfSpawn, zombieSpawn, goldmine, sawmill, oil, shrines)
+    }
+
+    fun cleanMapCopies() {
+        val serverRoot = Bukkit.getWorldContainer()
+
+        val baseNames = serverRoot.listFiles { file ->
+            file.isDirectory && file.name.endsWith("-template")
+        }?.map { it.name.removeSuffix("-template") } ?: emptyList()
+
+        if (baseNames.isEmpty()) return
+
+        serverRoot.listFiles { file ->
+            file.isDirectory && !file.name.endsWith("-template")
+        }?.forEach { folder ->
+            val isMapCopy = baseNames.any { baseName -> folder.name.equals(baseName) }
+
+            if (isMapCopy) {
+                val success = folder.deleteRecursively()
+
+                if (success) {
+                    DvZ.INSTANCE.logger.info("Cleaned up map copy: ${folder.name}")
+                } else {
+                    DvZ.INSTANCE.logger.warning("Failed to fully delete map copy: ${folder.name}")
+                }
+            }
+        }
     }
 
 }
