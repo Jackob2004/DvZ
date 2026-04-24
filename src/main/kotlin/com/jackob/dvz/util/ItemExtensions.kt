@@ -3,6 +3,8 @@ package com.jackob.dvz.util
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Material
 import org.bukkit.enchantments.Enchantment
+import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 
@@ -43,3 +45,15 @@ var ItemMeta.description: String
 fun ItemMeta.enchant(enchantment: Enchantment, level: Int) {
     addEnchant(enchantment, level, true)
 }
+
+/**
+ * Returns the item in the main hand only if the player performed a right-click.
+ * Returns null if they held nothing.
+ */
+val PlayerInteractEvent.rightClickItem: ItemStack?
+    get() {
+        if (hand != EquipmentSlot.HAND) return null
+        if (!action.isRightClick) return null
+
+        return item?.takeIf { it.type != Material.AIR }
+    }

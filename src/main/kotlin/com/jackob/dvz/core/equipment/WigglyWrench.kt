@@ -5,6 +5,7 @@ import com.jackob.dvz.util.description
 import com.jackob.dvz.util.enchant
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.removeItem
+import com.jackob.dvz.util.rightClickItem
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.enchantments.Enchantment
@@ -40,11 +41,7 @@ class WigglyWrench : CustomItem(), Listener {
 
     @EventHandler
     fun onItemClick(event: PlayerInteractEvent) {
-        if (event.hand != EquipmentSlot.HAND) return
-        if (!event.action.isRightClick) return
-
-        val item = event.item ?: return
-        if (item.type == Material.AIR) return
+        val item = event.rightClickItem ?: return
         if (!isCustomItem(item)) return
 
         val player = event.player
