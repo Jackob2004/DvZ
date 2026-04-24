@@ -11,6 +11,7 @@ import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.io.IOException
 
+private const val MAP_TEMPLATE_SUFFIX = "-template"
 object MapStorage {
 
     private const val LOBBY_PATH = "lobby-spawn"
@@ -65,7 +66,7 @@ object MapStorage {
 
     fun resetMap(templateName: String): World? {
         val templateWorld = File(Bukkit.getWorldContainer(), templateName)
-        val mapName = templateName.removeSuffix("-template")
+        val mapName = templateName.removeSuffix(MAP_TEMPLATE_SUFFIX)
         val mapWorld = File(Bukkit.getWorldContainer(), mapName)
 
         Bukkit.getWorld(mapName)?.let { world ->
@@ -167,13 +168,13 @@ object MapStorage {
         val serverRoot = Bukkit.getWorldContainer()
 
         val baseNames = serverRoot.listFiles { file ->
-            file.isDirectory && file.name.endsWith("-template")
-        }?.map { it.name.removeSuffix("-template") } ?: emptyList()
+            file.isDirectory && file.name.endsWith(MAP_TEMPLATE_SUFFIX)
+        }?.map { it.name.removeSuffix(MAP_TEMPLATE_SUFFIX) } ?: emptyList()
 
         if (baseNames.isEmpty()) return
 
         serverRoot.listFiles { file ->
-            file.isDirectory && !file.name.endsWith("-template")
+            file.isDirectory && !file.name.endsWith(MAP_TEMPLATE_SUFFIX)
         }?.forEach { folder ->
             val isMapCopy = baseNames.any { baseName -> folder.name.equals(baseName) }
 
