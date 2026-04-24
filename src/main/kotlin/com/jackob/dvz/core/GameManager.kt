@@ -23,7 +23,7 @@ object GameManager {
         val allMapNames = MapStorage.getMapKeys()!!
         val randomTemplateName = allMapNames[Random.nextInt(allMapNames.size)]
 
-        return MapStorage.getMapData(randomTemplateName)!!
+        return MapStorage.getMapData(randomTemplateName)
     }
 
     fun setMap(mapKey: String): Boolean {

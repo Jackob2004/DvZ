@@ -1,6 +1,8 @@
 package com.jackob.dvz.core.handlers
 
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.equipment.CustomItemType
+import com.jackob.dvz.core.equipment.EquipmentRegister
 import com.jackob.dvz.core.events.DwarfGoldCollectEvent
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.kits.Team
@@ -176,12 +178,7 @@ class GameplayMechanicsHandler : CoreHandler {
             }
 
             Material.BOWL if (clickedBlock == Material.SPONGE) -> {
-                item = createItem(Material.PINK_DYE, 3) {
-                    name = "<green>Mortal"
-                    description = """
-                      <white> [Right]<gray> click on the walls to harden them
-                """
-                }
+                item = EquipmentRegister.getItem(CustomItemType.MORTAR)!!
                 soundEffect = Sound.BLOCK_STONE_HIT
             }
 
