@@ -5,5 +5,6 @@ enum class CustomItemType {
     RADIANCE_TORCH,
     WIGGLY_WRENCH,
     DWARVEN_COMPASS,
-    MORTAR
+    MORTAR,
+    SUPER_MORTAR
 }

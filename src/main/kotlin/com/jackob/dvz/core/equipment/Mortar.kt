@@ -21,13 +21,14 @@ class Mortar : CustomItem(), Listener {
     override val item: ItemStack = createItem(Material.PINK_DYE) {
         name = "<b><gray>Mortar"
         description = """
-           <b><white>[R] <reset>click on a block to strengthen walls around you
+           <b><white>[R] <reset>click on a block to strengthen walls around you.
+           Breaking stronger block results in removing its first layer.
+           Can be fully destroyed by explosion.
         """
         enchant(Enchantment.UNBREAKING, 10)
     }
 
     override val type: CustomItemType = CustomItemType.MORTAR
-
 
     @Suppress("UnstableApiUsage")
     private fun strengthenWalls(player: Player, clickedBlockLocation: Location) {
