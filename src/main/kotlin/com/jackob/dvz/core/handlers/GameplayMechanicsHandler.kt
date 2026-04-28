@@ -1,5 +1,6 @@
 package com.jackob.dvz.core.handlers
 
+import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.CustomItemType
 import com.jackob.dvz.core.equipment.EquipmentRegister
@@ -16,12 +17,14 @@ import com.jackob.dvz.util.removeItem
 import com.jackob.dvz.util.toSound
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.NamespacedKey
 import org.bukkit.Sound
 import org.bukkit.Tag
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.block.Action
 import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent
 import org.bukkit.event.entity.EntityChangeBlockEvent
 import org.bukkit.event.inventory.CraftItemEvent
@@ -48,6 +51,10 @@ class GameplayMechanicsHandler : CoreHandler {
         ) {
             Material.matchMaterial(it.rackType)!! to Pair(it.item.toItemStack(), it.pickUpSound.toSound()!!)
         }
+
+    companion object {
+        val UNPLACEABLE_KEY = NamespacedKey(DvZ.INSTANCE, "unplaceable")
+    }
 
     private fun isOnCooldown(player: Player): Boolean {
         val playerId = player.uniqueId
@@ -77,12 +84,19 @@ class GameplayMechanicsHandler : CoreHandler {
         val blockType = event.block.type
         if (blockType.name.endsWith("_ORE") || blockType == Material.GRAVEL) {
             event.isDropItems = false
-            val goldAmount = if (blockType == Material.GRAVEL) 1 else Random.nextInt(3,6)
+            val goldAmount = if (blockType == Material.GRAVEL) 1 else Random.nextInt(3, 6)
             Bukkit.getPluginManager().callEvent(DwarfGoldCollectEvent(player, goldAmount))
         }
 
         if (blockType == Material.GRAVEL) {
             player.inventory.addItem(ItemStack(Material.COBBLESTONE))
+        }
+    }
+
+    @EventHandler
+    fun onBlockPlace(event: BlockPlaceEvent) {
+        if (event.itemInHand.persistentDataContainer.has(UNPLACEABLE_KEY)) {
+            event.isCancelled = true
         }
     }
 
@@ -131,6 +145,7 @@ class GameplayMechanicsHandler : CoreHandler {
                     description = """
                       <white> [Right]<gray> click on saw to turn them into planks
                 """
+                    persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
                 }
                 soundEffect = Sound.BLOCK_WOOD_BREAK
             }
@@ -157,7 +172,7 @@ class GameplayMechanicsHandler : CoreHandler {
             }
 
             Material.STICK if (clickedBlock == Material.IRON_BARS) -> {
-                item = createItem(Material.BOWL, 3) {
+                item = createItem(Material.GRAY_DYE, 3) {
                     name = "<gray>Bowls"
                     description = """
                       <white> [Right]<gray> click on oil to turn them into mortal
