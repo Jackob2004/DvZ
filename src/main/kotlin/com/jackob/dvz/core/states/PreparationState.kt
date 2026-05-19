@@ -27,6 +27,7 @@ import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.player.PlayerJoinEvent
@@ -63,19 +64,6 @@ class PreparationState(
 
     private val dwarvenCompass = Compass(generateCompassLocations())
 
-    private fun generateCompassLocations() : List<Compass.NamedLocation> {
-        val list = mutableListOf<Compass.NamedLocation>()
-        list.add(Compass.NamedLocation("Goldmine", Material.GOLD_BLOCK, gameMap.goldmine))
-        list.add(Compass.NamedLocation("Sawmill", Material.IRON_BARS, gameMap.sawmill))
-        list.add(Compass.NamedLocation("Oil", Material.SPONGE, gameMap.oil))
-
-        for ((idx, shrine) in gameMap.shrines.withIndex()) {
-            list.add(Compass.NamedLocation("Shrine #${idx + 1}", Material.ENCHANTING_TABLE, shrine))
-        }
-
-        return list
-    }
-
     private val gameStatusSidebar =
         Sidebar.create("<shadow:#000000:0.5><b><gradient:#1b4332:#2d6a4f:#74c69d>DWARVES VS ZOMBIES</gradient></b>") {
             line(4)
@@ -103,6 +91,19 @@ class PreparationState(
         }
     }
 
+    private fun generateCompassLocations() : List<Compass.NamedLocation> {
+        val list = mutableListOf<Compass.NamedLocation>()
+        list.add(Compass.NamedLocation("Goldmine", Material.GOLD_BLOCK, gameMap.goldmine))
+        list.add(Compass.NamedLocation("Sawmill", Material.IRON_BARS, gameMap.sawmill))
+        list.add(Compass.NamedLocation("Oil", Material.SPONGE, gameMap.oil))
+
+        for ((idx, shrine) in gameMap.shrines.withIndex()) {
+            list.add(Compass.NamedLocation("Shrine #${idx + 1}", Material.ENCHANTING_TABLE, shrine))
+        }
+
+        return list
+    }
+
     override fun onEnter() {
         lobbyStateHandler.onKitSelectorOpen = ::openKitSelectionMenu
         lobbyStateHandler.registerHandler(DvZ.INSTANCE)
@@ -126,6 +127,17 @@ class PreparationState(
         darknessTask.startTask(onlinePlayers)
 
         super.onEnter()
+    }
+
+    override fun onLeave() {
+        lobbyStateHandler.unregisterHandler()
+        lobbyRulesHandler.unregisterHandler()
+        gameplayHandler.unregisterHandler()
+        darknessTask.stopTask()
+        onlinePlayers.clear()
+        HandlerList.unregisterAll(dwarvenCompass)
+
+        super.onLeave()
     }
 
     override fun getPlayerTeam(player: Player): Team? {
