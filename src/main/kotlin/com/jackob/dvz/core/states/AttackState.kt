@@ -7,12 +7,16 @@ import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Team
+import com.jackob.dvz.kits.KitType
+import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.GameMap
+import com.jackob.dvz.ui.PagerMenu
 import com.jackob.dvz.ui.Sidebar
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.async
 import com.jackob.dvz.util.mm
+import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.withPrefix
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -47,11 +51,13 @@ class AttackState(
             line(0, "<gray>  ────────────────")
         }
 
+    private val kitSelectionMenu = createKitSelectionMenu()
+
     private var countdownTask: BukkitTask? = null
 
-    private fun startCountdown() : BukkitTask {
+    private fun startCountdown(): BukkitTask {
         var timer = 0
-        return async(period = TimeUnit.SECONDS(1))  {
+        return async(period = TimeUnit.SECONDS(1)) {
             timer++
             with(gameStatusSidebar) {
                 updateLine(5, " <white>${goldVault.getGoldAmount()}")
@@ -65,6 +71,7 @@ class AttackState(
     }
 
     override fun onEnter() {
+        lobbyStateHandler.onKitSelectorOpen = kitSelectionMenu::open
         lobbyStateHandler.registerHandler(DvZ.INSTANCE)
         lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
         gameplayHandler.registerHandler(DvZ.INSTANCE)
@@ -94,6 +101,38 @@ class AttackState(
         }
 
         return type
+    }
+
+    private fun selectKit(player: Player, kitType: KitType) {
+        player.resetAll()
+        player.teleport(gameMap.zombieSpawn)
+        KitsManager.setKit(player, kitType)
+
+        if (getPlayerTeam(player) == null) {
+            zombieTeam.addMember(player)
+        }
+    }
+
+    private fun createKitSelectionMenu(): PagerMenu {
+        val basicZombieKits = KitType.entries
+            .filter { !it.isHero && it.team == TeamType.ZOMBIE }
+            .map { it.toItem() }
+
+        return object : PagerMenu(basicZombieKits, title = "<gray><b>Select kit") {
+            override fun handleClick(slot: Int, player: Player) {
+                super.handleClick(slot, player)
+
+                menu.getItem(slot)?.let { item ->
+                    val keys = item.persistentDataContainer.keys
+                    if (keys.isEmpty()) return@handleClick
+
+                    KitType.getByKey(keys.first())?.let { type ->
+                        selectKit(player, type)
+                    }
+                }
+
+            }
+        }
     }
 
 }
