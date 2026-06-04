@@ -6,6 +6,7 @@ import com.jackob.dvz.command.MapRerollCommand
 import com.jackob.dvz.command.MapSetCommand
 import com.jackob.dvz.command.SaveLobbyCommand
 import com.jackob.dvz.command.SetupMapCommand
+import com.jackob.dvz.command.ZombieReleaseCommand
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.EquipmentRegister
 import com.jackob.dvz.kits.KitConfigsCache
@@ -43,6 +44,7 @@ class DvZ : JavaPlugin() {
         registerCommand("dvz-delete-map", DeleteMapCommand())
         registerCommand("dvz-map-reroll", MapRerollCommand())
         registerCommand("dvz-map-set", MapSetCommand())
+        registerCommand("dvz-release-zombie", ZombieReleaseCommand())
 
         server.pluginManager.registerEvents(CustomMenuListener(), this)
         EquipmentRegister.initRegister()

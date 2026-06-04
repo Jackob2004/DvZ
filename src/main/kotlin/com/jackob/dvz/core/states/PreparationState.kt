@@ -1,6 +1,7 @@
 package com.jackob.dvz.core.states
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.Compass
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
@@ -21,6 +22,7 @@ import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.resetAll
+import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
 import com.jackob.dvz.util.withPrefix
 import org.bukkit.Bukkit
@@ -36,6 +38,7 @@ import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArraySet
 
@@ -64,9 +67,11 @@ class PreparationState(
             line(0, "<gray>  ────────────────")
         }
 
-    private fun startCountdown() {
+    private var countdownTask: BukkitTask? = null
+
+    private fun startCountdown(): BukkitTask {
         var timer = ConfigStorage.PREPARATION_COUNTDOWN
-        async(period = TimeUnit.SECONDS(1)) {
+        return async(period = TimeUnit.SECONDS(1)) {
             with(gameStatusSidebar) {
                 updateLine(3, " <white>${goldVault.getGoldAmount()}")
                 updateLine(2, " <white>${dwarfTeam.getOnlineCount()}")
@@ -76,13 +81,14 @@ class PreparationState(
 
             timer--
             if (timer < 0) {
-                cancel()
-                // start next phase
+                sync {
+                    startNextPhase()
+                }
             }
         }
     }
 
-    private fun generateCompassLocations() : List<Compass.NamedLocation> {
+    private fun generateCompassLocations(): List<Compass.NamedLocation> {
         val list = mutableListOf<Compass.NamedLocation>()
         list.add(Compass.NamedLocation("Goldmine", Material.GOLD_BLOCK, gameMap.goldmine))
         list.add(Compass.NamedLocation("Sawmill", Material.IRON_BARS, gameMap.sawmill))
@@ -112,10 +118,10 @@ class PreparationState(
         onlinePlayers.addAll(Bukkit.getOnlinePlayers())
         gameStatusSidebar.sendSidebar(onlinePlayers)
 
-        Bukkit.broadcast("<gray>Preparation phase has started, dwarfs prepare for battle!!!".withPrefix().mm())
+        Bukkit.broadcast("<gray>Preparation phase has started, <dark_green>dwarfs prepare for battle!!!".withPrefix().mm())
         gameMap.dwarfSpawn.world.playSound(gameMap.dwarfSpawn, Sound.ITEM_GOAT_HORN_SOUND_0, 1f, 1f)
-        startCountdown()
         darknessTask.startTask(onlinePlayers)
+        countdownTask = startCountdown()
 
         super.onEnter()
     }
@@ -189,6 +195,26 @@ class PreparationState(
             <gray> Type <u><white>/settings<reset><gray> to opt in to die in the coming plague
         """.trimIndent().mm()
         player.sendMessage(message)
+    }
+
+    fun startNextPhase(): Boolean {
+        if (countdownTask == null) return false
+        if (countdownTask!!.isCancelled) return false
+
+        countdownTask!!.cancel()
+        GameManager.setGameState(
+            AttackState(
+                gameMap,
+                lobbyStateHandler,
+                lobbyRulesHandler,
+                gameplayHandler,
+                goldVault,
+                darknessTask,
+                dwarfTeam
+            )
+        )
+
+        return true
     }
 
     @EventHandler

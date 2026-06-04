@@ -2,6 +2,7 @@ package com.jackob.dvz.core
 
 import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.states.GameState
+import com.jackob.dvz.core.states.PreparationState
 import com.jackob.dvz.core.states.RecruitingState
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.GameMap
@@ -49,6 +50,12 @@ object GameManager {
         recruitingState.performMapReroll(MapStorage.getMapData(newMapName))
 
         return true
+    }
+
+    fun releaseZombies() : Boolean {
+        val preparationState = gameState as? PreparationState ?: return false
+
+        return preparationState.startNextPhase()
     }
 
     fun getPlayerTeam(player: Player) : TeamType? {
