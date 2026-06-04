@@ -18,9 +18,7 @@ import com.jackob.dvz.ui.PagerMenu
 import com.jackob.dvz.ui.Sidebar
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.async
-import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.mm
-import com.jackob.dvz.util.name
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
@@ -35,7 +33,6 @@ import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
@@ -66,6 +63,8 @@ class PreparationState(
             line(1, " <light_purple><b>⌚</b> <gradient:#d8b4fe:#a855f7>Time:</gradient>", " <white>0")
             line(0, "<gray>  ────────────────")
         }
+
+    private val kitSelectionMenu = createKitSelectionMenu()
 
     private var countdownTask: BukkitTask? = null
 
@@ -102,7 +101,7 @@ class PreparationState(
     }
 
     override fun onEnter() {
-        lobbyStateHandler.onKitSelectorOpen = ::openKitSelectionMenu
+        lobbyStateHandler.onKitSelectorOpen = kitSelectionMenu::open
         lobbyStateHandler.registerHandler(DvZ.INSTANCE)
         lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
         gameplayHandler.registerHandler(DvZ.INSTANCE)
@@ -157,12 +156,12 @@ class PreparationState(
         player.inventory.addItem(dwarvenCompass.retrieveItem())
     }
 
-    private fun openKitSelectionMenu(player: Player) {
+    private fun createKitSelectionMenu() : PagerMenu {
         val basicDwarfKits = KitType.entries
             .filter { !it.isHero && it.team == TeamType.DWARF }
             .map { it.toItem() }
 
-        object : PagerMenu(basicDwarfKits, player, "<gray><b>Select kit") {
+        return object : PagerMenu(basicDwarfKits, title = "<gray><b>Select kit") {
             override fun handleClick(slot: Int, player: Player) {
                 super.handleClick(slot, player)
 

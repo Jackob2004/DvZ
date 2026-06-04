@@ -20,7 +20,7 @@ private const val INFO_IDX = 42
 
 open class PagerMenu(
     private val contents: List<ItemStack>,
-    player: Player,
+    player: Player? = null,
     title: String
 ) : CustomMenu {
 
@@ -53,8 +53,10 @@ open class PagerMenu(
     }
 
     init {
-        rerender()
-        player.openInventory(menu)
+        if (player != null) {
+            rerender()
+            player.openInventory(menu)
+        }
     }
 
     private fun nextPage(): Boolean {
@@ -111,6 +113,11 @@ open class PagerMenu(
                 <gray>All pages: <white>$allPages
             """
         }
+    }
+
+    fun open(player: Player) {
+        rerender()
+        player.openInventory(menu)
     }
 
     override fun handleClick(slot: Int, player: Player) {
