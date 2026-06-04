@@ -4,9 +4,16 @@ import com.jackob.dvz.DvZ
 import com.jackob.dvz.kits.dwarf.Archer
 import com.jackob.dvz.kits.dwarf.Warrior
 import com.jackob.dvz.kits.dwarf.hero.Elf
+import com.jackob.dvz.kits.zombie.Zombie
 import com.jackob.dvz.storage.KitDisplay
 import com.jackob.dvz.storage.KitDisplaysStorage
+import com.jackob.dvz.util.createItem
+import com.jackob.dvz.util.mm
+import com.jackob.dvz.util.name
 import org.bukkit.NamespacedKey
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataType
 
 enum class KitType(
     val kitClass: Class<out BaseKit>,
@@ -17,6 +24,7 @@ enum class KitType(
     WARRIOR(Warrior::class.java, TeamType.DWARF, false, KitDisplaysStorage.getKitDisplayData("warrior")),
     ARCHER(Archer::class.java, TeamType.DWARF, false, KitDisplaysStorage.getKitDisplayData("archer")),
     ELF(Elf::class.java, TeamType.DWARF, true, KitDisplaysStorage.getKitDisplayData("elf")),
+    ZOMBIE(Zombie::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("zombie")),
     ;
 
     val key: NamespacedKey by lazy {
@@ -34,4 +42,14 @@ enum class KitType(
             }
         }
     }
+
+    fun toItem(configure: ItemMeta.() -> Unit = {}) : ItemStack {
+        return createItem(displayData.icon) {
+            name = displayData.name
+            lore(displayData.description.map(String::mm))
+            persistentDataContainer.set(key, PersistentDataType.BOOLEAN, false)
+            this.configure()
+        }
+    }
+
 }

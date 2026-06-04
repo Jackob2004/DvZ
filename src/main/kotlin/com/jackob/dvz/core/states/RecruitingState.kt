@@ -43,7 +43,6 @@ import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.InventoryHolder
 import org.bukkit.inventory.ItemStack
-import org.bukkit.persistence.PersistentDataType
 import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
 import kotlin.math.max
@@ -177,17 +176,11 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
 
         val basicDwarfKits = KitType.entries
             .filter { !it.isHero && it.team == TeamType.DWARF }
-            .map {
-                createItem(it.displayData.icon) {
-                    name = it.displayData.name
-                    lore(it.displayData.description.map(String::mm))
-                    persistentDataContainer.set(it.key, PersistentDataType.BOOLEAN, false)
-
-                    if (selectedKits[playerId] != null && selectedKits[playerId] == it) {
-                        enchant(Enchantment.UNBREAKING, 10)
-                    }
+            .map { it.toItem {
+                if (selectedKits[playerId] != null && selectedKits[playerId] == it) {
+                    enchant(Enchantment.UNBREAKING, 10)
                 }
-            }
+            }}
 
         object : PagerMenu(basicDwarfKits, player, "<gray><b>Select kit") {
             override fun handleClick(slot: Int, player: Player) {

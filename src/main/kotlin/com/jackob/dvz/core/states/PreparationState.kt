@@ -160,13 +160,7 @@ class PreparationState(
     private fun openKitSelectionMenu(player: Player) {
         val basicDwarfKits = KitType.entries
             .filter { !it.isHero && it.team == TeamType.DWARF }
-            .map {
-                createItem(it.displayData.icon) {
-                    name = it.displayData.name
-                    lore(it.displayData.description.map(String::mm))
-                    persistentDataContainer.set(it.key, PersistentDataType.BOOLEAN, false)
-                }
-            }
+            .map { it.toItem() }
 
         object : PagerMenu(basicDwarfKits, player, "<gray><b>Select kit") {
             override fun handleClick(slot: Int, player: Player) {

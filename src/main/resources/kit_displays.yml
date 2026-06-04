@@ -13,3 +13,8 @@ elf:
   name: <green>Elf
   description:
     - <gray>Force of nature
+zombie:
+  icon: ZOMBIE_HEAD
+  name: <dark_green>Zombie
+  description:
+    - <gray>Basic monster

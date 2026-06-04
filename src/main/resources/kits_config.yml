@@ -64,3 +64,15 @@ kits:
           power: 5
           punch: 2
           unbreaking: 3
+
+  zombie:
+    activateMessage:
+      message: "<green>You arrived to battle as a zombie"
+      broadcast: false
+
+    items:
+      - material: "WOODEN_SWORD"
+        name: "<b><dark_green>Rotten blade"
+        enchantments:
+          sharpness: 2
+          unbreaking: 3
