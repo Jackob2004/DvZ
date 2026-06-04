@@ -18,6 +18,10 @@ class Team(val teamType: TeamType) {
 
     companion object {
         private val customBoard = Bukkit.getScoreboardManager().newScoreboard
+
+        fun refreshTeamVisibility(player: Player) {
+            player.scoreboard = customBoard
+        }
     }
 
     fun addMember(player: Player) {
@@ -29,10 +33,6 @@ class Team(val teamType: TeamType) {
     fun removeMember(player: Player) {
         team.removePlayer(player)
         onlineMembers.decrementAndGet()
-    }
-
-    fun refreshTeamVisibility(player: Player) {
-        player.scoreboard = customBoard
     }
 
     fun hasMember(player: Player): Boolean = team.hasPlayer(player)

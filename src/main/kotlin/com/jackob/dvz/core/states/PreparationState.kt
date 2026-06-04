@@ -215,7 +215,7 @@ class PreparationState(
         val player = event.player
 
         onlinePlayers.add(player)
-        dwarfTeam.refreshTeamVisibility(player)
+        Team.refreshTeamVisibility(player)
         gameStatusSidebar.sendSidebar(listOf(player))
 
         if (!isActiveDwarf(player)) {
