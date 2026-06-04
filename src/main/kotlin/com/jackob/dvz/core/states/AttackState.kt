@@ -18,8 +18,13 @@ import com.jackob.dvz.util.async
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.withPrefix
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes.player
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.scheduler.BukkitTask
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicInteger
@@ -103,12 +108,18 @@ class AttackState(
         return type
     }
 
+    private fun refreshToAttackState(player: Player) {
+        player.resetAll()
+        player.teleport(gameMap.zombieSpawn) // todo: teleport according to active shrine
+        player.gameMode = GameMode.SPECTATOR
+    }
+
     private fun selectKit(player: Player, kitType: KitType) {
         player.resetAll()
-        player.teleport(gameMap.zombieSpawn)
+        player.teleport(gameMap.zombieSpawn) // todo: teleport according to active shrine
         KitsManager.setKit(player, kitType)
 
-        if (getPlayerTeam(player) == null) {
+        if (isNewPlayer(player)) {
             zombieTeam.addMember(player)
         }
     }
@@ -132,6 +143,44 @@ class AttackState(
                 }
 
             }
+        }
+    }
+
+    private fun isActiveZombie(player: Player): Boolean = zombieTeam.hasMember(player) && KitsManager.hasKit(player)
+
+    private fun isActiveDwarf(player: Player): Boolean = dwarfTeam.hasMember(player) && KitsManager.hasKit(player)
+
+    private fun isNewPlayer(player: Player): Boolean = getPlayerTeam(player) == null
+
+    @EventHandler
+    private fun onPlayerJoin(event: PlayerJoinEvent) {
+        val player = event.player
+
+        onlinePlayers.add(player)
+        Team.refreshTeamVisibility(player)
+        gameStatusSidebar.sendSidebar(listOf(player))
+
+        if (isNewPlayer(player)) {
+            lobbyStateHandler.refreshToLobbyState(player)
+        } else if (isActiveDwarf(player)) {
+            dwarfTeam.increaseOnlineCount()
+        } else if (isActiveZombie(player)) {
+            zombieTeam.increaseOnlineCount()
+        } else {
+            refreshToAttackState(player)
+            zombieTeam.increaseOnlineCount()
+        }
+    }
+
+    @EventHandler
+    private fun onPlayerQuit(event: PlayerQuitEvent) {
+        val player = event.player
+
+        onlinePlayers.remove(player)
+        if (isActiveDwarf(player)) {
+            dwarfTeam.decreaseOnlineCount()
+        } else if (isActiveZombie(player)) {
+            zombieTeam.decreaseOnlineCount()
         }
     }
 
