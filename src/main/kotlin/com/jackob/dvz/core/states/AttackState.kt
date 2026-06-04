@@ -18,12 +18,16 @@ import com.jackob.dvz.util.async
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.withPrefix
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes.player
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.block.Action
 import org.bukkit.event.entity.FoodLevelChangeEvent
+import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.inventory.InventoryOpenEvent
+import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.scheduler.BukkitTask
@@ -112,7 +116,7 @@ class AttackState(
     private fun refreshToAttackState(player: Player) {
         player.resetAll()
         player.teleport(gameMap.zombieSpawn) // todo: teleport according to active shrine
-        player.gameMode = GameMode.SPECTATOR
+        // todo: add custom spectator mode
     }
 
     private fun selectKit(player: Player, kitType: KitType) {
@@ -154,7 +158,7 @@ class AttackState(
     private fun isNewPlayer(player: Player): Boolean = getPlayerTeam(player) == null
 
     @EventHandler
-    private fun onPlayerJoin(event: PlayerJoinEvent) {
+    fun onPlayerJoin(event: PlayerJoinEvent) {
         val player = event.player
 
         onlinePlayers.add(player)
@@ -174,7 +178,7 @@ class AttackState(
     }
 
     @EventHandler
-    private fun onPlayerQuit(event: PlayerQuitEvent) {
+    fun onPlayerQuit(event: PlayerQuitEvent) {
         val player = event.player
 
         onlinePlayers.remove(player)
@@ -184,6 +188,23 @@ class AttackState(
             zombieTeam.decreaseOnlineCount()
         }
     }
+
+    @EventHandler
+    fun onPlayerDeath(event: PlayerDeathEvent) {
+        val player = event.player
+
+        if (isActiveDwarf(player)) {
+            dwarfTeam.removeMember(player)
+            zombieTeam.addMember(player)
+        } else if (isActiveZombie(player)) {
+            killedMonsters.incrementAndGet()
+        }
+
+        KitsManager.unsetKit(player)
+        refreshToAttackState(player)
+        event.drops.clear()
+    }
+
 
     @EventHandler
     fun onFoodLevelChange(event: FoodLevelChangeEvent) {

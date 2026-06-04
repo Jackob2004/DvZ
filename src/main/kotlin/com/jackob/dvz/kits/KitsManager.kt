@@ -19,6 +19,7 @@ object KitsManager {
 
     fun unsetKit(player: Player) {
         playerKits[player.uniqueId]?.onDeactivate()
+        playerKits.remove(player.uniqueId)
     }
 
     fun hasKit(player: Player) = playerKits.containsKey(player.uniqueId)
