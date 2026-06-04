@@ -1,7 +1,7 @@
 package com.jackob.dvz.core.equipment
 
 import com.jackob.dvz.core.GameManager
-import com.jackob.dvz.kits.Team
+import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
 import com.jackob.dvz.util.enchant
@@ -75,7 +75,7 @@ class SuperMortar : CustomItem(), Listener {
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
-        if (GameManager.getPlayerTeam(event.player) != Team.ZOMBIE) return
+        if (GameManager.getPlayerTeam(event.player) != TeamType.ZOMBIE) return
         val block = event.block
         if (block.type != Material.POLISHED_BLACKSTONE_BRICKS) return
 

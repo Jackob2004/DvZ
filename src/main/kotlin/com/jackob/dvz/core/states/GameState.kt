@@ -1,7 +1,7 @@
 package com.jackob.dvz.core.states
 
 import com.jackob.dvz.DvZ
-import com.jackob.dvz.kits.Team
+import com.jackob.dvz.kits.TeamType
 import org.bukkit.entity.Player
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
@@ -14,5 +14,5 @@ sealed interface GameState : Listener {
         HandlerList.unregisterAll(this)
     }
 
-    fun getPlayerTeam(player: Player) : Team?
+    fun getPlayerTeam(player: Player) : TeamType?
 }

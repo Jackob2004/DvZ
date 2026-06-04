@@ -3,7 +3,7 @@ package com.jackob.dvz.core
 import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.states.GameState
 import com.jackob.dvz.core.states.RecruitingState
-import com.jackob.dvz.kits.Team
+import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
 import org.bukkit.entity.Player
@@ -51,7 +51,7 @@ object GameManager {
         return true
     }
 
-    fun getPlayerTeam(player: Player) : Team? {
+    fun getPlayerTeam(player: Player) : TeamType? {
         return gameState.getPlayerTeam(player)
     }
 

@@ -10,13 +10,13 @@ import org.bukkit.NamespacedKey
 
 enum class KitType(
     val kitClass: Class<out BaseKit>,
-    val team: Team,
+    val team: TeamType,
     val isHero: Boolean,
     val displayData: KitDisplay
 ) {
-    WARRIOR(Warrior::class.java, Team.DWARF, false, KitDisplaysStorage.getKitDisplayData("warrior")),
-    ARCHER(Archer::class.java, Team.DWARF, false, KitDisplaysStorage.getKitDisplayData("archer")),
-    ELF(Elf::class.java, Team.DWARF, true, KitDisplaysStorage.getKitDisplayData("elf")),
+    WARRIOR(Warrior::class.java, TeamType.DWARF, false, KitDisplaysStorage.getKitDisplayData("warrior")),
+    ARCHER(Archer::class.java, TeamType.DWARF, false, KitDisplaysStorage.getKitDisplayData("archer")),
+    ELF(Elf::class.java, TeamType.DWARF, true, KitDisplaysStorage.getKitDisplayData("elf")),
     ;
 
     val key: NamespacedKey by lazy {

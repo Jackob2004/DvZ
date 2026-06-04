@@ -10,7 +10,7 @@ import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.HeroPricker
 import com.jackob.dvz.kits.KitType
-import com.jackob.dvz.kits.Team
+import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
@@ -24,7 +24,6 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.withPrefix
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes.player
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.title.Title
 import org.bukkit.Bukkit
@@ -111,7 +110,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
         super.onLeave()
     }
 
-    override fun getPlayerTeam(player: Player): Team? = null
+    override fun getPlayerTeam(player: Player): TeamType? = null
 
     private fun includeHeroKits() {
         heroPicker?.let {
@@ -177,7 +176,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
         val playerId = player.uniqueId
 
         val basicDwarfKits = KitType.entries
-            .filter { !it.isHero && it.team == Team.DWARF }
+            .filter { !it.isHero && it.team == TeamType.DWARF }
             .map {
                 createItem(it.displayData.icon) {
                     name = it.displayData.name

@@ -6,7 +6,7 @@ import com.jackob.dvz.core.equipment.CustomItemType
 import com.jackob.dvz.core.equipment.EquipmentRegister
 import com.jackob.dvz.core.events.DwarfGoldCollectEvent
 import com.jackob.dvz.core.objects.DarknessTask
-import com.jackob.dvz.kits.Team
+import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ObtainableRegistry
 import com.jackob.dvz.storage.loadConfig
 import com.jackob.dvz.storage.toItemStack
@@ -79,7 +79,7 @@ class GameplayMechanicsHandler : CoreHandler {
         val player = event.player
         event.expToDrop = 0
 
-        if (GameManager.getPlayerTeam(player) != Team.DWARF) return
+        if (GameManager.getPlayerTeam(player) != TeamType.DWARF) return
 
         val blockType = event.block.type
         if (blockType.name.endsWith("_ORE") || blockType == Material.GRAVEL) {
@@ -127,7 +127,7 @@ class GameplayMechanicsHandler : CoreHandler {
         if (event.action != Action.RIGHT_CLICK_BLOCK) return
 
         val player = event.player
-        if (GameManager.getPlayerTeam(player) != Team.DWARF) return
+        if (GameManager.getPlayerTeam(player) != TeamType.DWARF) return
         if (event.hand != EquipmentSlot.HAND) return
         if (isOnCooldown(player)) return
 

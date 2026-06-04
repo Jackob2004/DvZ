@@ -7,9 +7,10 @@ import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
+import com.jackob.dvz.core.objects.Team
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
-import com.jackob.dvz.kits.Team
+import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.ui.PagerMenu
@@ -37,8 +38,6 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.atomic.AtomicInteger
-import org.bukkit.scoreboard.Team as BukkitTeam
 
 class PreparationState(
     private val gameMap: GameMap,
@@ -50,17 +49,9 @@ class PreparationState(
     private val darknessTask: DarknessTask
 ) : GameState {
 
-    private val customBoard = Bukkit.getScoreboardManager().newScoreboard
-
-    private val dwarfTeam = customBoard.registerNewTeam(Team.DWARF.teamName).apply {
-        setAllowFriendlyFire(false)
-        setOption(BukkitTeam.Option.COLLISION_RULE, BukkitTeam.OptionStatus.NEVER)
-        color(Team.DWARF.color)
-    }
+    private val dwarfTeam = Team(TeamType.DWARF)
 
     private val onlinePlayers = CopyOnWriteArraySet<Player>()
-
-    private val onlineDwarfs = AtomicInteger()
 
     private val dwarvenCompass = Compass(generateCompassLocations())
 
@@ -78,7 +69,7 @@ class PreparationState(
         async(period = TimeUnit.SECONDS(1)) {
             with(gameStatusSidebar) {
                 updateLine(3, " <white>${goldVault.getGoldAmount()}")
-                updateLine(2, " <white>${onlineDwarfs.get()}")
+                updateLine(2, " <white>${dwarfTeam.getOnlineCount()}")
                 updateLine(1, " <white>$timer")
                 sendSideBarUpdate(onlinePlayers)
             }
@@ -140,31 +131,29 @@ class PreparationState(
         super.onLeave()
     }
 
-    override fun getPlayerTeam(player: Player): Team? {
-        return if (isActiveDwarf(player)) Team.DWARF else null
+    override fun getPlayerTeam(player: Player): TeamType? {
+        return if (isActiveDwarf(player)) TeamType.DWARF else null
     }
 
     private fun isActiveDwarf(player: Player): Boolean {
-        return dwarfTeam.hasPlayer(player) && KitsManager.hasKit(player)
+        return dwarfTeam.hasMember(player) && KitsManager.hasKit(player)
     }
 
     private fun lastActiveInRecruiting(player: Player): Boolean {
-        return !dwarfTeam.hasPlayer(player) && selectedKits.containsKey(player.uniqueId)
+        return !dwarfTeam.hasMember(player) && selectedKits.containsKey(player.uniqueId)
     }
 
     private fun addDwarf(player: Player, kitType: KitType) {
         player.resetAll()
-        player.scoreboard = customBoard
-        dwarfTeam.addPlayer(player)
+        dwarfTeam.addMember(player)
         player.teleport(gameMap.dwarfSpawn)
         KitsManager.setKit(player, kitType)
         player.inventory.addItem(dwarvenCompass.retrieveItem())
-        onlineDwarfs.incrementAndGet()
     }
 
     private fun openKitSelectionMenu(player: Player) {
         val basicDwarfKits = KitType.entries
-            .filter { !it.isHero && it.team == Team.DWARF }
+            .filter { !it.isHero && it.team == TeamType.DWARF }
             .map {
                 createItem(it.displayData.icon) {
                     name = it.displayData.name
@@ -207,7 +196,7 @@ class PreparationState(
         val player = event.player
 
         onlinePlayers.add(player)
-        player.scoreboard = customBoard
+        dwarfTeam.refreshTeamVisibility(player)
         gameStatusSidebar.sendSidebar(listOf(player))
 
         if (!isActiveDwarf(player)) {
@@ -215,7 +204,7 @@ class PreparationState(
         } else if (lastActiveInRecruiting(player)) {
             addDwarf(player, selectedKits[player.uniqueId]!!)
         } else {
-            onlineDwarfs.incrementAndGet()
+            dwarfTeam.increaseOnlineCount()
         }
     }
 
@@ -225,7 +214,7 @@ class PreparationState(
 
         onlinePlayers.remove(player)
         if (isActiveDwarf(player)) {
-            onlineDwarfs.decrementAndGet()
+            dwarfTeam.decreaseOnlineCount()
         }
     }
 
