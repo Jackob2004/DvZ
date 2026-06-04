@@ -21,7 +21,7 @@ class DarknessTask {
     }
 
     fun stopTask() {
-        if (task != null && task!!.isCancelled) {
+        if (task != null && !task!!.isCancelled) {
             task!!.cancel()
             task = null
         }
