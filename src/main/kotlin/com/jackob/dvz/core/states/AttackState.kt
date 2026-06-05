@@ -1,6 +1,7 @@
 package com.jackob.dvz.core.states
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.equipment.Compass
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
@@ -19,15 +20,10 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.withPrefix
 import org.bukkit.Bukkit
-import org.bukkit.GameMode
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
-import org.bukkit.event.block.Action
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.entity.PlayerDeathEvent
-import org.bukkit.event.inventory.InventoryOpenEvent
-import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.scheduler.BukkitTask
@@ -41,6 +37,7 @@ class AttackState(
     private val gameplayHandler: GameplayMechanicsHandler,
     private val goldVault: GoldVault,
     private val darknessTask: DarknessTask,
+    private val dwarvenCompass: Compass,
     private val dwarfTeam: Team
 ) : GameState {
 
@@ -85,7 +82,7 @@ class AttackState(
         lobbyStateHandler.registerHandler(DvZ.INSTANCE)
         lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
         gameplayHandler.registerHandler(DvZ.INSTANCE)
-
+        dwarvenCompass.registerCompass()
         onlinePlayers.addAll(Bukkit.getOnlinePlayers())
         gameStatusSidebar.sendSidebar(onlinePlayers)
         darknessTask.startTask(onlinePlayers)

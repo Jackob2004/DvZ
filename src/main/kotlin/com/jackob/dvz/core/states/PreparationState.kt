@@ -105,7 +105,7 @@ class PreparationState(
         lobbyStateHandler.registerHandler(DvZ.INSTANCE)
         lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
         gameplayHandler.registerHandler(DvZ.INSTANCE)
-        DvZ.INSTANCE.server.pluginManager.registerEvents(dwarvenCompass, DvZ.INSTANCE)
+        dwarvenCompass.registerCompass()
 
         for ((uuid, kitType) in selectedKits) {
             uuid.toPlayer()?.let { player ->
@@ -131,7 +131,7 @@ class PreparationState(
         gameplayHandler.unregisterHandler()
         darknessTask.stopTask()
         onlinePlayers.clear()
-        HandlerList.unregisterAll(dwarvenCompass)
+        dwarvenCompass.unregisterCompass()
 
         super.onLeave()
     }
@@ -203,6 +203,7 @@ class PreparationState(
                 gameplayHandler,
                 goldVault,
                 darknessTask,
+                dwarvenCompass,
                 dwarfTeam
             )
         )

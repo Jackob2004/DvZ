@@ -1,5 +1,6 @@
 package com.jackob.dvz.core.equipment
 
+import com.jackob.dvz.DvZ
 import com.jackob.dvz.ui.Menu
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
@@ -9,6 +10,7 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
@@ -33,6 +35,14 @@ class Compass(val locations: List<NamedLocation>) : CustomItem(), Listener {
                 }
             }
         }
+    }
+
+    fun registerCompass() {
+        DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+    }
+
+    fun unregisterCompass() {
+        HandlerList.unregisterAll(this)
     }
 
     override val item: ItemStack = createItem(Material.COMPASS) {
