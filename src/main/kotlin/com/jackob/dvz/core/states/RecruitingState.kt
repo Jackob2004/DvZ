@@ -229,9 +229,9 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 button(index.plus(1).digitToChar()) {
                     icon = createItem(Material.ENCHANTING_TABLE) {
                         name = "<yellow>Shrine (#${index + 1})"
-                        onClick = {
-                            teleport(it, location)
-                        }
+                    }
+                    onClick = {
+                        teleport(it, location)
                     }
                 }
             }
@@ -239,9 +239,9 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
             button('L') {
                 icon = createItem(Material.DIRT) {
                     name = "<white>Lobby"
-                    onClick = {
-                        teleport(it, MapStorage.LOBBY_SPAWN!!)
-                    }
+                }
+                onClick = {
+                    teleport(it, MapStorage.LOBBY_SPAWN!!)
                 }
             }
 
@@ -257,36 +257,36 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
             button('Z') {
                 icon = createItem(Material.ZOMBIE_HEAD) {
                     name = "<dark_red>Zombie spawn"
-                    onClick = {
-                        teleport(it, gameMap.zombieSpawn)
-                    }
+                }
+                onClick = {
+                    teleport(it, gameMap.zombieSpawn)
                 }
             }
 
             button('G') {
                 icon = createItem(Material.GOLD_BLOCK) {
                     name = "<gold>Goldmine"
-                    onClick = {
-                        teleport(it, gameMap.goldmine)
-                    }
+                }
+                onClick = {
+                    teleport(it, gameMap.goldmine)
                 }
             }
 
             button('S') {
                 icon = createItem(Material.IRON_BARS) {
                     name = "<white>Sawmill"
-                    onClick = {
-                        teleport(it, gameMap.sawmill)
-                    }
+                }
+                onClick = {
+                    teleport(it, gameMap.sawmill)
                 }
             }
 
             button('O') {
                 icon = createItem(Material.SPONGE) {
                     name = "<dark_purple>Oil"
-                    onClick = {
-                        teleport(it, gameMap.oil)
-                    }
+                }
+                onClick = {
+                    teleport(it, gameMap.oil)
                 }
             }
 
