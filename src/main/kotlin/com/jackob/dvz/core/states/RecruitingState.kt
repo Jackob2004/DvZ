@@ -178,13 +178,15 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
 
         val basicDwarfKits = KitType.entries
             .filter { !it.isHero && it.team == TeamType.DWARF }
-            .map { it.toItem {
-                if (selectedKits[playerId] != null && selectedKits[playerId] == it) {
-                    enchant(Enchantment.UNBREAKING, 10)
+            .map {
+                it.toItem {
+                    if (selectedKits[playerId] != null && selectedKits[playerId] == it) {
+                        enchant(Enchantment.UNBREAKING, 10)
+                    }
                 }
-            }}
+            }
 
-        object : PagerMenu(basicDwarfKits,true, player,"<gray><b>Select kit") {
+        object : PagerMenu(basicDwarfKits, true, player, "<gray><b>Select kit") {
             override fun handleClick(slot: Int, player: Player) {
                 super.handleClick(slot, player)
 
@@ -217,10 +219,10 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
             val teleport: (Player, Location) -> Unit = { player, location ->
                 if (canChangeGameMap()) {
                     player.teleport(location)
-                    player.closeInventory()
                 } else {
                     player.sendMessage("<yellow>Too late to travel between worlds, wait for the countdown".mm())
                 }
+                player.closeInventory()
             }
 
             for ((index, location) in gameMap.shrines.withIndex()) {
