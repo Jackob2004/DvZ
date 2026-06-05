@@ -2,6 +2,7 @@ package com.jackob.dvz.core.states
 
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.Compass
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
@@ -25,10 +26,11 @@ import org.bukkit.GameMode
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.block.Action
+import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.entity.PlayerDeathEvent
-import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
@@ -66,6 +68,8 @@ class AttackState(
         }
 
     private val kitSelectionMenu = createKitSelectionMenu()
+
+    private val spectators = mutableSetOf<Player>()
 
     private var countdownTask: BukkitTask? = null
 
@@ -120,11 +124,18 @@ class AttackState(
 
     private fun refreshToAttackState(player: Player) {
         player.resetAll()
-        // TODO: implement spectator
+
+        player.gameMode = GameMode.ADVENTURE
+        player.allowFlight = true
+        player.isFlying = true
+        onlinePlayers.forEach { if (it != player) it.hidePlayer(DvZ.INSTANCE, player) }
+        spectators.add(player)
     }
 
     private fun selectKit(player: Player, kitType: KitType) {
         player.resetAll()
+        onlinePlayers.forEach { if (it != player) it.showPlayer(DvZ.INSTANCE, player) }
+        spectators.remove(player)
         player.teleport(gameMap.zombieSpawn) // todo: teleport according to active shrine
         KitsManager.setKit(player, kitType)
 
@@ -148,6 +159,7 @@ class AttackState(
 
                     KitType.getByKey(keys.first())?.let { type ->
                         selectKit(player, type)
+                        player.closeInventory()
                     }
                 }
 
@@ -170,6 +182,7 @@ class AttackState(
         onlinePlayers.add(player)
         Team.refreshTeamVisibility(player)
         gameStatusSidebar.sendSidebar(listOf(player))
+        spectators.forEach { spectator -> player.hidePlayer(DvZ.INSTANCE, spectator) }
 
         if (isNewPlayer(player)) {
             lobbyStateHandler.refreshToLobbyState(player)
@@ -189,6 +202,7 @@ class AttackState(
         val player = event.player
 
         onlinePlayers.remove(player)
+        spectators.remove(player)
         if (isActiveDwarf(player)) {
             dwarfTeam.decreaseOnlineCount()
         } else if (isActiveZombie(player) || isInactiveZombie(player)) {
@@ -214,7 +228,7 @@ class AttackState(
 
     @EventHandler
     fun onPlayerRespawn(event: PlayerRespawnEvent) {
-        event.respawnLocation = gameMap.zombieSpawn
+        event.respawnLocation = gameMap.zombieSpawn // todo: teleport according to active shrineSpawn
     }
 
     @EventHandler
@@ -230,6 +244,30 @@ class AttackState(
         if (event.action == Action.LEFT_CLICK_AIR) {
             kitSelectionMenu.open(player)
         }
+
+        event.isCancelled = true
+    }
+
+    @EventHandler
+    fun onSpectatorAttack(event: EntityDamageByEntityEvent) {
+        val damager = event.damager as? Player ?: return
+        if (damager.gameMode != GameMode.ADVENTURE) return
+
+        event.isCancelled = true
+    }
+
+    @EventHandler
+    fun onSpectatorDamage(event: EntityDamageEvent) {
+        val player = event.entity as? Player ?: return
+        if (player.gameMode != GameMode.ADVENTURE) return
+
+        event.isCancelled = true
+    }
+
+    @EventHandler
+    fun unItemPickUp(event: EntityPickupItemEvent) {
+        val player = event.entity as? Player ?: return
+        if (GameManager.getPlayerTeam(player) != TeamType.ZOMBIE) return
 
         event.isCancelled = true
     }

@@ -6,7 +6,7 @@ import org.bukkit.entity.Player
 import java.util.concurrent.atomic.AtomicInteger
 import org.bukkit.scoreboard.Team as BukkitTeam
 
-class Team(val teamType: TeamType) {
+class Team(teamType: TeamType) {
 
     private val team = customBoard.registerNewTeam(teamType.teamName).apply {
         setAllowFriendlyFire(false)
