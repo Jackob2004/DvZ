@@ -1,5 +1,6 @@
 package com.jackob.dvz.core.states
 
+import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.equipment.Compass
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
@@ -20,12 +21,18 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.withPrefix
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.block.Action
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.inventory.InventoryClickEvent
+import org.bukkit.event.inventory.InventoryOpenEvent
+import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.scheduler.BukkitTask
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicInteger
@@ -113,8 +120,7 @@ class AttackState(
 
     private fun refreshToAttackState(player: Player) {
         player.resetAll()
-        player.teleport(gameMap.zombieSpawn) // todo: teleport according to active shrine
-        // todo: add custom spectator mode
+        // TODO: implement spectator
     }
 
     private fun selectKit(player: Player, kitType: KitType) {
@@ -172,6 +178,7 @@ class AttackState(
         } else if (isActiveZombie(player)) {
             zombieTeam.increaseOnlineCount()
         } else {
+            player.teleport(gameMap.zombieSpawn) // todo: teleport according to active shrine
             refreshToAttackState(player)
             zombieTeam.increaseOnlineCount()
         }
@@ -201,11 +208,31 @@ class AttackState(
         }
 
         KitsManager.unsetKit(player)
-        refreshToAttackState(player)
         event.drops.clear()
         event.droppedExp = 0
     }
 
+    @EventHandler
+    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+        event.respawnLocation = gameMap.zombieSpawn
+    }
+
+    @EventHandler
+    fun onPlayerPostRespawn(event: PlayerPostRespawnEvent) {
+        refreshToAttackState(event.player)
+    }
+
+    @EventHandler
+    fun onSpectatorInteract(event: PlayerInteractEvent) {
+        val player = event.player
+        if (player.gameMode != GameMode.ADVENTURE) return
+
+        if (event.action == Action.LEFT_CLICK_AIR) {
+            kitSelectionMenu.open(player)
+        }
+
+        event.isCancelled = true
+    }
 
     @EventHandler
     fun onFoodLevelChange(event: FoodLevelChangeEvent) {
