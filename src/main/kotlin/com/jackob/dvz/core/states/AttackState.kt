@@ -150,6 +150,8 @@ class AttackState(
 
     private fun isActiveZombie(player: Player): Boolean = zombieTeam.hasMember(player) && KitsManager.hasKit(player)
 
+    private fun isInactiveZombie(player: Player): Boolean = zombieTeam.hasMember(player)
+
     private fun isActiveDwarf(player: Player): Boolean = dwarfTeam.hasMember(player) && KitsManager.hasKit(player)
 
     private fun isNewPlayer(player: Player): Boolean = getPlayerTeam(player) == null
@@ -181,7 +183,7 @@ class AttackState(
         onlinePlayers.remove(player)
         if (isActiveDwarf(player)) {
             dwarfTeam.decreaseOnlineCount()
-        } else if (isActiveZombie(player)) {
+        } else if (isActiveZombie(player) || isInactiveZombie(player)) {
             zombieTeam.decreaseOnlineCount()
         }
     }
@@ -200,6 +202,7 @@ class AttackState(
         KitsManager.unsetKit(player)
         refreshToAttackState(player)
         event.drops.clear()
+        event.droppedExp = 0
     }
 
 
