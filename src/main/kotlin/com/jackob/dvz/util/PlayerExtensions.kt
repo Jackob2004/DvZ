@@ -35,6 +35,9 @@ fun Player.resetAll() {
     walkSpeed = 0.2F
     flySpeed = 0.1F
     foodLevel = 20
+    isFlying = false
+    isInvisible = false
+    allowFlight = false
     gameMode = GameMode.SURVIVAL
 }
 
