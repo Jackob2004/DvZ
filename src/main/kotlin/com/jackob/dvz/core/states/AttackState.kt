@@ -83,6 +83,7 @@ class AttackState(
         lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
         gameplayHandler.registerHandler(DvZ.INSTANCE)
         dwarvenCompass.registerCompass()
+
         onlinePlayers.addAll(Bukkit.getOnlinePlayers())
         gameStatusSidebar.sendSidebar(onlinePlayers)
         darknessTask.startTask(onlinePlayers)
@@ -131,7 +132,7 @@ class AttackState(
             .filter { !it.isHero && it.team == TeamType.ZOMBIE }
             .map { it.toItem() }
 
-        return object : PagerMenu(basicZombieKits, title = "<gray><b>Select kit") {
+        return object : PagerMenu(basicZombieKits, canDeactivate = true, title = "<gray><b>Select kit") {
             override fun handleClick(slot: Int, player: Player) {
                 super.handleClick(slot, player)
 

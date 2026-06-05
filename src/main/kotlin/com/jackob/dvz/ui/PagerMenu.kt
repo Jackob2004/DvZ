@@ -20,6 +20,7 @@ private const val INFO_IDX = 42
 
 open class PagerMenu(
     private val contents: List<ItemStack>,
+    val canDeactivate: Boolean = false,
     player: Player? = null,
     title: String
 ) : CustomMenu {
@@ -37,11 +38,11 @@ open class PagerMenu(
 
         createItem(Material.TIPPED_ARROW) {
             name = "<blue><u>Next page"
-        }.also { setItem(NEXT_PAGE_BTN_IDX, it)}
+        }.also { setItem(NEXT_PAGE_BTN_IDX, it) }
 
         createItem(Material.ARROW) {
             name = "<blue><u>Previous page"
-        }.also { setItem(PREV_PAGE_BTN_IDX, it)}
+        }.also { setItem(PREV_PAGE_BTN_IDX, it) }
 
         createItem(Material.PAPER) {
             name = "<gray>Info"
@@ -56,6 +57,16 @@ open class PagerMenu(
         if (player != null) {
             rerender()
             player.openInventory(menu)
+        }
+    }
+
+    companion object {
+        fun safeDeactivate(player: Player) {
+            val holder = player.openInventory.topInventory.holder
+
+            if (holder is PagerMenu && holder.canDeactivate) {
+                player.closeInventory()
+            }
         }
     }
 
@@ -79,7 +90,7 @@ open class PagerMenu(
         return true
     }
 
-    private fun currentPageContents() : List<ItemStack> {
+    private fun currentPageContents(): List<ItemStack> {
         val firstIdx = currentPage * ITEMS_PER_PAGE
         val possibleLastIdx = firstIdx + ITEMS_PER_PAGE - 1
         val lastIdx = if (possibleLastIdx > contents.size - 1) contents.size - 1 else possibleLastIdx

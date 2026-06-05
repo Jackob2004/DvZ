@@ -117,7 +117,9 @@ class PreparationState(
         onlinePlayers.addAll(Bukkit.getOnlinePlayers())
         gameStatusSidebar.sendSidebar(onlinePlayers)
 
-        Bukkit.broadcast("<gray>Preparation phase has started, <dark_green>dwarfs prepare for battle!!!".withPrefix().mm())
+        Bukkit.broadcast(
+            "<gray>Preparation phase has started, <dark_green>dwarfs prepare for battle!!!".withPrefix().mm()
+        )
         gameMap.dwarfSpawn.world.playSound(gameMap.dwarfSpawn, Sound.ITEM_GOAT_HORN_SOUND_0, 1f, 1f)
         darknessTask.startTask(onlinePlayers)
         countdownTask = startCountdown()
@@ -126,6 +128,7 @@ class PreparationState(
     }
 
     override fun onLeave() {
+        onlinePlayers.forEach { player -> PagerMenu.safeDeactivate(player) }
         lobbyStateHandler.unregisterHandler()
         lobbyRulesHandler.unregisterHandler()
         gameplayHandler.unregisterHandler()
@@ -156,12 +159,12 @@ class PreparationState(
         player.inventory.addItem(dwarvenCompass.retrieveItem())
     }
 
-    private fun createKitSelectionMenu() : PagerMenu {
+    private fun createKitSelectionMenu(): PagerMenu {
         val basicDwarfKits = KitType.entries
             .filter { !it.isHero && it.team == TeamType.DWARF }
             .map { it.toItem() }
 
-        return object : PagerMenu(basicDwarfKits, title = "<gray><b>Select kit") {
+        return object : PagerMenu(basicDwarfKits, canDeactivate = true, title = "<gray><b>Select kit") {
             override fun handleClick(slot: Int, player: Player) {
                 super.handleClick(slot, player)
 

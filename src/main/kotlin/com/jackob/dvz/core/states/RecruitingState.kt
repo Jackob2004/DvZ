@@ -24,6 +24,7 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.withPrefix
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes.player
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.title.Title
 import org.bukkit.Bukkit
@@ -100,6 +101,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
             if (it.world != MapStorage.LOBBY_SPAWN!!) {
                 it.teleport(MapStorage.LOBBY_SPAWN)
             }
+            PagerMenu.safeDeactivate(it)
         }
         playersWaiting.clear()
         countdownTask = null
@@ -182,7 +184,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 }
             }}
 
-        object : PagerMenu(basicDwarfKits, player, "<gray><b>Select kit") {
+        object : PagerMenu(basicDwarfKits,true, player,"<gray><b>Select kit") {
             override fun handleClick(slot: Int, player: Player) {
                 super.handleClick(slot, player)
 
