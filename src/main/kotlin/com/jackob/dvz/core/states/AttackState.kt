@@ -10,6 +10,7 @@ import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Team
+import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
@@ -178,6 +179,11 @@ class AttackState(
 
     private fun isNewPlayer(player: Player): Boolean = getPlayerTeam(player) == null
 
+    private fun updatePlayerDisguise(player: Player) {
+        val kit = KitsManager.getKit(player) as? Disguisable ?: return
+        kit.startDisguise(player)
+    }
+
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
         val player = event.player
@@ -186,6 +192,7 @@ class AttackState(
         Team.refreshTeamVisibility(player)
         gameStatusSidebar.sendSidebar(listOf(player))
         spectators.forEach { spectator -> player.hidePlayer(DvZ.INSTANCE, spectator) }
+        updatePlayerDisguise(player)
 
         if (isNewPlayer(player)) {
             lobbyStateHandler.refreshToLobbyState(player)
@@ -211,6 +218,9 @@ class AttackState(
         } else if (isActiveZombie(player) || isInactiveZombie(player)) {
             zombieTeam.decreaseOnlineCount()
         }
+
+        val kit = KitsManager.getKit(player) as? Disguisable ?: return
+        kit.stopDisguise(player)
     }
 
     @EventHandler
