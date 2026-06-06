@@ -22,6 +22,15 @@ fun sync(init: BukkitRunnable.() -> Unit): BukkitTask {
     }.runTask(DvZ.INSTANCE)
 }
 
+fun sync(delay: Long, init: BukkitRunnable.() -> Unit): BukkitTask {
+    return object : BukkitRunnable() {
+        override fun run() {
+            init()
+        }
+
+    }.runTaskLater(DvZ.INSTANCE, delay)
+}
+
 fun async(delay: Long = 0, period: Long, init: BukkitRunnable.() -> Unit): BukkitTask {
     return object : BukkitRunnable() {
         override fun run() {
