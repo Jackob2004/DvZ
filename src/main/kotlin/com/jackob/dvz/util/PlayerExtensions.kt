@@ -38,6 +38,7 @@ fun Player.resetAll() {
     isFlying = false
     isInvisible = false
     allowFlight = false
+    isCollidable = true
     gameMode = GameMode.SURVIVAL
 }
 

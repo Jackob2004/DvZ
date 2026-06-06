@@ -128,6 +128,8 @@ class AttackState(
         player.gameMode = GameMode.ADVENTURE
         player.allowFlight = true
         player.isFlying = true
+        player.isCollidable = false
+        player.isInvisible = true
         onlinePlayers.forEach { if (it != player) it.hidePlayer(DvZ.INSTANCE, player) }
         spectators.add(player)
     }
