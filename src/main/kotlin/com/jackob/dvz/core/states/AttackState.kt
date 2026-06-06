@@ -95,6 +95,7 @@ class AttackState(
         gameplayHandler.registerHandler(DvZ.INSTANCE)
         dwarvenCompass.registerCompass()
 
+        dwarfTeam.recalculateOnlineCount()
         onlinePlayers.addAll(Bukkit.getOnlinePlayers())
         gameStatusSidebar.sendSidebar(onlinePlayers)
         darknessTask.startTask(onlinePlayers)

@@ -35,6 +35,11 @@ class Team(teamType: TeamType) {
         onlineMembers.decrementAndGet()
     }
 
+    fun recalculateOnlineCount() {
+        val count = Bukkit.getOnlinePlayers().count { hasMember(it) }
+        onlineMembers.set(count)
+    }
+
     fun hasMember(player: Player): Boolean = team.hasPlayer(player)
 
     fun increaseOnlineCount() = onlineMembers.incrementAndGet()
