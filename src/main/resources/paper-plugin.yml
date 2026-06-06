@@ -14,3 +14,6 @@ dependencies:
     WorldGuard:
       load: BEFORE
       required: true
+    LibsDisguises:
+      load: AFTER
+      required: true

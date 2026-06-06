@@ -18,6 +18,12 @@ repositories {
     maven { url = uri("https://repo.codemc.io/repository/maven-snapshots/") }
 
     maven("https://maven.enginehub.org/repo/")
+
+    maven("https://mvn.lib.co.nz/public") {
+        content {
+            includeGroup("me.libraryaddict.disguises")
+        }
+    }
 }
 
 dependencies {
@@ -29,6 +35,7 @@ dependencies {
 
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.16")
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.4.0")
+    compileOnly("me.libraryaddict.disguises:libsdisguises:11.0.18")
 }
 
 tasks {
