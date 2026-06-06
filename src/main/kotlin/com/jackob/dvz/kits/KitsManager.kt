@@ -11,7 +11,7 @@ object KitsManager {
         if (playerKits.containsKey(player.uniqueId)) return
 
         playerKits[player.uniqueId] =
-            type.kitClass.getConstructor(String::class.java, Player::class.java).newInstance(type.toString().lowercase(), player)
+            type.kitClass.getConstructor(String::class.java, UUID::class.java).newInstance(type.toString().lowercase(), player.uniqueId)
                 .apply {
                     onActivate()
                 }

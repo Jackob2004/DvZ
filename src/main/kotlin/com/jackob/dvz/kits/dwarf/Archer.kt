@@ -2,10 +2,10 @@ package com.jackob.dvz.kits.dwarf
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.kits.BaseKit
-import org.bukkit.entity.Player
 import org.bukkit.event.Listener
+import java.util.UUID
 
-class Archer(internalName: String, owner: Player) : BaseKit(internalName, owner) {
+class Archer(internalName: String, owner: UUID) : BaseKit(internalName, owner) {
 
     init {
         ArcherListener

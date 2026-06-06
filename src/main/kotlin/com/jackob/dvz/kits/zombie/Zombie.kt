@@ -2,10 +2,10 @@ package com.jackob.dvz.kits.zombie
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.kits.BaseKit
-import org.bukkit.entity.Player
 import org.bukkit.event.Listener
+import java.util.UUID
 
-class Zombie (internalName: String, owner: Player) : BaseKit(internalName, owner) {
+class Zombie (internalName: String, owner: UUID) : BaseKit(internalName, owner) {
 
     init {
         ZombieListener

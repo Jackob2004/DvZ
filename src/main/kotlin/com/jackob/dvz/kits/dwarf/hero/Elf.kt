@@ -2,10 +2,10 @@ package com.jackob.dvz.kits.dwarf.hero
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.kits.BaseKit
-import org.bukkit.entity.Player
 import org.bukkit.event.Listener
+import java.util.UUID
 
-class Elf(internalName: String, owner: Player) : BaseKit(internalName, owner) {
+class Elf(internalName: String, owner: UUID) : BaseKit(internalName, owner) {
 
     init {
         ElfListener

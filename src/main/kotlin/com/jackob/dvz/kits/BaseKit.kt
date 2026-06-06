@@ -1,13 +1,14 @@
 package com.jackob.dvz.kits
 
 import com.jackob.dvz.util.mm
+import com.jackob.dvz.util.toPlayer
 import org.bukkit.Bukkit
-import org.bukkit.entity.Player
+import java.util.UUID
 
 /**
  * Classes extending BaseKit are expected to provide ctor perfectly matching superclass ctor arguments(order and types).
  */
-abstract class BaseKit(val internalName: String, val owner: Player) {
+abstract class BaseKit(val internalName: String, val ownerId: UUID) {
 
     open fun onActivate() {
         applyPotionEffects()
@@ -19,22 +20,22 @@ abstract class BaseKit(val internalName: String, val owner: Player) {
     open fun onDeactivate() { }
 
     protected fun applyPotionEffects() {
-        owner.addPotionEffects(KitConfigsCache.retrieveKitPotions(internalName))
+        ownerId.toPlayer()?.addPotionEffects(KitConfigsCache.retrieveKitPotions(internalName))
     }
 
     protected fun applyAttributeModifiers() {
         KitConfigsCache.retrieveAttributes(internalName).forEach {
-            owner.getAttribute(it.first)!!.addModifier(it.second)
+            ownerId.toPlayer()?.getAttribute(it.first)!!.addModifier(it.second)
         }
     }
 
     protected fun giveItems() {
         KitConfigsCache.retrieveKitItems(internalName).forEach {
-            owner.inventory.addItem(it)
+            ownerId.toPlayer()?.inventory?.addItem(it)
         }
 
         KitConfigsCache.retrieveKitCustomItems(internalName).forEach {
-            owner.inventory.addItem(it)
+            ownerId.toPlayer()?.inventory?.addItem(it)
         }
     }
 
@@ -44,7 +45,7 @@ abstract class BaseKit(val internalName: String, val owner: Player) {
         if (message.second) {
             Bukkit.broadcast(message.first.mm())
         } else {
-            owner.sendMessage(message.first.mm())
+            ownerId.toPlayer()?.sendMessage(message.first.mm())
         }
     }
 }
