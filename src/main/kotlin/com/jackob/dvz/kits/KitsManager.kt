@@ -24,5 +24,7 @@ object KitsManager {
 
     fun hasKit(player: Player) = playerKits.containsKey(player.uniqueId)
 
+    fun isHero(player: Player) = hasKit(player) && playerKits[player.uniqueId]!!.isHero
+
     fun getKit(player: Player) = playerKits[player.uniqueId]
 }

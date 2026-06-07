@@ -9,6 +9,7 @@ import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
+import com.jackob.dvz.core.objects.Plague
 import com.jackob.dvz.core.objects.Team
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
@@ -104,6 +105,11 @@ class AttackState(
         // start plague
         Bukkit.broadcast("<gray>Attack phase has started, <dark_red>zombies have been released!!!".withPrefix().mm())
         countdownTask = startCountdown()
+        Plague(
+            onlinePlayers.filter { dwarfTeam.hasMember(it) }.map { it.uniqueId },
+            emptyList(), // todo: import from settings
+            ::convertDwarf
+        )
 
         super.onEnter()
     }
@@ -122,6 +128,14 @@ class AttackState(
         }
 
         return type
+    }
+
+    private fun convertDwarf(player: Player) {
+        player.resetAll()
+        dwarfTeam.removeMember(player)
+        zombieTeam.addMember(player)
+        KitsManager.unsetKit(player)
+        KitsManager.setKit(player, KitType.ZOMBIE)
     }
 
     private fun refreshToAttackState(player: Player) {

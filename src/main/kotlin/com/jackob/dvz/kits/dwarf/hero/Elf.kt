@@ -7,6 +7,8 @@ import java.util.UUID
 
 class Elf(internalName: String, owner: UUID) : BaseKit(internalName, owner) {
 
+    override val isHero: Boolean = true
+
     init {
         ElfListener
     }

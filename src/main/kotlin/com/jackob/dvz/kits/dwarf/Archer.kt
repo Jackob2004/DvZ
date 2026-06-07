@@ -7,6 +7,8 @@ import java.util.UUID
 
 class Archer(internalName: String, owner: UUID) : BaseKit(internalName, owner) {
 
+    override val isHero: Boolean = false
+
     init {
         ArcherListener
     }

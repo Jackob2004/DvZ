@@ -13,6 +13,8 @@ class Zombie(internalName: String, owner: UUID) : BaseKit(internalName, owner), 
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.ZOMBIE) { }
 
+    override val isHero: Boolean = false
+
     init {
         ZombieListener
     }

@@ -10,6 +10,8 @@ import java.util.UUID
  */
 abstract class BaseKit(val internalName: String, val ownerId: UUID) {
 
+    abstract val isHero: Boolean
+
     open fun onActivate() {
         applyPotionEffects()
         applyAttributeModifiers()
