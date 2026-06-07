@@ -24,7 +24,6 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.withPrefix
-import io.papermc.paper.command.brigadier.argument.ArgumentTypes.player
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.title.Title
 import org.bukkit.Bukkit
@@ -46,7 +45,6 @@ import org.bukkit.inventory.InventoryHolder
 import org.bukkit.inventory.ItemStack
 import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
-import kotlin.math.max
 
 private const val RECRUITING_PERMISSION = "dvz.recruiting.interact"
 
@@ -294,7 +292,8 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
     }
 
     private fun updateInfoBar() {
-        val barProgressLevel = max((playersWaiting.size * 100.0F / ConfigStorage.REQUIRED_PLAYERS) / 100.0F, 1.0F)
+        val barProgressLevel =
+            ((playersWaiting.size * 100.0F / ConfigStorage.REQUIRED_PLAYERS) / 100.0F).coerceIn(0.0F, 1.0F)
         gameInfoBar.name("$INFO_BAR_MAP${gameMap.name} $INFO_BAR_PLAYERS${playersWaiting.size}/${ConfigStorage.REQUIRED_PLAYERS}".mm())
         gameInfoBar.progress(barProgressLevel)
     }
