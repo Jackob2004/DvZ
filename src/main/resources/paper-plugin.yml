@@ -11,6 +11,9 @@ dependencies:
     Multiverse-Core:
       load: BEFORE
       required: false
+    WorldEdit:
+      load: BEFORE
+      required: true
     WorldGuard:
       load: BEFORE
       required: true
