@@ -9,6 +9,20 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.updateItem
 import com.jackob.dvz.util.withPrefix
+import com.sk89q.worldedit.IncompleteRegionException
+import com.sk89q.worldedit.LocalSession
+import com.sk89q.worldedit.WorldEdit
+import com.sk89q.worldedit.bukkit.BukkitAdapter
+import com.sk89q.worldedit.regions.Region
+import com.sk89q.worldedit.world.World
+import com.sk89q.worldguard.WorldGuard
+import com.sk89q.worldguard.protection.flags.Flags
+import com.sk89q.worldguard.protection.flags.StateFlag
+import com.sk89q.worldguard.protection.managers.RegionManager
+import com.sk89q.worldguard.protection.managers.storage.StorageException
+import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.event.ClickEvent
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.enchantments.Enchantment
@@ -16,14 +30,11 @@ import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
-import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 
-class MapSetupProcess(private val player: Player) : Listener {
-
-    init {
-        DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
-    }
+class MapSetupProcess @Throws(IllegalStateException::class) constructor(
+    private val player: Player
+) : Listener {
 
     val processWorldName = player.world.name
 
@@ -31,8 +42,39 @@ class MapSetupProcess(private val player: Player) : Listener {
 
     private var selectedShrine = 1
 
+    private var requiredRegions: Array<RequiredRegion>? = null
+
+    private val weWorld: World = BukkitAdapter.adapt(player.world)
+
+    private val weSession: LocalSession = WorldEdit.getInstance().sessionManager.get(BukkitAdapter.adapt(player))
+
+    private val regionManager: RegionManager =
+        WorldGuard.getInstance().platform.regionContainer.get(weWorld)
+            ?: throw IllegalStateException("Internal error, could not manage regions for the world: $processWorldName")
+
+    init {
+        regionManager.setRegions(emptyMap())
+        try {
+            regionManager.saveChanges()
+        } catch (e: StorageException) {
+            e.printStackTrace()
+            throw IllegalStateException("Internal error, could not reset regions to began setup process")
+        }
+
+        DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+    }
+
     private fun canGiveConfigTools(): Boolean = with(gameMap) {
         !name.isNullOrBlank() && totalShrines != null && totalShrines!! > 0
+    }
+
+    private fun locationsSet(): Boolean = with(gameMap) {
+        dwarfSpawn != null &&
+                zombieSpawn != null &&
+                goldMine != null &&
+                sawmill != null &&
+                oil != null &&
+                shrines.size == totalShrines
     }
 
     private fun selectNextShrine() {
@@ -42,18 +84,115 @@ class MapSetupProcess(private val player: Player) : Listener {
         }
     }
 
-    fun isComplete(): Boolean = with(gameMap) {
-        canGiveConfigTools() &&
-                dwarfSpawn != null &&
-                zombieSpawn != null &&
-                goldMine != null &&
-                sawmill != null &&
-                oil != null &&
-                shrines.size == totalShrines
+    private fun generateRequiredRegions() {
+        val regions = mutableListOf(
+            RequiredRegion("zombie-spawn", false), RequiredRegion("dwarf-spawn", false),
+            RequiredRegion("zombie-area", false)
+        )
+
+        for (i in 1..gameMap.totalShrines!!) {
+            regions.add(RequiredRegion("inner-shrine-$i", false))
+            regions.add(RequiredRegion("outer-shrine-$i", false))
+        }
+
+        requiredRegions = regions.toTypedArray()
+    }
+
+    private fun regionsSet(): Boolean {
+        if (requiredRegions == null) return false
+
+        for ((id, _) in requiredRegions) {
+            if (!regionManager.hasRegion(id)) return false
+        }
+
+        return true
+    }
+
+    private fun setRegion(regionId: String, idx: Int) {
+        val selection: Region
+
+        try {
+            selection = weSession.getSelection(weWorld)
+        } catch (ex: IncompleteRegionException) {
+            ex.printStackTrace()
+            player.sendMessage("<red>Please select a region first!".mm())
+            return
+        }
+
+        val region = ProtectedCuboidRegion(regionId, selection.minimumPoint, selection.maximumPoint)
+
+        val regex = "-\\d$".toRegex()
+        when (regionId.replace(regex, "")) {
+            "zombie-spawn" -> configureZombieSpawnRegion(region)
+            "dwarf-spawn", "zombie-area", "inner-shrine" -> configureBasicRegionProtection(region)
+        }
+
+        regionManager.addRegion(region)
+        requiredRegions!![idx].isSet = true
+    }
+
+    private fun configureZombieSpawnRegion(region: ProtectedCuboidRegion) = with(region) {
+        setFlag(Flags.PVP, StateFlag.State.DENY)
+        setFlag(Flags.INVINCIBILITY, StateFlag.State.ALLOW)
+    }
+
+    private fun configureBasicRegionProtection(region: ProtectedCuboidRegion) = with(region) {
+        setFlag(Flags.BLOCK_BREAK, StateFlag.State.DENY)
+        setFlag(Flags.BLOCK_PLACE, StateFlag.State.DENY)
+        setFlag(Flags.CREEPER_EXPLOSION, StateFlag.State.DENY)
+        setFlag(Flags.TNT, StateFlag.State.DENY)
+        setFlag(Flags.FIRE_SPREAD, StateFlag.State.DENY)
+        setFlag(Flags.OTHER_EXPLOSION, StateFlag.State.DENY)
+        setFlag(Flags.GHAST_FIREBALL, StateFlag.State.DENY)
+        setFlag(Flags.WATER_FLOW, StateFlag.State.DENY)
+        setFlag(Flags.LAVA_FLOW, StateFlag.State.DENY)
+    }
+
+    fun setBasicInfo(mapName: String, numberOfShrines: Int) {
+        gameMap.name = mapName
+        gameMap.totalShrines = numberOfShrines
+        generateRequiredRegions()
+    }
+
+    fun isComplete(): Boolean {
+        return canGiveConfigTools() && locationsSet() && regionsSet()
     }
 
     fun closeProcess() {
         HandlerList.unregisterAll(this)
+    }
+
+    fun saveRegions(): Boolean {
+        try {
+            regionManager.save()
+            return true
+        } catch (ex: StorageException) {
+            ex.printStackTrace()
+            player.sendMessage("<red>An unexpected error occurred while saving regions for the map!".mm())
+        }
+
+        return false
+    }
+
+    fun printRegionsConfig(): Boolean {
+        if (requiredRegions == null) return false
+        if (!locationsSet()) return false
+
+        val regionsList = Component.text().append(Component::newline)
+
+        for ((idx, region) in requiredRegions!!.withIndex()) {
+            val isSetColorIndicator = if (region.isSet) "<green>" else "<white>"
+            regionsList.append("<gray> - $isSetColorIndicator${region.id}".mm().clickEvent(ClickEvent.callback {
+                setRegion(region.id, idx)
+                printRegionsConfig()
+            }))
+            regionsList.append(Component::newline).append(Component::newline)
+        }
+
+        player.sendMessage("<u>Click to set selected cuboid as region<newline>(use WorldEdit wand)".withPrefix().mm())
+        player.sendMessage(regionsList.build())
+
+        return true
     }
 
     fun giveConfigTools(): Boolean {
@@ -177,4 +316,6 @@ class MapSetupProcess(private val player: Player) : Listener {
             player.playSound(player.location, sound, 1f, 1f)
         }
     }
+
+    data class RequiredRegion(val id: String, var isSet: Boolean)
 }
