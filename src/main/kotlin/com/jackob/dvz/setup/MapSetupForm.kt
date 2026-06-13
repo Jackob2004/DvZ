@@ -79,9 +79,7 @@ class MapSetupForm : CustomForm {
 
         if (view!!.getText(MAP_KEY)!!.isNotBlank()) {
             val process = MapSetupManager.getProcess(player)!!
-
-            process.gameMap.name = view.getText(MAP_KEY)
-            process.gameMap.totalShrines = view.getFloat(SHRINES_KEY)?.toInt()
+            process.setBasicInfo(view.getText(MAP_KEY)!!, view.getFloat(SHRINES_KEY)!!.toInt())
 
             player.sendMessage("<green>Basic info saved".withPrefix().mm())
         } else {
