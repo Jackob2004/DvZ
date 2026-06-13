@@ -28,10 +28,21 @@ object MapSetupManager : Listener {
         return player.world.name in processes.values.map { it.processWorldName }
     }
 
-    private fun registerProcess(player: Player) {
-        if (!processes.containsKey(player)) {
-            processes[player] = MapSetupProcess(player)
+    /**
+     * @return false if a new process could not register due to exception
+     */
+    private fun registerProcess(player: Player): Boolean {
+        try {
+            if (!processes.containsKey(player)) {
+                val process = MapSetupProcess(player)
+                processes[player] = process
+            }
+            return true
+        } catch (e: IllegalStateException) {
+            e.printStackTrace()
         }
+
+        return false
     }
 
     private fun unregisterProcess(player: Player) {
@@ -42,7 +53,7 @@ object MapSetupManager : Listener {
     }
 
     private fun finishProcess(player: Player, process: MapSetupProcess): Boolean {
-        if (process.isComplete() && MapStorage.saveMap(process.gameMap)) {
+        if (process.isComplete() && process.saveRegions() && MapStorage.saveMap(process.gameMap)) {
             unregisterProcess(player)
             return true
         }
@@ -59,13 +70,14 @@ object MapSetupManager : Listener {
             player.sendMessage("<yellow>Someone else is configuring this map right now!!!".withPrefix().mm())
             return
         }
-        registerProcess(player)
+
+        if (!registerProcess(player)) return
 
         val menu = Menu.create("<b><gray>Map setup menu") {
             val process = processes[player]!!
             pattern(
                 "EFFFFFFFF",
-                "F__P_T__F",
+                "F_P_T_R_F",
                 "CFFFFFFFA"
             )
 
@@ -105,6 +117,22 @@ object MapSetupManager : Listener {
                         )
                     } else {
                         it.sendMessage("<red>You need to fill up basic information first!".withPrefix().mm())
+                    }
+                }
+            }
+
+            button('R') {
+                icon = createItem(Material.BARRIER) {
+                    name = "<gray><i>Print regions to set"
+                    description = """
+                        Don't forget to set locations first
+                    """
+                    enchant(Enchantment.UNBREAKING, 10)
+                }
+                onClick = {
+                    it.closeInventory()
+                    if (!process.printRegionsConfig()) {
+                        it.sendMessage("<red>You need to set locations first!".withPrefix().mm())
                     }
                 }
             }
