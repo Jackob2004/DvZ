@@ -4,12 +4,15 @@ import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.Compass
+import com.jackob.dvz.core.events.ShrineFallEvent
+import com.jackob.dvz.core.events.ShrineTrespassEvent
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Plague
+import com.jackob.dvz.core.objects.ShrineManager
 import com.jackob.dvz.core.objects.Team
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
@@ -75,6 +78,10 @@ class AttackState(
 
     private var countdownTask: BukkitTask? = null
 
+    private val shrineManager = ShrineManager(gameMap.shrines.size, onlinePlayers, gameMap.zombieSpawn.world)
+
+    private var currentZombieSpawn = gameMap.zombieSpawn
+
     private fun startCountdown(): BukkitTask {
         var timer = 0
         return async(period = TimeUnit.SECONDS(1)) {
@@ -110,6 +117,7 @@ class AttackState(
             emptyList(), // todo: import from settings
             ::convertDwarf
         )
+        shrineManager.startShrineTicking()
 
         super.onEnter()
     }
@@ -154,7 +162,7 @@ class AttackState(
         player.resetAll()
         onlinePlayers.forEach { if (it != player) it.showPlayer(DvZ.INSTANCE, player) }
         spectators.remove(player)
-        player.teleport(gameMap.zombieSpawn) // todo: teleport according to active shrine
+        player.teleport(currentZombieSpawn)
         KitsManager.setKit(player, kitType)
 
         if (isNewPlayer(player)) {
@@ -207,6 +215,7 @@ class AttackState(
         gameStatusSidebar.sendSidebar(listOf(player))
         spectators.forEach { spectator -> player.hidePlayer(DvZ.INSTANCE, spectator) }
         updatePlayerDisguise(player)
+        shrineManager.addViewer(player)
 
         if (isNewPlayer(player)) {
             lobbyStateHandler.refreshToLobbyState(player)
@@ -215,7 +224,7 @@ class AttackState(
         } else if (isActiveZombie(player)) {
             zombieTeam.increaseOnlineCount()
         } else {
-            player.teleport(gameMap.zombieSpawn) // todo: teleport according to active shrine
+            player.teleport(currentZombieSpawn)
             refreshToAttackState(player)
             zombieTeam.increaseOnlineCount()
         }
@@ -227,6 +236,7 @@ class AttackState(
 
         onlinePlayers.remove(player)
         spectators.remove(player)
+        shrineManager.removeViewer(player)
         if (isActiveDwarf(player)) {
             dwarfTeam.decreaseOnlineCount()
         } else if (isActiveZombie(player) || isInactiveZombie(player)) {
@@ -255,12 +265,34 @@ class AttackState(
 
     @EventHandler
     fun onPlayerRespawn(event: PlayerRespawnEvent) {
-        event.respawnLocation = gameMap.zombieSpawn // todo: teleport according to active shrineSpawn
+        event.respawnLocation = currentZombieSpawn
     }
 
     @EventHandler
     fun onPlayerPostRespawn(event: PlayerPostRespawnEvent) {
         refreshToAttackState(event.player)
+    }
+
+    @EventHandler
+    fun onShrineFall(event: ShrineFallEvent) {
+        Bukkit.broadcast("<red><b> Shrine ${event.shrineNumber.plus(1)} has fallen!!!".mm())
+        // play global sound
+        if (shrineManager.activateNextShrine()) {
+            currentZombieSpawn = gameMap.shrines[event.shrineNumber]
+        } else {
+            Bukkit.broadcast("<dark_red><b> Zombies destroyed all shines the age of dwarves is over!!!!".mm())
+            shrineManager.stopShrineTicking()
+            // next phase
+        }
+    }
+
+    @EventHandler
+    fun onShrineTrespass(event: ShrineTrespassEvent) {
+        event.zombie.apply {
+            sendMessage("<red><i>You entered shrine protected by dwarves gods!!!".mm())
+            world.strikeLightningEffect(location)
+            health = 0.0
+        }
     }
 
     @EventHandler
