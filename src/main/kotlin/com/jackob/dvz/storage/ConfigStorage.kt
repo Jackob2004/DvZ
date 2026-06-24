@@ -9,4 +9,5 @@ object ConfigStorage {
     val MAP_CHANGE_TIME_LIMIT = DvZ.INSTANCE.config.getInt("map-change-time-limit")
     val PLAYERS_PER_HERO = DvZ.INSTANCE.config.getInt("players-per-hero")
     val HERO_SELECT_TIME = DvZ.INSTANCE.config.getInt("hero-select-time")
+    val RESTART_COUNTDOWN = DvZ.INSTANCE.config.getInt("restart-countdown")
 }

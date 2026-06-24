@@ -18,7 +18,7 @@ class ShrineManager(private val numberOfShrines: Int, private val onlinePlayers:
         WorldGuard.getInstance().platform.regionContainer.get(BukkitAdapter.adapt(world))!!
 
     private val shrines: Array<Shrine> = Array(numberOfShrines) { idx ->
-        Shrine(100, 400, 1 + idx, numberOfShrines + idx, idx, regionManager)
+        Shrine(10, 20, 1 + idx, numberOfShrines + idx, idx, regionManager)
     }
 
     private var currentShrine = 0

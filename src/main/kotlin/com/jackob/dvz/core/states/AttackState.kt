@@ -123,7 +123,19 @@ class AttackState(
     }
 
     override fun onLeave() {
-        TODO("Not yet implemented")
+        lobbyStateHandler.unregisterHandler()
+        lobbyRulesHandler.unregisterHandler()
+        gameplayHandler.unregisterHandler()
+        goldVault.unregisterVault()
+        dwarvenCompass.unregisterCompass()
+
+        darknessTask.stopTask()
+        shrineManager.stopShrineTicking()
+        countdownTask?.cancel()
+        countdownTask = null
+        onlinePlayers.clear()
+        spectators.clear()
+
         super.onLeave()
     }
 
@@ -281,8 +293,7 @@ class AttackState(
             currentZombieSpawn = gameMap.shrines[event.shrineNumber]
         } else {
             Bukkit.broadcast("<dark_red><b> Zombies destroyed all shines the age of dwarves is over!!!!".mm())
-            shrineManager.stopShrineTicking()
-            // next phase
+            GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
         }
     }
 
