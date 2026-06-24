@@ -2,6 +2,7 @@ package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.events.DwarfGoldCollectEvent
+import com.jackob.dvz.core.events.ShrineGoldDepositEvent
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
@@ -27,9 +28,9 @@ class GoldVault : Listener {
 
     private var gold: AtomicInteger = AtomicInteger()
 
-    private var canDirectlyDeposit: Boolean = true
-
     private val goldDepositSound: Sound = Sound.ENTITY_ITEM_PICKUP
+
+    var canDirectlyDeposit: Boolean = true
 
     private fun playDepositSound(player: Player) {
         val pitch = 0.8f + Random.nextFloat() * 0.4f
@@ -62,6 +63,11 @@ class GoldVault : Listener {
         } else {
             event.player.inventory.addItem(ItemStack(Material.GOLD_INGOT, event.amount))
         }
+    }
+
+    @EventHandler
+    fun onShrineDeposit(e: ShrineGoldDepositEvent) {
+        makeDeposit(e.player, e.amount)
     }
 
 }

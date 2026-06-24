@@ -118,6 +118,7 @@ class AttackState(
             ::convertDwarf
         )
         shrineManager.startShrineTicking()
+        goldVault.canDirectlyDeposit = false
         dwarfTeam.onMemberQuit = { count -> handleLastDwarfDeath(count) }
 
         super.onEnter()
