@@ -4,6 +4,7 @@ import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.events.ShrineDamageEvent
 import com.jackob.dvz.core.events.ShrineFallEvent
 import com.jackob.dvz.core.events.ShrineTrespassEvent
+import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
 import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldguard.protection.managers.RegionManager
