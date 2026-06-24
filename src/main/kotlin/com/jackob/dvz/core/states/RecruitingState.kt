@@ -373,7 +373,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
         val player = event.player
         handleTeleportToolClick(event.item, event.action, player)
 
-        if (!event.player.hasPermission(RECRUITING_PERMISSION)) {
+        if (!player.hasPermission(RECRUITING_PERMISSION)) {
             event.isCancelled = true
         }
     }
