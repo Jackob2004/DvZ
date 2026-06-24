@@ -5,3 +5,5 @@ restart-countdown: 15 # seconds
 map-change-time-limit: 5
 players-per-hero: 10
 hero-select-time: 5 # seconds
+armor-repair-cost: 3
+gold-collect-baseline: 3

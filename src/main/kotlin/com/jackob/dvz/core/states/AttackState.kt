@@ -18,16 +18,21 @@ import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.ui.PagerMenu
 import com.jackob.dvz.ui.Sidebar
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.async
+import com.jackob.dvz.util.leftClickItem
 import com.jackob.dvz.util.mm
+import com.jackob.dvz.util.repair
 import com.jackob.dvz.util.resetAll
+import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.withPrefix
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.block.Action
@@ -40,6 +45,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerRespawnEvent
+import org.bukkit.inventory.meta.Damageable
 import org.bukkit.scheduler.BukkitTask
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicInteger
@@ -325,6 +331,21 @@ class AttackState(
         }
 
         event.isCancelled = true
+    }
+
+    @EventHandler
+    fun onArmorRepair(e: PlayerInteractEvent) {
+        val player = e.player
+        if (!isActiveDwarf(player)) return
+        val item = e.leftClickItem ?: return
+        val meta = item.itemMeta as? Damageable ?: return
+
+        if (meta.damage <= 0) return
+        if (!goldVault.makeWithdrawal(ConfigStorage.ARMOR_REPAIR_COST)) return
+
+        if (item.repair(10)) {
+            player.playSound(player.location, Sound.BLOCK_ANVIL_USE, 1f, 1f)
+        }
     }
 
     @EventHandler

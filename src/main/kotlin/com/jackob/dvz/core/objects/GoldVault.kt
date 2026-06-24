@@ -37,17 +37,17 @@ class GoldVault : Listener {
         player.playSound(player.location, goldDepositSound, 1.0f, pitch)
     }
 
-    private fun makeWithdrawal(amount: Int) : Boolean {
+    private fun makeDeposit(player: Player, amount: Int) {
+        gold.set(gold.get() + amount)
+        playDepositSound(player)
+    }
+
+    fun makeWithdrawal(amount: Int): Boolean {
         if (gold.get() == 0) return false
 
         val updatedGold = max(gold.get() - amount, 0)
         gold.set(updatedGold)
         return true
-    }
-
-    private fun makeDeposit(player: Player, amount: Int) {
-        gold.set(gold.get() + amount)
-        playDepositSound(player)
     }
 
     fun getGoldAmount(): Int = gold.get()

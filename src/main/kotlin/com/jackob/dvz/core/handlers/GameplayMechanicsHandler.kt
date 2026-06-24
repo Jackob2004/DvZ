@@ -7,6 +7,7 @@ import com.jackob.dvz.core.equipment.EquipmentRegister
 import com.jackob.dvz.core.events.DwarfGoldCollectEvent
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.ObtainableRegistry
 import com.jackob.dvz.storage.loadConfig
 import com.jackob.dvz.storage.toItemStack
@@ -84,7 +85,8 @@ class GameplayMechanicsHandler : CoreHandler {
         val blockType = event.block.type
         if (blockType.name.endsWith("_ORE") || blockType == Material.GRAVEL) {
             event.isDropItems = false
-            val goldAmount = if (blockType == Material.GRAVEL) 1 else Random.nextInt(3, 6)
+            val goldDropBase = ConfigStorage.GOLD_COLLECT_BASELINE
+            val goldAmount = if (blockType == Material.GRAVEL) 1 else Random.nextInt(goldDropBase, goldDropBase * 2)
             Bukkit.getPluginManager().callEvent(DwarfGoldCollectEvent(player, goldAmount))
         }
 
