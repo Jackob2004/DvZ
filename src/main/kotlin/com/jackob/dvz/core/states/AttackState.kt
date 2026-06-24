@@ -14,6 +14,7 @@ import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Plague
 import com.jackob.dvz.core.objects.ShrineManager
 import com.jackob.dvz.core.objects.Team
+import com.jackob.dvz.core.objects.TemporalShiftTask
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
@@ -28,7 +29,6 @@ import com.jackob.dvz.util.leftClickItem
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.repair
 import com.jackob.dvz.util.resetAll
-import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.withPrefix
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -88,6 +88,8 @@ class AttackState(
 
     private var currentZombieSpawn = gameMap.zombieSpawn
 
+    private val temporalShiftTask = TemporalShiftTask(gameMap.zombieSpawn.world)
+
     private fun startCountdown(): BukkitTask {
         var timer = 0
         return async(period = TimeUnit.SECONDS(1)) {
@@ -114,6 +116,7 @@ class AttackState(
         onlinePlayers.addAll(Bukkit.getOnlinePlayers())
         gameStatusSidebar.sendSidebar(onlinePlayers)
         darknessTask.startTask(onlinePlayers)
+        temporalShiftTask.startTask()
 
         // start plague
         Bukkit.broadcast("<gray>Attack phase has started, <dark_red>zombies have been released!!!".withPrefix().mm())
@@ -138,6 +141,7 @@ class AttackState(
         dwarvenCompass.unregisterCompass()
 
         darknessTask.stopTask()
+        temporalShiftTask.stopTask()
         shrineManager.stopShrineTicking()
         countdownTask?.cancel()
         countdownTask = null
