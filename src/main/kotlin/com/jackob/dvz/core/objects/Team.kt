@@ -6,7 +6,10 @@ import org.bukkit.entity.Player
 import java.util.concurrent.atomic.AtomicInteger
 import org.bukkit.scoreboard.Team as BukkitTeam
 
-class Team(teamType: TeamType) {
+/**
+ * @property onMemberQuit a fn that is called whenever online members count decreases
+ */
+class Team(teamType: TeamType, var onMemberQuit: ((Int) -> Unit)? = null) {
 
     private val team = customBoard.registerNewTeam(teamType.teamName).apply {
         setAllowFriendlyFire(false)
@@ -32,7 +35,7 @@ class Team(teamType: TeamType) {
 
     fun removeMember(player: Player) {
         team.removePlayer(player)
-        onlineMembers.decrementAndGet()
+        decreaseOnlineCount()
     }
 
     fun recalculateOnlineCount() {
@@ -44,7 +47,10 @@ class Team(teamType: TeamType) {
 
     fun increaseOnlineCount() = onlineMembers.incrementAndGet()
 
-    fun decreaseOnlineCount() = onlineMembers.decrementAndGet()
+    fun decreaseOnlineCount() {
+        onlineMembers.decrementAndGet()
+        onMemberQuit?.invoke(getOnlineCount())
+    }
 
     fun getOnlineCount(): Int = onlineMembers.get()
 }

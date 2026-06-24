@@ -118,6 +118,7 @@ class AttackState(
             ::convertDwarf
         )
         shrineManager.startShrineTicking()
+        dwarfTeam.onMemberQuit = { count -> handleLastDwarfDeath(count) }
 
         super.onEnter()
     }
@@ -216,6 +217,13 @@ class AttackState(
     private fun updatePlayerDisguise(player: Player) {
         val kit = KitsManager.getKit(player) as? Disguisable ?: return
         kit.startDisguise(player)
+    }
+
+    private fun handleLastDwarfDeath(count: Int) {
+        if (count != 0) return
+
+        Bukkit.broadcast("<red>All dwarfs died!".mm())
+        GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
     }
 
     @EventHandler
