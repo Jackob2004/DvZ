@@ -82,7 +82,7 @@ class AttackState(
 
     private val spectators = mutableSetOf<Player>()
 
-    private var countdownTask: BukkitTask? = null
+    private var counterTask: BukkitTask? = null
 
     private val shrineManager = ShrineManager(gameMap.shrines.size, onlinePlayers, gameMap.zombieSpawn.world)
 
@@ -90,16 +90,16 @@ class AttackState(
 
     private val temporalShiftTask = TemporalShiftTask(gameMap.zombieSpawn.world)
 
-    private fun startCountdown(): BukkitTask {
-        var timer = 0
+    private fun startCounter(): BukkitTask {
+        var timeElapsed = 0
         return async(period = TimeUnit.SECONDS(1)) {
-            timer++
+            timeElapsed++
             with(gameStatusSidebar) {
                 updateLine(5, " <white>${goldVault.getGoldAmount()}")
                 updateLine(4, " <white>${dwarfTeam.getOnlineCount()}")
                 updateLine(3, " <white>${zombieTeam.getOnlineCount()}")
                 updateLine(2, " <white>${killedMonsters.get()}")
-                updateLine(1, " <white>$timer")
+                updateLine(1, " <white>$timeElapsed")
                 sendSideBarUpdate(onlinePlayers)
             }
         }
@@ -120,7 +120,7 @@ class AttackState(
 
         // start plague
         Bukkit.broadcast("<gray>Attack phase has started, <dark_red>zombies have been released!!!".withPrefix().mm())
-        countdownTask = startCountdown()
+        counterTask = startCounter()
         Plague(
             onlinePlayers.filter { dwarfTeam.hasMember(it) }.map { it.uniqueId },
             emptyList(), // todo: import from settings
@@ -143,8 +143,8 @@ class AttackState(
         darknessTask.stopTask()
         temporalShiftTask.stopTask()
         shrineManager.stopShrineTicking()
-        countdownTask?.cancel()
-        countdownTask = null
+        counterTask?.cancel()
+        counterTask = null
         onlinePlayers.clear()
         spectators.clear()
 
