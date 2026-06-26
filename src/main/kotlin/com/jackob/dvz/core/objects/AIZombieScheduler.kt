@@ -20,6 +20,8 @@ import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
+import org.bukkit.entity.Raider
+import org.bukkit.entity.Vindicator
 import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
@@ -58,7 +60,7 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
 
         DisguiseAPI.disguiseNextEntity(zombieDisguise)
 
-        val zombie = (loc.world.spawnEntity(loc, MOB_TYPE) as LivingEntity).apply {
+        val zombie = (loc.world.spawnEntity(loc, MOB_TYPE) as Raider).apply {
             val healthVal = 40.0
 
             getAttribute(Attribute.MOVEMENT_SPEED)?.baseValue = 0.40
@@ -67,6 +69,9 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
             getAttribute(Attribute.FOLLOW_RANGE)?.baseValue = 25.0
 
             health = healthVal
+            isPatrolLeader = false
+            equipment.helmet = null
+            canPickupItems = false
         }
 
         return zombie
