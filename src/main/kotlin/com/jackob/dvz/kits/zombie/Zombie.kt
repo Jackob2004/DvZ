@@ -15,6 +15,8 @@ class Zombie(internalName: String, owner: UUID) : BaseKit(internalName, owner), 
 
     override val isHero: Boolean = false
 
+    override val aiZombieEnabled: Boolean = true
+
     init {
         ZombieListener
     }

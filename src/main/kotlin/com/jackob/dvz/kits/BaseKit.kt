@@ -12,6 +12,12 @@ abstract class BaseKit(val internalName: String, val ownerId: UUID) {
 
     abstract val isHero: Boolean
 
+    /**
+     * Indicates whether AI zombies can be spawned around the owner of the kit.
+     * Null means the attribute is not applicable to the given kit.
+     */
+    open val aiZombieEnabled: Boolean? = null
+
     open fun onActivate() {
         applyPotionEffects()
         applyAttributeModifiers()
