@@ -42,6 +42,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.entity.PlayerDeathEvent
@@ -361,6 +362,12 @@ class AttackState(
         if (item.repair(10)) {
             player.playSound(player.location, Sound.BLOCK_ANVIL_USE, 1f, 1f)
         }
+    }
+
+    @EventHandler
+    fun onEntityDeath(e: EntityDeathEvent) {
+        e.droppedExp = 0
+        e.drops.clear()
     }
 
     @EventHandler
