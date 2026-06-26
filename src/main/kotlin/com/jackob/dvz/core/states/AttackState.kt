@@ -9,6 +9,7 @@ import com.jackob.dvz.core.events.ShrineTrespassEvent
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
+import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Plague
@@ -30,6 +31,9 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.repair
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.withPrefix
+import com.sk89q.worldedit.bukkit.BukkitAdapter
+import com.sk89q.worldguard.WorldGuard
+import com.sk89q.worldguard.protection.managers.RegionManager
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Sound
@@ -61,6 +65,9 @@ class AttackState(
     private val dwarfTeam: Team
 ) : GameState {
 
+    private val regionManager: RegionManager =
+        WorldGuard.getInstance().platform.regionContainer.get(BukkitAdapter.adapt(gameMap.zombieSpawn.world))!!
+
     private val zombieTeam = Team(TeamType.ZOMBIE)
 
     private val onlinePlayers = CopyOnWriteArraySet<Player>()
@@ -84,11 +91,13 @@ class AttackState(
 
     private var counterTask: BukkitTask? = null
 
-    private val shrineManager = ShrineManager(gameMap.shrines.size, onlinePlayers, gameMap.zombieSpawn.world)
+    private val shrineManager = ShrineManager(gameMap.shrines.size, onlinePlayers, regionManager)
 
     private var currentZombieSpawn = gameMap.zombieSpawn
 
     private val temporalShiftTask = TemporalShiftTask(gameMap.zombieSpawn.world)
+
+    private val zombieScheduler = AIZombieScheduler(onlinePlayers, regionManager)
 
     private fun startCounter(): BukkitTask {
         var timeElapsed = 0
@@ -117,6 +126,7 @@ class AttackState(
         gameStatusSidebar.sendSidebar(onlinePlayers)
         darknessTask.startTask(onlinePlayers)
         temporalShiftTask.startTask()
+        zombieScheduler.startScheduling()
 
         // start plague
         Bukkit.broadcast("<gray>Attack phase has started, <dark_red>zombies have been released!!!".withPrefix().mm())
@@ -142,6 +152,7 @@ class AttackState(
 
         darknessTask.stopTask()
         temporalShiftTask.stopTask()
+        zombieScheduler.stopScheduling()
         shrineManager.stopShrineTicking()
         counterTask?.cancel()
         counterTask = null
