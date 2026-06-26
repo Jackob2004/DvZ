@@ -41,7 +41,7 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
     private val zombieArea: ProtectedRegion = regions.getRegion("zombie-area")!!
 
     companion object {
-        private val MOB_TYPE = EntityType.VINDICATOR
+        val MOB_TYPE = EntityType.VINDICATOR
 
         private val SPAWN_CORD_MODIFIERS: Array<DoubleArray> = arrayOf(
             doubleArrayOf(-3.0, 3.0),

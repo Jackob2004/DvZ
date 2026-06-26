@@ -366,6 +366,12 @@ class AttackState(
 
     @EventHandler
     fun onEntityDeath(e: EntityDeathEvent) {
+        val attacker = e.damageSource.causingEntity as? Player
+
+        if (e.entity.type == AIZombieScheduler.MOB_TYPE && attacker != null && isActiveDwarf(attacker)) {
+            killedMonsters.incrementAndGet()
+        }
+
         e.droppedExp = 0
         e.drops.clear()
     }
