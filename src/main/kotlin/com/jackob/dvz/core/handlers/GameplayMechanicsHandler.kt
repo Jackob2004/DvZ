@@ -11,6 +11,7 @@ import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.ObtainableRegistry
 import com.jackob.dvz.storage.loadConfig
 import com.jackob.dvz.storage.toItemStack
+import com.jackob.dvz.util.CooldownUtil
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
 import com.jackob.dvz.util.name
@@ -34,17 +35,16 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
-import java.util.UUID
 import kotlin.random.Random
 
-private const val EQUIPMENT_COOLDOWN = 500
+private const val EQUIPMENT_COOLDOWN = 500L
 
 /**
  * Handles gameplay mechanics that are shared across multiple game states
  */
 class GameplayMechanicsHandler : CoreHandler {
 
-    val equipmentCooldowns: MutableMap<UUID, Long> = HashMap()
+    val equipmentCooldowns = CooldownUtil(EQUIPMENT_COOLDOWN)
 
     val obtainables: Map<Material, Pair<ItemStack, Sound>> =
         loadConfig<ObtainableRegistry>("obtainable_config.yml")!!.obtainables.associateTo(
@@ -55,20 +55,6 @@ class GameplayMechanicsHandler : CoreHandler {
 
     companion object {
         val UNPLACEABLE_KEY = NamespacedKey(DvZ.INSTANCE, "unplaceable")
-    }
-
-    private fun isOnCooldown(player: Player): Boolean {
-        val playerId = player.uniqueId
-
-        val currentTimeStamp = System.currentTimeMillis()
-        val lastClick = equipmentCooldowns.putIfAbsent(playerId, currentTimeStamp) ?: return true
-
-        if (currentTimeStamp - lastClick > EQUIPMENT_COOLDOWN) {
-            equipmentCooldowns[playerId] = currentTimeStamp
-            return false
-        }
-
-        return true
     }
 
     private fun handleObtainableItems(clickedBlock: Material): Pair<ItemStack, Sound>? {
@@ -131,7 +117,7 @@ class GameplayMechanicsHandler : CoreHandler {
         val player = event.player
         if (GameManager.getPlayerTeam(player) != TeamType.DWARF) return
         if (event.hand != EquipmentSlot.HAND) return
-        if (isOnCooldown(player)) return
+        if (equipmentCooldowns.isOnCooldown(player)) return
 
         val itemInHand = if (event.item == null) Material.AIR else event.item!!.type
         val clickedBlock = event.clickedBlock!!.type
