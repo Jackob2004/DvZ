@@ -7,8 +7,8 @@ import com.jackob.dvz.core.events.ShrineFallEvent
 import com.jackob.dvz.core.events.ShrineGoldDepositEvent
 import com.jackob.dvz.core.events.ShrineTrespassEvent
 import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.util.isInRegion
 import com.jackob.dvz.util.removeItem
-import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldguard.protection.managers.RegionManager
 import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import org.bukkit.Bukkit
@@ -52,14 +52,6 @@ class Shrine(
         }
     }
 
-    private fun isInRegion(region: ProtectedRegion, player: Player): Boolean {
-        val loc = player.location
-
-        val weVector = BlockVector3.at(loc.x, loc.y, loc.z)
-
-        return region.contains(weVector)
-    }
-
     private fun takeDamage(zombies: Collection<Player>) {
         if (currentShield > 0) {
             currentShield -= damageRate
@@ -83,7 +75,7 @@ class Shrine(
 
     private fun handleActiveState(players: Collection<Player>) {
         val (zombies, dwarves) = players
-            .filter { isInRegion(innerShrine, it) }
+            .filter { it.isInRegion(innerShrine) }
             .partition { GameManager.getPlayerTeam(it) == TeamType.ZOMBIE }
 
         val zombieCount = zombies.size
@@ -98,7 +90,7 @@ class Shrine(
 
     private fun handleInactiveState(players: Collection<Player>) {
         players.filter {
-            GameManager.getPlayerTeam(it) == TeamType.ZOMBIE && isInRegion(outerShrine, it)
+            GameManager.getPlayerTeam(it) == TeamType.ZOMBIE && it.isInRegion(outerShrine)
         }.forEach {
             Bukkit.getPluginManager().callEvent(ShrineTrespassEvent(it))
         }
@@ -140,7 +132,7 @@ class Shrine(
 
         val item = player.inventory.itemInMainHand
         if (item.type != Material.GOLD_INGOT) return
-        if (!isInRegion(innerShrine, player)) return
+        if (!player.isInRegion(innerShrine)) return
 
         val amount = 1
         player.removeItem(item, amount)

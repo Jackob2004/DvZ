@@ -5,21 +5,15 @@ import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.sync
-import com.sk89q.worldedit.bukkit.BukkitAdapter
-import com.sk89q.worldguard.WorldGuard
 import com.sk89q.worldguard.protection.managers.RegionManager
 import net.kyori.adventure.bossbar.BossBar
-import org.bukkit.World
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitTask
 
-class ShrineManager(private val numberOfShrines: Int, private val onlinePlayers: Collection<Player>, world: World) {
-
-    private val regionManager: RegionManager =
-        WorldGuard.getInstance().platform.regionContainer.get(BukkitAdapter.adapt(world))!!
+class ShrineManager(private val numberOfShrines: Int, private val onlinePlayers: Collection<Player>, regions: RegionManager) {
 
     private val shrines: Array<Shrine> = Array(numberOfShrines) { idx ->
-        Shrine(100, 400, 1 + idx, numberOfShrines + idx, idx, regionManager)
+        Shrine(100, 400, 1 + idx, numberOfShrines + idx, idx, regions)
     }
 
     private var currentShrine = 0
