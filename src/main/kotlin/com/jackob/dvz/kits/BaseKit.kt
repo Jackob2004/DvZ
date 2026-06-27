@@ -18,6 +18,8 @@ abstract class BaseKit(val internalName: String, val ownerId: UUID) {
      */
     open val aiZombieEnabled: Boolean? = null
 
+    val kitAttributes: KitAttributes = KitConfigsCache.retrieveKitAttributes(internalName)
+
     open fun onActivate() {
         applyPotionEffects()
         applyAttributeModifiers()

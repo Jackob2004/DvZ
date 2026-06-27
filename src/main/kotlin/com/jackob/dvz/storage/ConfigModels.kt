@@ -2,6 +2,7 @@ package com.jackob.dvz.storage
 
 import com.charleskorn.kaml.Yaml
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.kits.KitAttributes
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.toAttribute
 import io.papermc.paper.registry.RegistryAccess
@@ -71,7 +72,8 @@ data class KitConfig(
     val attributes: List<AttributeConfig> = emptyList(),
     val items: List<ItemConfig> = emptyList(),
     val customItems: List<CustomItemConfig> = emptyList(),
-    val activateMessage: ActivationMessage
+    val activateMessage: ActivationMessage,
+    val kitAttributes: KitAttributes
 )
 
 @Serializable

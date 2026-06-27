@@ -41,4 +41,8 @@ object KitConfigsCache {
         val serialized = kitsCache[kitName]!!.activateMessage
         return Pair(serialized.message, serialized.broadcast)
     }
+
+    fun retrieveKitAttributes(kitName: String): KitAttributes {
+        return kitsCache[kitName]!!.kitAttributes
+    }
 }
