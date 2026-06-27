@@ -6,6 +6,7 @@ import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.Compass
 import com.jackob.dvz.core.events.ShrineFallEvent
 import com.jackob.dvz.core.events.ShrineTrespassEvent
+import com.jackob.dvz.core.events.ZombieDeathEvent
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
@@ -13,6 +14,7 @@ import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Plague
+import com.jackob.dvz.core.objects.RampageManager
 import com.jackob.dvz.core.objects.ShrineManager
 import com.jackob.dvz.core.objects.Team
 import com.jackob.dvz.core.objects.TemporalShiftTask
@@ -102,6 +104,8 @@ class AttackState(
 
     private val temporalShiftTask = TemporalShiftTask(gameMap.zombieSpawn.world)
 
+    private val rampageManager = RampageManager()
+
     private fun startCounter(): BukkitTask {
         var timeElapsed = 0
         return async(period = TimeUnit.SECONDS(1)) {
@@ -130,6 +134,7 @@ class AttackState(
         darknessTask.startTask(onlinePlayers)
         temporalShiftTask.startTask()
         zombieScheduler.startScheduling()
+        rampageManager.register()
 
         // start plague
         Bukkit.broadcast("<gray>Attack phase has started, <dark_red>zombies have been released!!!".withPrefix().mm())
@@ -152,6 +157,7 @@ class AttackState(
         gameplayHandler.unregisterHandler()
         goldVault.unregisterVault()
         dwarvenCompass.unregisterCompass()
+        rampageManager.unregister()
 
         darknessTask.stopTask()
         temporalShiftTask.stopTask()
@@ -301,6 +307,10 @@ class AttackState(
             zombieTeam.addMember(player)
         } else if (isActiveZombie(player)) {
             killedMonsters.incrementAndGet()
+
+            (event.damageSource.causingEntity as? Player)?.takeIf { isActiveDwarf(it) }?.let {
+                Bukkit.getPluginManager().callEvent(ZombieDeathEvent(it, player))
+            }
         }
 
         KitsManager.unsetKit(player)
@@ -372,6 +382,7 @@ class AttackState(
 
         if (e.entity.type == AIZombieScheduler.MOB_TYPE && attacker != null && isActiveDwarf(attacker)) {
             killedMonsters.incrementAndGet()
+            Bukkit.getPluginManager().callEvent(ZombieDeathEvent(attacker))
         }
 
         e.droppedExp = 0

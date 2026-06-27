@@ -43,4 +43,8 @@ class CooldownUtil(private val cooldownInMilliseconds: Long) {
         cooldownMap[playerId] = System.currentTimeMillis()
     }
 
+    fun wasOnCooldown(player: Player): Boolean {
+        return cooldownMap.containsKey(player.uniqueId)
+    }
+
 }
