@@ -5,6 +5,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Registry
+import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import java.util.UUID
@@ -53,7 +54,7 @@ fun Player.removeItem(item: ItemStack, amountToRemove: Int) {
     }
 }
 
-fun Player.isInRegion(region: ProtectedRegion): Boolean {
+fun Entity.isInRegion(region: ProtectedRegion): Boolean {
     val loc = location
 
     val weVector = BlockVector3.at(loc.x, loc.y, loc.z)

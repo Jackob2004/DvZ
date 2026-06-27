@@ -17,8 +17,8 @@ import me.libraryaddict.disguise.disguisetypes.MobDisguise
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.attribute.Attribute
-import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.entity.Vindicator
 import org.bukkit.event.EventHandler
@@ -34,7 +34,7 @@ import kotlin.math.sqrt
 
 class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: RegionManager) : Listener {
 
-    private val zombieQueue: Queue<Entity> = ArrayDeque(40 * spawningOperationsCap())
+    private val zombieQueue: Queue<LivingEntity> = ArrayDeque(40 * spawningOperationsCap())
 
     private val spawnCooldowns = CooldownUtil(18_000)
 
@@ -58,7 +58,7 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
 
     private fun spawningOperationsCap(): Int = BASE_OPERATIONS + (MULTIPLIER * sqrt(onlinePlayers.size.toDouble())).toInt()
 
-    private fun spawnZombie(loc: Location): Entity {
+    private fun spawnZombie(loc: Location): LivingEntity {
         val zombieDisguise = MobDisguise(DisguiseType.ZOMBIE)
         val watcher = zombieDisguise.watcher
         watcher.itemInMainHand = ItemStack(Material.WOODEN_SWORD)
@@ -163,6 +163,8 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
         task = null
         HandlerList.unregisterAll(this)
     }
+
+    fun getZombieCollection(): Collection<LivingEntity> = zombieQueue
 
     @EventHandler
     fun onZombieTarget(event: EntityTargetEvent) {

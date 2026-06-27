@@ -14,6 +14,8 @@ import com.sk89q.worldguard.protection.managers.RegionManager
 import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.entity.Entity
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
@@ -100,10 +102,16 @@ class Shrine(
         }
     }
 
-    private fun handleInactiveState(players: Collection<Player>) {
+    private fun handleInactiveState(players: Collection<Player>, aiZombies: Collection<LivingEntity>) {
         for (p in players) {
             if (KitsManager.hasKit(p) && GameManager.getPlayerTeam(p) == TeamType.ZOMBIE && p.isInRegion(outerShrine)) {
                 Bukkit.getPluginManager().callEvent(ShrineTrespassEvent(p))
+            }
+        }
+
+        for (zombie in aiZombies) {
+            if (zombie.isValid && !zombie.isDead && zombie.isInRegion(outerShrine)) {
+                Bukkit.getPluginManager().callEvent(ShrineTrespassEvent(zombie))
             }
         }
     }
@@ -111,10 +119,10 @@ class Shrine(
     /**
      * @param players collection of players expected to be on the same word the shrine is
      */
-    fun onUpdate(players: Collection<Player>) {
+    fun onUpdate(players: Collection<Player>, aiZombies: Collection<LivingEntity>) {
         when (currentState) {
             ShrineState.ACTIVE -> handleActiveState(players)
-            ShrineState.INACTIVE -> handleInactiveState(players)
+            ShrineState.INACTIVE -> handleInactiveState(players, aiZombies)
             ShrineState.FALLEN -> Unit
         }
     }

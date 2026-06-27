@@ -36,6 +36,7 @@ import com.sk89q.worldguard.WorldGuard
 import com.sk89q.worldguard.protection.managers.RegionManager
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -92,13 +93,14 @@ class AttackState(
 
     private var counterTask: BukkitTask? = null
 
-    private val shrineManager = ShrineManager(gameMap.shrines.size, onlinePlayers, regionManager)
+    private val zombieScheduler = AIZombieScheduler(onlinePlayers, regionManager)
+
+    private val shrineManager =
+        ShrineManager(gameMap.shrines.size, onlinePlayers, zombieScheduler.getZombieCollection(), regionManager)
 
     private var currentZombieSpawn = gameMap.zombieSpawn
 
     private val temporalShiftTask = TemporalShiftTask(gameMap.zombieSpawn.world)
-
-    private val zombieScheduler = AIZombieScheduler(onlinePlayers, regionManager)
 
     private fun startCounter(): BukkitTask {
         var timeElapsed = 0

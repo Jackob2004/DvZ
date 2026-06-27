@@ -5,10 +5,17 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.sync
 import com.sk89q.worldguard.protection.managers.RegionManager
 import net.kyori.adventure.bossbar.BossBar
+import org.bukkit.entity.Entity
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitTask
 
-class ShrineManager(private val numberOfShrines: Int, private val onlinePlayers: Collection<Player>, regions: RegionManager) {
+class ShrineManager(
+    private val numberOfShrines: Int,
+    private val onlinePlayers: Collection<Player>,
+    private val aiZombies: Collection<LivingEntity>,
+    regions: RegionManager
+) {
 
     private val shrines: Array<Shrine> = Array(numberOfShrines) { idx ->
         Shrine(100, 400, 1 + idx, numberOfShrines + idx, idx, regions)
@@ -43,7 +50,7 @@ class ShrineManager(private val numberOfShrines: Int, private val onlinePlayers:
 
         updateTask = sync(delay = TimeUnit.TICKS(1), period = TimeUnit.SECONDS(1)) {
             for (shrine in shrines) {
-                shrine.onUpdate(onlinePlayers)
+                shrine.onUpdate(onlinePlayers, aiZombies)
             }
             updateInfoBar()
         }
