@@ -6,6 +6,7 @@ import com.jackob.dvz.core.events.ShrineDamageEvent
 import com.jackob.dvz.core.events.ShrineFallEvent
 import com.jackob.dvz.core.events.ShrineGoldDepositEvent
 import com.jackob.dvz.core.events.ShrineTrespassEvent
+import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.util.isInRegion
 import com.jackob.dvz.util.removeItem
@@ -46,6 +47,8 @@ class Shrine(
 
     private val outerShrine: ProtectedRegion = regionManager.getRegion("outer-shrine-${shrineNumber.plus(1)}")!!
 
+    private val zombieBuffer = ArrayList<Player>()
+
     init {
         if (currentState == ShrineState.ACTIVE) {
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
@@ -57,7 +60,7 @@ class Shrine(
             currentShield -= damageRate
         } else {
             currentHealth -= damageRate
-            Bukkit.getPluginManager().callEvent(ShrineDamageEvent(zombies))
+            Bukkit.getPluginManager().callEvent(ShrineDamageEvent(zombies.toList()))
         }
 
         if (currentHealth == 0) {
@@ -74,25 +77,34 @@ class Shrine(
     }
 
     private fun handleActiveState(players: Collection<Player>) {
-        val (zombies, dwarves) = players
-            .filter { it.isInRegion(innerShrine) }
-            .partition { GameManager.getPlayerTeam(it) == TeamType.ZOMBIE }
+        zombieBuffer.clear()
+        var dwarfCount = 0
 
-        val zombieCount = zombies.size
-        val dwarfCount = dwarves.size
+        for (player in players) {
+            if (!KitsManager.hasKit(player) || !player.isInRegion(innerShrine)) continue
+
+            val team = GameManager.getPlayerTeam(player)
+            if (team == TeamType.ZOMBIE) {
+                zombieBuffer.add(player)
+            } else if (team == TeamType.DWARF) {
+                dwarfCount++
+            }
+        }
+
+        val zombieCount = zombieBuffer.size
 
         if (zombieCount == 0 && dwarfCount > 0) {
             applyRegen()
         } else if (zombieCount > 0) {
-            takeDamage(zombies)
+            takeDamage(zombieBuffer)
         }
     }
 
     private fun handleInactiveState(players: Collection<Player>) {
-        players.filter {
-            GameManager.getPlayerTeam(it) == TeamType.ZOMBIE && it.isInRegion(outerShrine)
-        }.forEach {
-            Bukkit.getPluginManager().callEvent(ShrineTrespassEvent(it))
+        for (p in players) {
+            if (KitsManager.hasKit(p) && GameManager.getPlayerTeam(p) == TeamType.ZOMBIE && p.isInRegion(outerShrine)) {
+                Bukkit.getPluginManager().callEvent(ShrineTrespassEvent(p))
+            }
         }
     }
 

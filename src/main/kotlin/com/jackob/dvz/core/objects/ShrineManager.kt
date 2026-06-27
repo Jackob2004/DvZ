@@ -1,7 +1,5 @@
 package com.jackob.dvz.core.objects
 
-import com.jackob.dvz.core.GameManager
-import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.sync
@@ -44,9 +42,8 @@ class ShrineManager(private val numberOfShrines: Int, private val onlinePlayers:
         onlinePlayers.forEach(::addViewer)
 
         updateTask = sync(delay = TimeUnit.TICKS(1), period = TimeUnit.SECONDS(1)) {
-            val filteredPlayers = onlinePlayers.filter { GameManager.getPlayerTeam(it) != null && KitsManager.hasKit(it) }
             for (shrine in shrines) {
-                shrine.onUpdate(filteredPlayers)
+                shrine.onUpdate(onlinePlayers)
             }
             updateInfoBar()
         }
