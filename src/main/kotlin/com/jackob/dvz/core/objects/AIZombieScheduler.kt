@@ -4,6 +4,7 @@ import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.util.CooldownUtil
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.isInRegion
@@ -27,12 +28,13 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityTargetEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.scheduler.BukkitTask
-import java.util.LinkedList
+import java.util.ArrayDeque
 import java.util.Queue
+import kotlin.math.sqrt
 
 class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: RegionManager) : Listener {
 
-    private val zombieQueue: Queue<Entity> = LinkedList()
+    private val zombieQueue: Queue<Entity> = ArrayDeque(40 * spawningOperationsCap())
 
     private val spawnCooldowns = CooldownUtil(18_000)
 
@@ -49,7 +51,12 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
             doubleArrayOf(3.0, 3.0),
             doubleArrayOf(3.0, -3.0),
         )
+
+        private const val BASE_OPERATIONS = 2
+        private val MULTIPLIER = ConfigStorage.AI_ZOMBIE_MULTIPLIER
     }
+
+    private fun spawningOperationsCap(): Int = BASE_OPERATIONS + (MULTIPLIER * sqrt(onlinePlayers.size.toDouble())).toInt()
 
     private fun spawnZombie(loc: Location): Entity {
         val zombieDisguise = MobDisguise(DisguiseType.ZOMBIE)
@@ -111,11 +118,17 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
 
         val spawningRange = 10.0
         val cleanupInterval = 12
+        val spawningInterval = 4
+        val operationsCap = spawningOperationsCap()
 
         var cleanupTimer = 0
+        var spawningTimer = 0
+        var operations = 0
 
         task = sync(period = TimeUnit.SECONDS(1)) {
             for (player in onlinePlayers) {
+                if (operations >= operationsCap) break
+
                 val kit = KitsManager.getKit(player) ?: continue
                 if (kit.aiZombieEnabled != true) continue
                 if (spawnCooldowns.isOnCooldownSafe(player)) continue
@@ -127,13 +140,20 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
                 if (anyDwarfNearby) {
                     spawnZombies(player)
                     spawnCooldowns.putOnCooldown(player)
+                    operations++
                 }
             }
             cleanupTimer++
+            spawningTimer++
 
             if (cleanupTimer >= cleanupInterval) {
                 cleanupTimer = 0
                 removeOldZombies()
+            }
+
+            if (spawningTimer >= spawningInterval) {
+                spawningTimer = 0
+                operations = 0
             }
         }
     }
