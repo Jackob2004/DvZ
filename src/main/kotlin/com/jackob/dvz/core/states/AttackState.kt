@@ -4,6 +4,7 @@ import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.Compass
+import com.jackob.dvz.core.events.DwarfDeathEvent
 import com.jackob.dvz.core.events.ShrineFallEvent
 import com.jackob.dvz.core.events.ShrineTrespassEvent
 import com.jackob.dvz.core.events.ZombieDeathEvent
@@ -308,14 +309,18 @@ class AttackState(
     @EventHandler
     fun onPlayerDeath(event: PlayerDeathEvent) {
         val player = event.player
+        val causingPlayer = event.damageSource.causingEntity as? Player
 
         if (isActiveDwarf(player)) {
             dwarfTeam.removeMember(player)
             zombieTeam.addMember(player)
+
+            val killer = if (causingPlayer != null && isActiveZombie(causingPlayer)) causingPlayer else null
+            Bukkit.getPluginManager().callEvent(DwarfDeathEvent(killer, player))
         } else if (isActiveZombie(player)) {
             killedMonsters.incrementAndGet()
 
-            (event.damageSource.causingEntity as? Player)?.takeIf { isActiveDwarf(it) }?.let {
+            causingPlayer?.takeIf { isActiveDwarf(it) }?.let {
                 Bukkit.getPluginManager().callEvent(ZombieDeathEvent(it, player))
             }
         }

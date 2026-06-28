@@ -1,6 +1,7 @@
 package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.events.DwarfDeathEvent
 import com.jackob.dvz.core.events.LightSourceBreakEvent
 import com.jackob.dvz.core.events.ShrineDamageEvent
 import com.jackob.dvz.kits.KitsManager
@@ -76,7 +77,7 @@ class ManaManger : Listener {
 
         val newAmount = (currentAmount + value).coerceAtMost(MAX_MANA)
 
-        playerManaVaults.put(id,pack(bonus, newAmount))
+        playerManaVaults.put(id, pack(bonus, newAmount))
     }
 
     fun consumeMana(player: Player, cost: Int): Boolean {
@@ -132,6 +133,13 @@ class ManaManger : Listener {
     fun onShrineDamage(e: ShrineDamageEvent) {
         for (p in e.participants) {
             addMana(p, 2)
+        }
+    }
+
+    @EventHandler
+    fun onDwarfDeath(e: DwarfDeathEvent) {
+        e.killer?.let {
+            addMana(it, 10)
         }
     }
 
