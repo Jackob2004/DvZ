@@ -1,6 +1,7 @@
 package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.events.LightSourceBreakEvent
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.sync
@@ -106,6 +107,20 @@ class ManaManger : Listener {
     @EventHandler
     fun onPlayerExpChange(e: PlayerExpChangeEvent) {
         e.amount = 0
+    }
+
+    @EventHandler
+    fun onLightSourceBreak(e: LightSourceBreakEvent) {
+        val playerId = e.zombie.uniqueId
+        if (playerManaVaults.containsKey(playerId)) {
+            val data: Int = playerManaVaults.getInt(playerId)
+            val bonus = getBonus(data)
+            val currentAmount = getAmount(data)
+
+            val newAmount = (currentAmount + 8).coerceAtMost(MAX_MANA)
+
+            playerManaVaults.put(playerId,pack(bonus, newAmount))
+        }
     }
 
 }
