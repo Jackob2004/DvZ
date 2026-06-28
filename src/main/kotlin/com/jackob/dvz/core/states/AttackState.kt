@@ -13,6 +13,7 @@ import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.core.objects.DarknessTask
 import com.jackob.dvz.core.objects.GoldVault
+import com.jackob.dvz.core.objects.ManaManger
 import com.jackob.dvz.core.objects.Plague
 import com.jackob.dvz.core.objects.RampageManager
 import com.jackob.dvz.core.objects.ShrineManager
@@ -105,6 +106,8 @@ class AttackState(
 
     private val rampageManager = RampageManager()
 
+    private val manaManager = ManaManger()
+
     private fun startCounter(): BukkitTask {
         var timeElapsed = 0
         return async(period = TimeUnit.SECONDS(1)) {
@@ -134,6 +137,7 @@ class AttackState(
         temporalShiftTask.startTask()
         zombieScheduler.startScheduling()
         rampageManager.register()
+        manaManager.register()
 
         // start plague
         Bukkit.broadcast("<gray>Attack phase has started, <dark_red>zombies have been released!!!".withPrefix().mm())
@@ -157,6 +161,7 @@ class AttackState(
         goldVault.unregisterVault()
         dwarvenCompass.unregisterCompass()
         rampageManager.unregister()
+        manaManager.unregister()
 
         darknessTask.stopTask()
         temporalShiftTask.stopTask()
@@ -187,6 +192,7 @@ class AttackState(
         zombieTeam.addMember(player)
         KitsManager.unsetKit(player)
         KitsManager.setKit(player, KitType.ZOMBIE)
+        manaManager.addPlayer(player, 1)
     }
 
     private fun refreshToAttackState(player: Player) {
@@ -207,6 +213,7 @@ class AttackState(
         spectators.remove(player)
         player.teleport(currentZombieSpawn)
         KitsManager.setKit(player, kitType)
+        manaManager.addPlayer(player)
 
         if (isNewPlayer(player)) {
             zombieTeam.addMember(player)
