@@ -5,7 +5,7 @@ import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.CustomItemType
 import com.jackob.dvz.core.equipment.EquipmentRegister
 import com.jackob.dvz.core.events.DwarfGoldCollectEvent
-import com.jackob.dvz.core.objects.DarknessTask
+import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.ObtainableRegistry
@@ -44,9 +44,9 @@ private const val EQUIPMENT_COOLDOWN = 500L
  */
 class GameplayMechanicsHandler : CoreHandler {
 
-    val equipmentCooldowns = CooldownUtil(EQUIPMENT_COOLDOWN)
+    private val equipmentCooldowns = CooldownUtil(EQUIPMENT_COOLDOWN)
 
-    val obtainables: Map<Material, Pair<ItemStack, Sound>> =
+    private val obtainables: Map<Material, Pair<ItemStack, Sound>> =
         loadConfig<ObtainableRegistry>("obtainable_config.yml")!!.obtainables.associateTo(
             HashMap()
         ) {
@@ -175,7 +175,7 @@ class GameplayMechanicsHandler : CoreHandler {
                     description = """
                       <gray> Place to see in the darkness
                 """
-                    persistentDataContainer.set(DarknessTask.RADIANCE, PersistentDataType.BOOLEAN, true)
+                    persistentDataContainer.set(DarknessManager.RADIANCE, PersistentDataType.BOOLEAN, true)
                 }
                 soundEffect = Sound.BLOCK_FIRE_AMBIENT
             }

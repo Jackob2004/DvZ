@@ -6,7 +6,7 @@ import com.jackob.dvz.core.equipment.Compass
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
-import com.jackob.dvz.core.objects.DarknessTask
+import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Team
 import com.jackob.dvz.kits.KitType
@@ -28,7 +28,6 @@ import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
-import org.bukkit.event.HandlerList
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.player.PlayerJoinEvent
@@ -46,7 +45,7 @@ class PreparationState(
     private val lobbyRulesHandler: LobbyRulesHandler,
     private val gameplayHandler: GameplayMechanicsHandler,
     private val goldVault: GoldVault,
-    private val darknessTask: DarknessTask
+    private val darknessManager: DarknessManager
 ) : GameState {
 
     private val dwarfTeam = Team(TeamType.DWARF)
@@ -121,7 +120,7 @@ class PreparationState(
             "<gray>Preparation phase has started, <dark_green>dwarfs prepare for battle!!!".withPrefix().mm()
         )
         gameMap.dwarfSpawn.world.playSound(gameMap.dwarfSpawn, Sound.ITEM_GOAT_HORN_SOUND_0, 1f, 1f)
-        darknessTask.startTask(onlinePlayers)
+        darknessManager.register(onlinePlayers)
         countdownTask = startCountdown()
 
         super.onEnter()
@@ -132,7 +131,7 @@ class PreparationState(
         lobbyStateHandler.unregisterHandler()
         lobbyRulesHandler.unregisterHandler()
         gameplayHandler.unregisterHandler()
-        darknessTask.stopTask()
+        darknessManager.unregister()
         onlinePlayers.clear()
         dwarvenCompass.unregisterCompass()
 
@@ -205,7 +204,7 @@ class PreparationState(
                 lobbyRulesHandler,
                 gameplayHandler,
                 goldVault,
-                darknessTask,
+                darknessManager,
                 dwarvenCompass,
                 dwarfTeam
             )

@@ -1,6 +1,7 @@
 package com.jackob.dvz.util
 
 import org.bukkit.Location
+import org.bukkit.block.Block
 
 fun Location.getSphere(radius: Int, hollow: Boolean): MutableList<Location> {
     val circleBlocks = mutableListOf<Location>()
@@ -23,4 +24,14 @@ fun Location.getSphere(radius: Int, hollow: Boolean): MutableList<Location> {
     }
 
     return circleBlocks
+}
+
+/**
+ * Packs X, Y, and Z into a single 64-bit long.
+ * X: 26 bits | Z: 26 bits | Y: 12 bits
+ */
+fun Block.packCoordinates(): Long {
+    return ((x and 0x3FFFFFF).toLong() shl 38) or
+            ((z and 0x3FFFFFF).toLong() shl 12) or
+            ((y and 0xFFF).toLong())
 }

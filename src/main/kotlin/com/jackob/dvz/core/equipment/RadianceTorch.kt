@@ -1,6 +1,6 @@
 package com.jackob.dvz.core.equipment
 
-import com.jackob.dvz.core.objects.DarknessTask
+import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
@@ -30,7 +30,7 @@ class RadianceTorch : CustomItem(), Listener {
               <gray>It is truly understandably source of light.
         """
         enchant(Enchantment.UNBREAKING, 10)
-        persistentDataContainer.set(DarknessTask.RADIANCE, PersistentDataType.BOOLEAN, true)
+        persistentDataContainer.set(DarknessManager.RADIANCE, PersistentDataType.BOOLEAN, true)
     }
 
     override val type: CustomItemType = CustomItemType.RADIANCE_TORCH

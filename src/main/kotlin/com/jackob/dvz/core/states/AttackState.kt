@@ -11,7 +11,7 @@ import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.AIZombieScheduler
-import com.jackob.dvz.core.objects.DarknessTask
+import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.ManaManger
 import com.jackob.dvz.core.objects.Plague
@@ -64,7 +64,7 @@ class AttackState(
     private val lobbyRulesHandler: LobbyRulesHandler,
     private val gameplayHandler: GameplayMechanicsHandler,
     private val goldVault: GoldVault,
-    private val darknessTask: DarknessTask,
+    private val darknessManager: DarknessManager,
     private val dwarvenCompass: Compass,
     private val dwarfTeam: Team
 ) : GameState {
@@ -108,6 +108,7 @@ class AttackState(
 
     private val manaManager = ManaManger()
 
+
     private fun startCounter(): BukkitTask {
         var timeElapsed = 0
         return async(period = TimeUnit.SECONDS(1)) {
@@ -133,7 +134,7 @@ class AttackState(
         dwarfTeam.recalculateOnlineCount()
         onlinePlayers.addAll(Bukkit.getOnlinePlayers())
         gameStatusSidebar.sendSidebar(onlinePlayers)
-        darknessTask.startTask(onlinePlayers)
+        darknessManager.register(onlinePlayers)
         temporalShiftTask.startTask()
         zombieScheduler.startScheduling()
         rampageManager.register()
@@ -163,7 +164,7 @@ class AttackState(
         rampageManager.unregister()
         manaManager.unregister()
 
-        darknessTask.stopTask()
+        darknessManager.unregister(true)
         temporalShiftTask.stopTask()
         zombieScheduler.stopScheduling()
         shrineManager.stopShrineTicking()
@@ -259,9 +260,10 @@ class AttackState(
     private fun handleLastDwarfDeath(count: Int) {
         if (count != 0) return
 
-        Bukkit.broadcast("<red>All dwarfs died!".mm())
-        GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
+       // Bukkit.broadcast("<red>All dwarfs died!".mm())
+        //GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
     }
+
 
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {

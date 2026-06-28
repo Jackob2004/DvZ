@@ -6,7 +6,7 @@ import com.jackob.dvz.core.handlers.GameplayMechanicsHandler
 import com.jackob.dvz.core.HotspotManager
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
-import com.jackob.dvz.core.objects.DarknessTask
+import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.HeroPricker
 import com.jackob.dvz.kits.KitType
@@ -143,7 +143,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
                 GameManager.setGameState(
                     PreparationState(
                         gameMap, selectedKits, lobbyStateHandler, LobbyRulesHandler(),
-                        GameplayMechanicsHandler(), GoldVault(), DarknessTask()
+                        GameplayMechanicsHandler(), GoldVault(), DarknessManager()
                     )
                 )
             }
