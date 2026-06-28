@@ -2,6 +2,7 @@ package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.events.LightSourceBreakEvent
+import com.jackob.dvz.core.events.ShrineDamageEvent
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.sync
@@ -65,6 +66,19 @@ class ManaManger : Listener {
         }
     }
 
+    private fun addMana(player: Player, value: Int) {
+        val id = player.uniqueId
+        if (!playerManaVaults.containsKey(id)) return
+
+        val data: Int = playerManaVaults.getInt(id)
+        val bonus = getBonus(data)
+        val currentAmount = getAmount(data)
+
+        val newAmount = (currentAmount + value).coerceAtMost(MAX_MANA)
+
+        playerManaVaults.put(id,pack(bonus, newAmount))
+    }
+
     fun consumeMana(player: Player, cost: Int): Boolean {
         val uuid = player.uniqueId
 
@@ -111,15 +125,13 @@ class ManaManger : Listener {
 
     @EventHandler
     fun onLightSourceBreak(e: LightSourceBreakEvent) {
-        val playerId = e.zombie.uniqueId
-        if (playerManaVaults.containsKey(playerId)) {
-            val data: Int = playerManaVaults.getInt(playerId)
-            val bonus = getBonus(data)
-            val currentAmount = getAmount(data)
+        addMana(e.zombie, 8)
+    }
 
-            val newAmount = (currentAmount + 8).coerceAtMost(MAX_MANA)
-
-            playerManaVaults.put(playerId,pack(bonus, newAmount))
+    @EventHandler
+    fun onShrineDamage(e: ShrineDamageEvent) {
+        for (p in e.participants) {
+            addMana(p, 2)
         }
     }
 
