@@ -42,16 +42,17 @@ class RampageManager : Listener {
     private fun startVisualEffect(): BukkitTask {
         check(visualEffectsTask == null) { "Visual effect task is already running!" }
 
+        val particleEffect = Particle.GLOW.builder()
+            .count(5)
+            .offset(0.5, 0.5, 0.5)
+
         return sync(period = TimeUnit.SECONDS(1)) {
             for (i in 0 until visualEffectRecipients.size) {
                 val player = visualEffectRecipients[i].toPlayer() ?: continue
                 if (!activeRampageMap.isOnCooldownSafe(player)) continue
 
-                Particle.GLOW.builder()
-                    .location(player.location.add(0.0, 1.0, 0.0))
-                    .count(5)
-                    .offset(0.5, 0.5, 0.5)
-                    .receivers(15, true)
+                particleEffect.location(player.location.add(0.0, 1.0, 0.0))
+                    .receivers(12, true)
                     .spawn()
             }
         }
