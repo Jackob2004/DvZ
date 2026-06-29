@@ -20,6 +20,7 @@ import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.scheduler.BukkitTask
 import java.util.concurrent.CopyOnWriteArraySet
 
@@ -141,5 +142,10 @@ class RestartState(private val lobbyStateHandler: LobbyStateHandler, private val
     @EventHandler
     fun onFoodLevelChange(event: FoodLevelChangeEvent) {
         event.foodLevel = 20
+    }
+
+    @EventHandler
+    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+        lobbyStateHandler.refreshToLobbyState(event.player)
     }
 }
