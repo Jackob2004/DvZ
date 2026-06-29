@@ -7,8 +7,9 @@ import com.jackob.dvz.util.description
 import com.jackob.dvz.util.enchant
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
+import com.jackob.dvz.util.packCoordinates
 import com.jackob.dvz.util.sync
-import org.bukkit.Location
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.block.Block
@@ -28,7 +29,7 @@ private const val EFFECT_DURATION_IN_SECONDS = 60
 
 class RadianceShroom : CustomItem(), Listener {
 
-    private val protectedBlocks: MutableSet<Location> = HashSet()
+    private val protectedBlocks: LongOpenHashSet = LongOpenHashSet()
 
     override val item: ItemStack = createItem(Material.SHROOMLIGHT) {
         name = "<b><white>Radiance shroom"
@@ -45,7 +46,8 @@ class RadianceShroom : CustomItem(), Listener {
 
     private fun spawnProtectedLightBlock(placedBlock: Block, player: Player) {
         val placedBlockLocation = placedBlock.location
-        protectedBlocks.add(placedBlockLocation)
+        val cordsAsLong = placedBlock.packCoordinates()
+        protectedBlocks.add(cordsAsLong)
 
         var timeLeft = EFFECT_DURATION_IN_SECONDS
         val displayLoc = placedBlockLocation.clone().add(0.5, 1.5, 0.5)
@@ -58,7 +60,7 @@ class RadianceShroom : CustomItem(), Listener {
         sync(period = TimeUnit.SECONDS(1)) {
             timeLeft--
             if (timeLeft <= 0 || placedBlock.isEmpty) {
-                protectedBlocks.remove(placedBlockLocation)
+                protectedBlocks.remove(cordsAsLong)
                 timeDisplay.remove()
                 this.cancel()
             } else {
@@ -78,7 +80,7 @@ class RadianceShroom : CustomItem(), Listener {
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
-        if (event.block.location in protectedBlocks) {
+        if (protectedBlocks.contains(event.block.packCoordinates())) {
             event.isCancelled = true
         }
     }
