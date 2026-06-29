@@ -63,7 +63,7 @@ class DarknessManager: Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBlockPlace(event: BlockPlaceEvent) {
         if (event.itemInHand.persistentDataContainer.has(RADIANCE)) {
             val block = event.blockPlaced
@@ -71,7 +71,7 @@ class DarknessManager: Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBlockBreak(event: BlockBreakEvent) {
         val block = event.block
         val cordsAsLong: Long = block.packCoordinates()
