@@ -1,21 +1,27 @@
 package com.jackob.dvz.util
 
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
 import org.bukkit.entity.Player
 import java.util.UUID
 import kotlin.collections.set
 
 class CooldownUtil(private val cooldownInMilliseconds: Long) {
 
-    private val cooldownMap: MutableMap<UUID, Long> = HashMap()
+    private val cooldownMap: Object2LongOpenHashMap<UUID> = Object2LongOpenHashMap()
 
     /**
      * Checks whether player is on cooldown and updates it as well
      */
     fun isOnCooldown(player: Player): Boolean {
         val playerId = player.uniqueId
-
         val currentTimeStamp = System.currentTimeMillis()
-        val lastClick = cooldownMap.putIfAbsent(playerId, currentTimeStamp) ?: return false
+
+        if (!cooldownMap.containsKey(playerId)) {
+            cooldownMap.put(playerId, currentTimeStamp)
+            return false
+        }
+
+        val lastClick = cooldownMap.getLong(playerId)
 
         if (currentTimeStamp - lastClick > cooldownInMilliseconds) {
             cooldownMap[playerId] = currentTimeStamp
@@ -33,14 +39,14 @@ class CooldownUtil(private val cooldownInMilliseconds: Long) {
         if (!cooldownMap.containsKey(playerId)) return false
 
         val currentTimeStamp = System.currentTimeMillis()
-        val lastClick = cooldownMap[playerId]!!
+        val lastClick = cooldownMap.getLong(playerId)
 
         return currentTimeStamp - lastClick < cooldownInMilliseconds
     }
 
     fun putOnCooldown(player: Player) {
         val playerId = player.uniqueId
-        cooldownMap[playerId] = System.currentTimeMillis()
+        cooldownMap.put(playerId, System.currentTimeMillis())
     }
 
     fun wasOnCooldown(player: Player): Boolean {
