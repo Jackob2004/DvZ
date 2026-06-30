@@ -24,22 +24,30 @@ import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.kits.UpgradesManager
+import com.jackob.dvz.kits.zombie.Zombie
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.ui.PagerMenu
 import com.jackob.dvz.ui.Sidebar
+import com.jackob.dvz.ui.UpdatableMenu
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.async
+import com.jackob.dvz.util.createItem
+import com.jackob.dvz.util.description
 import com.jackob.dvz.util.leftClickItem
 import com.jackob.dvz.util.mm
+import com.jackob.dvz.util.name
 import com.jackob.dvz.util.repair
 import com.jackob.dvz.util.resetAll
+import com.jackob.dvz.util.updateItem
 import com.jackob.dvz.util.withPrefix
 import com.sk89q.worldedit.bukkit.BukkitAdapter
 import com.sk89q.worldguard.WorldGuard
 import com.sk89q.worldguard.protection.managers.RegionManager
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -54,7 +62,9 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerRespawnEvent
+import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.Damageable
+import org.bukkit.persistence.PersistentDataType
 import org.bukkit.scheduler.BukkitTask
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicInteger
@@ -224,13 +234,28 @@ class AttackState(
     private fun createKitSelectionMenu(): PagerMenu {
         val basicZombieKits = KitType.entries
             .filter { !it.isHero && it.team == TeamType.ZOMBIE }
-            .map { it.toItem() }
+            .map { it.toItem() }.toMutableList()
+
+        val zombieUpgrades = createItem(Material.ZOMBIE_SPAWN_EGG) {
+            name = "<dark_green>Open zombie upgrades menu"
+        }
 
         return object : PagerMenu(basicZombieKits, canDeactivate = true, title = "<gray><b>Select kit") {
+            init {
+                menu.setItem(36, zombieUpgrades)
+            }
+
             override fun handleClick(slot: Int, player: Player) {
                 super.handleClick(slot, player)
 
                 menu.getItem(slot)?.let { item ->
+                    if (item.type == Material.ZOMBIE_SPAWN_EGG) {
+                        val upgrades = Zombie.ZombieListener.upgrades
+                        upgrades.addPlayer(player)
+                        openUpgradesMenu(player, upgrades, "<dark_green>Zombie upgrades")
+                        return@handleClick
+                    }
+
                     val keys = item.persistentDataContainer.keys
                     if (keys.isEmpty()) return@handleClick
 
@@ -242,6 +267,65 @@ class AttackState(
 
             }
         }
+    }
+
+    private fun getUpgrades(player: Player, upgrades: UpgradesManager) : Pair<List<ItemStack>, Int>? {
+        val applicableUpgradesData = upgrades.getApplicableUpgradesData(player) ?: return null
+        val upgradeIcons = applicableUpgradesData.map {
+            it.icon.updateItem {
+                val info = """
+                    
+                    <gold> Upgrade level: ${it.upgradeLevel}
+                    <i> Mana: ${it.manaCost}
+                """.trimIndent()
+                description += info
+            }
+            it.icon
+        }
+
+        val playerCurrMana = manaManager.getMana(player)!!
+
+        return Pair(upgradeIcons, playerCurrMana)
+    }
+
+    private fun openUpgradesMenu(player: Player, upgrades: UpgradesManager, title: String) {
+        val data = getUpgrades(player, upgrades) ?: return
+
+        object : UpdatableMenu(2, data.first, title, "<dark_purple>Mana: ${data.second}") {
+            override fun exitButtonAction(player: Player) {
+                kitSelectionMenu.open(player)
+            }
+
+            override fun handleClick(slot: Int, player: Player) {
+                super.handleClick(slot, player)
+
+                menu.getItem(slot)?.let { item ->
+                    val container = item.persistentDataContainer
+                    val cost = container.get(UpgradesManager.UPGRADE_COST_KEY, PersistentDataType.INTEGER) ?: return@handleClick
+
+                    if (!manaManager.consumeMana(player, cost)) {
+                        player.playSound(player.location, Sound.ENTITY_WANDERING_TRADER_NO, 1f, 1f)
+                        return@handleClick
+                    }
+
+                    val upgradeIdx = container.get(UpgradesManager.UPGRADE_KEY, PersistentDataType.INTEGER)!!
+                    val upgradeLevel = container.get(UpgradesManager.UPGRADE_LEVEL_KEY, PersistentDataType.INTEGER)!!
+
+                    upgrades.unlockUpgrade(player, upgradeIdx + upgradeLevel - 1)
+                    val updatedData = getUpgrades(player, upgrades)
+
+                    if (updatedData != null) {
+                        this.updateMenu(updatedData.first, "<dark_purple>Mana: ${updatedData.second}")
+                    } else{
+                        player.closeInventory()
+                        player.sendMessage("<green>All $title <green>has been unlocked".mm())
+                    }
+                    player.playSound(player.location, Sound.ENTITY_WANDERING_TRADER_YES, 1f, 1f)
+                }
+            }
+
+        }.open(player)
+
     }
 
     private fun isActiveZombie(player: Player): Boolean = zombieTeam.hasMember(player) && KitsManager.hasKit(player)
@@ -260,8 +344,8 @@ class AttackState(
     private fun handleLastDwarfDeath(count: Int) {
         if (count != 0) return
 
-        Bukkit.broadcast("<red>All dwarfs died!".mm())
-        GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
+        //Bukkit.broadcast("<red>All dwarfs died!".mm())
+        //GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
     }
 
 
