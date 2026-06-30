@@ -13,7 +13,7 @@ import java.util.UUID
 private fun Player.resetAllAttributes() {
     Registry.ATTRIBUTE.forEach { attribute ->
         getAttribute(attribute)?.let { instance ->
-            instance.baseValue = instance.baseValue
+            instance.baseValue = instance.defaultValue
 
             instance.modifiers.forEach { modifier ->
                 instance.removeModifier(modifier)
