@@ -18,3 +18,8 @@ zombie:
   name: <dark_green>Zombie
   description:
     - <gray>Basic monster
+super_creeper:
+  icon: CREEPER_HEAD
+  name: <dark_green>Super Creeper
+  description:
+    - <gray>BOOM
