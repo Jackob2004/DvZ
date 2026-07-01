@@ -337,7 +337,8 @@ class AttackState(
     private fun isNewPlayer(player: Player): Boolean = getPlayerTeam(player) == null
 
     private fun updatePlayerDisguise(player: Player) {
-        val kit = KitsManager.getKit(player) as? Disguisable ?: return
+        val kit = KitsManager.getKit(player) as? Disguisable<*> ?: return
+
         kit.startDisguise(player)
     }
 
@@ -386,7 +387,7 @@ class AttackState(
             zombieTeam.decreaseOnlineCount()
         }
 
-        val kit = KitsManager.getKit(player) as? Disguisable ?: return
+        val kit = KitsManager.getKit(player) as? Disguisable<*> ?: return
         kit.stopDisguise(player)
     }
 

@@ -12,6 +12,7 @@ import com.jackob.dvz.util.name
 import com.jackob.dvz.util.toPlayer
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
+import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
 import org.bukkit.Material
 import org.bukkit.attribute.Attribute
 import org.bukkit.event.EventHandler
@@ -21,7 +22,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import java.util.UUID
 
-class Zombie(internalName: String, owner: UUID) : BaseKit(internalName, owner), Disguisable {
+class Zombie(internalName: String, owner: UUID) : BaseKit(internalName, owner), Disguisable<LivingWatcher> {
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.ZOMBIE) { }
 

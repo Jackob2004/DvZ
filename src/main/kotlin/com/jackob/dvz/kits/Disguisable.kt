@@ -7,23 +7,25 @@ import me.libraryaddict.disguise.disguisetypes.MobDisguise
 import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
 import org.bukkit.entity.Player
 
-interface Disguisable {
+interface Disguisable<T: LivingWatcher> {
 
     val disguiseTemplate: Disguise
 
-    fun createMobDisguise(type: DisguiseType, name: String = " ", config: LivingWatcher.() -> Unit): Disguise {
+    @Suppress("UNCHECKED_CAST")
+    fun createMobDisguise(type: DisguiseType, name: String = " ", config: T.() -> Unit): Disguise {
         val disguise = MobDisguise(type)
         disguise.setViewSelfDisguise(false)
         disguise.disguiseName = name
 
-        val watcher = disguise.watcher
-        watcher.config()
+        val watcher = disguise.watcher as? T
+        watcher?.config()
 
         return disguise
     }
 
-    fun Player.modifyMobDisguise(config: LivingWatcher.() -> Unit) {
-        val watcher = DisguiseAPI.getDisguise(this)?.watcher as? LivingWatcher ?: return
+    @Suppress("UNCHECKED_CAST")
+    fun Player.modifyMobDisguise(config: T.() -> Unit) {
+        val watcher = DisguiseAPI.getDisguise(this)?.watcher as? T ?: return
         watcher.config()
     }
 
