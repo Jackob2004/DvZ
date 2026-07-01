@@ -23,3 +23,8 @@ super_creeper:
   name: <dark_green>Super Creeper
   description:
     - <gray>BOOM
+enderman:
+  icon: ENDER_PEARL
+  name: <dark_green>Enderman
+  description:
+    - <gray>I can teleport!

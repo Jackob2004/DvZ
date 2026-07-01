@@ -99,3 +99,14 @@ kits:
 
     kitAttributes:
       rampageImmune: false
+  enderman:
+    activateMessage:
+      message: "<green>You arrived to battle as an enderman"
+      broadcast: false
+
+    items:
+      - material: "ENDER_PEARL"
+        name: "<b><dark_green>pearl"
+
+    kitAttributes:
+      rampageImmune: false
