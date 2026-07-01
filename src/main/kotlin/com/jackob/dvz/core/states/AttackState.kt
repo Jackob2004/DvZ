@@ -100,8 +100,6 @@ class AttackState(
             line(0, "<gray>  ────────────────")
         }
 
-    private val kitSelectionMenu = createKitSelectionMenu()
-
     private val spectators = mutableSetOf<Player>()
 
     private var counterTask: BukkitTask? = null
@@ -135,7 +133,9 @@ class AttackState(
     }
 
     override fun onEnter() {
-        lobbyStateHandler.onKitSelectorOpen = kitSelectionMenu::open
+        lobbyStateHandler.onKitSelectorOpen = { player ->
+            createKitSelectionMenu().open(player)
+        }
         lobbyStateHandler.registerHandler(DvZ.INSTANCE)
         lobbyRulesHandler.registerHandler(DvZ.INSTANCE)
         gameplayHandler.registerHandler(DvZ.INSTANCE)
@@ -293,7 +293,7 @@ class AttackState(
 
         object : UpdatableMenu(2, data.first, title, "<dark_purple>Mana: ${data.second}") {
             override fun exitButtonAction(player: Player) {
-                kitSelectionMenu.open(player)
+                createKitSelectionMenu().open(player)
             }
 
             override fun handleClick(slot: Int, player: Player) {
@@ -452,7 +452,7 @@ class AttackState(
         if (player.gameMode != GameMode.ADVENTURE) return
 
         if (event.action == Action.LEFT_CLICK_AIR) {
-            kitSelectionMenu.open(player)
+            createKitSelectionMenu().open(player)
         }
 
         event.isCancelled = true
