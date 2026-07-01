@@ -13,4 +13,5 @@ object ConfigStorage {
     val GOLD_COLLECT_BASELINE = DvZ.INSTANCE.config.getInt("gold-collect-baseline")
     val ARMOR_REPAIR_COST = DvZ.INSTANCE.config.getInt("armor-repair-cost")
     val AI_ZOMBIE_MULTIPLIER = DvZ.INSTANCE.config.getDouble("ai-zombie-multiplier")
+    val ZOMBIE_WAVE_INTERVAL = DvZ.INSTANCE.config.getInt("zombie-wave-interval")
 }

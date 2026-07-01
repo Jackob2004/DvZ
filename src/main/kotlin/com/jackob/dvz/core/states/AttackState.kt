@@ -20,6 +20,7 @@ import com.jackob.dvz.core.objects.RampageManager
 import com.jackob.dvz.core.objects.ShrineManager
 import com.jackob.dvz.core.objects.Team
 import com.jackob.dvz.core.objects.TemporalShiftTask
+import com.jackob.dvz.core.objects.WavesScheduler
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
@@ -117,6 +118,8 @@ class AttackState(
 
     private val manaManager = ManaManger()
 
+    private val wavesScheduler = WavesScheduler(dwarfTeam)
+
     private fun startCounter(): BukkitTask {
         var timeElapsed = 0
         return async(period = TimeUnit.SECONDS(1)) {
@@ -149,6 +152,7 @@ class AttackState(
         zombieScheduler.startScheduling()
         rampageManager.register()
         manaManager.register()
+        wavesScheduler.startScheduler()
 
         // start plague
         Bukkit.broadcast("<gray>Attack phase has started, <dark_red>zombies have been released!!!".withPrefix().mm())
@@ -173,6 +177,7 @@ class AttackState(
         dwarvenCompass.unregisterCompass()
         rampageManager.unregister()
         manaManager.unregister()
+        wavesScheduler.stopScheduler()
 
         darknessManager.unregister(true)
         temporalShiftTask.stopTask()
@@ -240,6 +245,10 @@ class AttackState(
             name = "<dark_green>Open zombie upgrades menu"
         }
 
+        wavesScheduler.currentKit?.let {
+            basicZombieKits.add(it)
+        }
+
         return object : PagerMenu(basicZombieKits, canDeactivate = true, title = "<gray><b>Select kit") {
             init {
                 menu.setItem(36, zombieUpgrades)
@@ -260,6 +269,10 @@ class AttackState(
                     if (keys.isEmpty()) return@handleClick
 
                     KitType.getByKey(keys.first())?.let { type ->
+                        if (type.isHero && !wavesScheduler.anyPlaysAvailable()) {
+                            player.sendMessage("<gray>This kit is no longer available")
+                            return@handleClick
+                        }
                         selectKit(player, type)
                         player.closeInventory()
                     }
