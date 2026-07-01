@@ -1,4 +1,4 @@
-package com.jackob.dvz.kits.zombie
+package com.jackob.dvz.kits.zombie.base
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.kits.BaseKit
@@ -49,7 +49,7 @@ class Zombie(internalName: String, owner: UUID) : BaseKit(internalName, owner), 
 
     object ZombieListener : Listener {
 
-        val upgrades = UpgradesManager.create(ZombieUpgrade.entries.size, 3) {
+        val upgrades = UpgradesManager.Companion.create(ZombieUpgrade.entries.size, 3) {
             tier(0) {
                 upgrade(ZombieUpgrade.TOUGH_FLESH_I, UpgradeType.MODIFIER, 2) {
                     icon = createItem(Material.ROTTEN_FLESH) {
@@ -168,7 +168,7 @@ class Zombie(internalName: String, owner: UUID) : BaseKit(internalName, owner), 
         }
 
         init {
-            DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+            DvZ.Companion.INSTANCE.server.pluginManager.registerEvents(this, DvZ.Companion.INSTANCE)
         }
 
 

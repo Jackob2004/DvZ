@@ -4,7 +4,7 @@ import com.jackob.dvz.DvZ
 import com.jackob.dvz.kits.dwarf.Archer
 import com.jackob.dvz.kits.dwarf.Warrior
 import com.jackob.dvz.kits.dwarf.hero.Elf
-import com.jackob.dvz.kits.zombie.Zombie
+import com.jackob.dvz.kits.zombie.base.Zombie
 import com.jackob.dvz.storage.KitDisplay
 import com.jackob.dvz.storage.KitDisplaysStorage
 import com.jackob.dvz.util.createItem

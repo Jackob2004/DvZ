@@ -25,7 +25,7 @@ import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.kits.UpgradesManager
-import com.jackob.dvz.kits.zombie.Zombie
+import com.jackob.dvz.kits.zombie.base.Zombie
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.ui.PagerMenu
