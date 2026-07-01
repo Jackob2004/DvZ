@@ -1,10 +1,12 @@
 package com.jackob.dvz.core.states
 
+import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
+import com.jackob.dvz.storage.MapStorage
 import com.jackob.dvz.ui.Sidebar
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.async
@@ -145,7 +147,8 @@ class RestartState(private val lobbyStateHandler: LobbyStateHandler, private val
     }
 
     @EventHandler
-    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+    fun onPlayerPostRespawn(event: PlayerPostRespawnEvent) {
         lobbyStateHandler.refreshToLobbyState(event.player)
     }
+
 }
