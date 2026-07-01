@@ -10,13 +10,11 @@ import me.libraryaddict.disguise.disguisetypes.watchers.CreeperWatcher
 import org.bukkit.event.Listener
 import java.util.UUID
 
-class SuperCreeper(internalName: String, owner: UUID) : BaseKit(internalName, owner), Disguisable<CreeperWatcher> {
+class SuperCreeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero), Disguisable<CreeperWatcher> {
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.CREEPER) {
         isIgnited = true
     }
-
-    override val isHero: Boolean = true
 
     override val aiZombieEnabled: Boolean = true
 

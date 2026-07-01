@@ -10,11 +10,9 @@ import me.libraryaddict.disguise.disguisetypes.watchers.EndermanWatcher
 import org.bukkit.event.Listener
 import java.util.UUID
 
-class Enderman(internalName: String, owner: UUID) : BaseKit(internalName, owner), Disguisable<EndermanWatcher> {
+class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero), Disguisable<EndermanWatcher> {
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.ENDERMAN) { }
-
-    override val isHero: Boolean = true
 
     override val aiZombieEnabled: Boolean = true
 

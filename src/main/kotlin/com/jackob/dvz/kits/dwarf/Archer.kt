@@ -5,9 +5,7 @@ import com.jackob.dvz.kits.BaseKit
 import org.bukkit.event.Listener
 import java.util.UUID
 
-class Archer(internalName: String, owner: UUID) : BaseKit(internalName, owner) {
-
-    override val isHero: Boolean = false
+class Archer(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero) {
 
     init {
         ArcherListener

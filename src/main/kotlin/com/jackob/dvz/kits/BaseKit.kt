@@ -8,9 +8,7 @@ import java.util.UUID
 /**
  * Classes extending BaseKit are expected to provide ctor perfectly matching superclass ctor arguments(order and types).
  */
-abstract class BaseKit(val internalName: String, val ownerId: UUID) {
-
-    abstract val isHero: Boolean
+abstract class BaseKit(val internalName: String, val ownerId: UUID, val isHero: Boolean) {
 
     /**
      * Indicates whether AI zombies can be spawned around the owner of the kit.

@@ -22,11 +22,9 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import java.util.UUID
 
-class Zombie(internalName: String, owner: UUID) : BaseKit(internalName, owner), Disguisable<LivingWatcher> {
+class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero), Disguisable<LivingWatcher> {
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.ZOMBIE) { }
-
-    override val isHero: Boolean = false
 
     override val aiZombieEnabled: Boolean = true
 
