@@ -2,6 +2,7 @@ package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.events.AIZombieSpawnEvent
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
@@ -14,6 +15,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import me.libraryaddict.disguise.DisguiseAPI
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.MobDisguise
+import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.attribute.Attribute
@@ -86,11 +88,14 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
 
     private fun spawnZombies(player: Player) {
         val loc = player.location
-
+        val zombies = ArrayList<LivingEntity>(4)
         for (i in 0..3) {
             val updatedLoc = loc.clone().add(SPAWN_CORD_MODIFIERS[i][0], 0.0, SPAWN_CORD_MODIFIERS[i][1])
-            zombieQueue.add(spawnZombie(updatedLoc))
+            zombies.add(spawnZombie(updatedLoc))
         }
+
+        zombieQueue.addAll(zombies)
+        Bukkit.getPluginManager().callEvent(AIZombieSpawnEvent(zombies, player))
     }
 
     private fun removeOldZombies() {
