@@ -288,8 +288,8 @@ class AttackState(
             it.icon.updateItem {
                 val info = """
                     
-                    <gold> Upgrade level: ${it.upgradeLevel}
-                    <i> Mana: ${it.manaCost}
+                    <i><gold> Upgrade level: <reset><gray>${it.upgradeLevel}
+                    <i> Mana: <reset><gray>${it.manaCost}
                 """.trimIndent()
                 description += info
             }

@@ -208,7 +208,12 @@ class UpgradesManager(
     }
 
     companion object {
-        fun create(numberOfUpgrades: Int, numberOfTiers: Int, numberOfPaths: Int, init: UpgradesBuilder.() -> Unit): UpgradesManager {
+        fun create(
+            numberOfUpgrades: Int,
+            numberOfTiers: Int,
+            numberOfPaths: Int,
+            init: UpgradesBuilder.() -> Unit
+        ): UpgradesManager {
             val builder = UpgradesBuilder(numberOfUpgrades, numberOfTiers, numberOfPaths)
             builder.init()
             return builder.build()
@@ -226,7 +231,7 @@ class UpgradesBuilder(numberOfUpgrades: Int, numberOfTiers: Int, numberOfPaths: 
     private val upgrades: Array<UpgradeBranch<*>?> = Array(numberOfUpgrades) { null }
     private val tiers: Array<Array<PathBounds>> =
         Array(numberOfTiers) {
-            Array(numberOfPaths + 1) { PathBounds(65,0) }
+            Array(numberOfPaths + 1) { PathBounds(65, 0) }
         }
 
     fun tier(index: Int, init: TierBuilder.() -> Unit) {
@@ -246,14 +251,18 @@ class TierBuilder(
     private val tiers: Array<Array<PathBounds>>,
 ) {
 
-    private fun addPathInfo(icon: ItemStack, pathName: String?) {
+    /**
+     * Adds info like pathname and tier to the Upgrade icon
+     */
+    private fun addUpgradeInfo(icon: ItemStack, pathName: String?) {
         val name = pathName ?: "<gray>Neutral"
-        icon.updateItem{
-            val pathInfo = """
+        icon.updateItem {
+            val info = """
                 
-                <white> Path: $name
+                <i><white> Path: <reset>$name
+                <i><aqua> Tier: <reset><gray>$tierIndex
             """.trimIndent()
-            description += pathInfo
+            description += info
         }
     }
 
@@ -265,7 +274,7 @@ class TierBuilder(
         pathName: String?,
         init: UpgradeBuilder<T>.() -> Unit
     ) {
-        val builder = UpgradeBuilder<T>(id, type,path, cost)
+        val builder = UpgradeBuilder<T>(id, type, path, cost)
         builder.init()
         val branch = builder.build()
 
@@ -274,7 +283,7 @@ class TierBuilder(
         upgrades[id] = branch
         tiers[tierIndex][pathIdx].start = min(tiers[tierIndex][pathIdx].start, id)
         tiers[tierIndex][pathIdx].end = max(tiers[tierIndex][pathIdx].end, id + branch.levels.size - 1)
-        addPathInfo(branch.icon, pathName)
+        addUpgradeInfo(branch.icon, pathName)
     }
 
     fun <T, E> upgrade(
@@ -283,7 +292,7 @@ class TierBuilder(
         cost: Int,
         path: E,
         init: UpgradeBuilder<T>.() -> Unit
-    ) where E : Enum<E>, E : BasePath{
+    ) where E : Enum<E>, E : BasePath {
         upgrade(id.ordinal, type, cost, path.ordinal, path.pathName, init)
     }
 
