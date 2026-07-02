@@ -6,6 +6,7 @@ import com.jackob.dvz.util.updateItem
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
@@ -22,14 +23,14 @@ data class UpgradeBranch<T>(
     val path: Int? = null,
     val cost: Int,
     val levels: List<UpgradeLevel<T>>,
-    val actions: List<(Player, T) -> Unit>,
+    val actions: List<(LivingEntity, T) -> Unit>,
     val icon: ItemStack
 ) {
-    fun applyUpgrade(player: Player, levelIndex: Int, actionIndex: Int = 0) {
+    fun applyUpgrade(livingEntity: LivingEntity, levelIndex: Int, actionIndex: Int = 0) {
         if (levels.isEmpty() || actions.isEmpty()) return
 
         val stats = levels[levelIndex].stats
-        actions[actionIndex](player, stats)
+        actions[actionIndex](livingEntity, stats)
     }
 }
 
@@ -128,6 +129,11 @@ class UpgradesManager(
         return hasUpgrade(player, index.ordinal)
     }
 
+    fun resetAllUpgrades(player: Player) {
+        if (!playerUpgrades.containsKey(player.uniqueId)) return
+        playerUpgrades.put(player.uniqueId, 0L)
+    }
+
     fun unlockUpgrade(player: Player, index: Int) {
         if (!playerUpgrades.containsKey(player.uniqueId)) return
         playerUpgrades.put(player.uniqueId, playerUpgrades.getLong(player.uniqueId).unlockUpgrade(index))
@@ -187,8 +193,8 @@ class UpgradesManager(
      * Applies upgrade that is not UpgradeType.Modifier
      * Assumes the player has the passed upgrade
      */
-    fun applyAbility(player: Player, upgradeId: Enum<*>, fnIdx: Int) {
-        val id = player.uniqueId
+    fun applyAbility(target: LivingEntity, upgradeId: Enum<*>, fnIdx: Int) {
+        val id = target.uniqueId
         if (!playerUpgrades.containsKey(id)) return
 
         val playerUpgradeFlags: Long = playerUpgrades.getLong(id)
@@ -199,7 +205,7 @@ class UpgradesManager(
 
         val level = findMaxUnlockedUpgrade(upgrade, idx, playerUpgradeFlags)
 
-        upgrade.applyUpgrade(player, level, fnIdx)
+        upgrade.applyUpgrade(target, level, fnIdx)
     }
 
 
@@ -314,10 +320,10 @@ class UpgradeBuilder<T>(
     private val cost: Int
 ) {
     private val levels = ArrayList<UpgradeLevel<T>>(5)
-    private val actions = ArrayList<(Player, T) -> Unit>(3)
+    private val actions = ArrayList<(LivingEntity, T) -> Unit>(3)
     var icon: ItemStack = ItemStack(Material.DIRT)
 
-    fun action(block: (Player, T) -> Unit) {
+    fun action(block: (LivingEntity, T) -> Unit) {
         actions.add(block)
     }
 
