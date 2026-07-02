@@ -260,7 +260,7 @@ class TierBuilder(
             val info = """
                 
                 <i><white> Path: <reset>$name
-                <i><aqua> Tier: <reset><gray>$tierIndex
+                <i><aqua> Tier: <reset><gray>${tierIndex + 1}
             """.trimIndent()
             description += info
         }
