@@ -31,7 +31,7 @@ open class UpdatableMenu(
             name = dataInfo
         })
 
-        var idx = 9 + gap
+        var idx = 8 + gap
         for (item in contents) {
             if (idx >= SIZE) throw IllegalStateException("Too many items!!!")
 

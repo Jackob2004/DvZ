@@ -251,7 +251,7 @@ class TierBuilder(
         icon.updateItem{
             val pathInfo = """
                 
-                <white>Path: $name
+                <white> Path: $name
             """.trimIndent()
             description += pathInfo
         }
