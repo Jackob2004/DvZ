@@ -1,6 +1,8 @@
 package com.jackob.dvz.kits
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.util.description
+import com.jackob.dvz.util.updateItem
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
@@ -9,6 +11,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import java.util.UUID
 import kotlin.math.max
+import kotlin.math.min
 
 @DslMarker
 annotation class UpgradesDsl
@@ -16,10 +19,10 @@ annotation class UpgradesDsl
 data class UpgradeBranch<T>(
     val id: Int,
     val type: UpgradeType,
+    val path: Int? = null,
     val cost: Int,
     val levels: List<UpgradeLevel<T>>,
     val actions: List<(Player, T) -> Unit>,
-    val blockingUpgrades: List<Int>? = null,
     val icon: ItemStack
 ) {
     fun applyUpgrade(player: Player, levelIndex: Int, actionIndex: Int = 0) {
@@ -40,6 +43,12 @@ data class UpgradeData(
     val icon: ItemStack
 )
 
+data class PathBounds(var start: Int, var end: Int)
+
+interface BasePath {
+    val pathName: String
+}
+
 /**
  * @param MODIFIER either item, attribute or potion effect
  */
@@ -51,7 +60,7 @@ enum class UpgradeType {
 
 class UpgradesManager(
     private val upgrades: Array<UpgradeBranch<*>?>,
-    private val tiers: Array<Int>
+    private val tiers: Array<Array<PathBounds>>
 ) {
     private val playerUpgrades: Object2LongOpenHashMap<UUID> = Object2LongOpenHashMap()
 
@@ -69,25 +78,45 @@ class UpgradesManager(
         return maxUnlockedUpgrade - idx
     }
 
+    private fun hasAllTierUpgrades(allUpgrades: Long, tierIdx: Int, pathIdx: Int): Boolean {
+        val path = tiers[tierIdx][pathIdx]
+        for (i in path.start..path.end) {
+            if (!allUpgrades.hasUpgrade(i)) return false
+        }
+
+        return true
+    }
+
     /**
-     * @return start, end - inclusive, null if all tiers are already unlocked
+     * @return player's path idx or null if player hasn't chosen any path yet
      */
-    private fun getTierBounds(allUpgrades: Long): Pair<Int, Int>? {
-        val unlockedUpgrades = allUpgrades.countOneBits()
-        DvZ.INSTANCE.logger.info { "unlocked: $unlockedUpgrades, max: ${upgrades.size}, tierI: ${tiers[0]}" }
-        if (unlockedUpgrades == upgrades.size) return null
+    private fun getPlayerPath(allUpgrades: Long): Int? {
+        val firstTier = tiers[0]
+        for (pathIdx in 0..<firstTier.lastIndex) {
+            if (allUpgrades.hasUpgrade(firstTier[pathIdx].start)) {
+                return pathIdx
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * @return last upgrade idx available in player's current tier or null if player has unlocked all upgrades
+     */
+    private fun calcTierBound(allUpgrades: Long, playerPath: Int?): Int? {
+        if (playerPath == null) {
+            return tiers[0][tiers[0].lastIndex].end
+        }
 
         var tierIdx = 0
 
-        while (tierIdx < tiers.size) {
-            if (unlockedUpgrades < tiers[tierIdx]) break
+        while (tierIdx < tiers.size - 1) {
+            if (!hasAllTierUpgrades(allUpgrades, tierIdx, playerPath)) break
             tierIdx++
         }
 
-        val start = if (tierIdx == 0) 0 else tiers[tierIdx - 1]
-        val end = tiers[tierIdx] - 1
-
-        return Pair(start, end)
+        return if (tierIdx == tiers.size) null else tiers[tierIdx][tiers[tierIdx].lastIndex].end
     }
 
     fun hasUpgrade(player: Player, index: Int): Boolean {
@@ -108,13 +137,14 @@ class UpgradesManager(
         if (!playerUpgrades.containsKey(player.uniqueId)) return null
 
         val playerUpgradeFlags: Long = playerUpgrades.getLong(player.uniqueId)
-        val tierBound = getTierBounds(playerUpgradeFlags) ?: return null
+        val playerPath = getPlayerPath(playerUpgradeFlags)
+        val tierBound = calcTierBound(playerUpgradeFlags, playerPath) ?: return null
+
         val icons = mutableListOf<UpgradeData>()
 
-        for (idx in tierBound.first..tierBound.second) {
+        for (idx in 0..tierBound) {
             val upgrade = upgrades[idx] ?: continue
-            val hasBlockingUpgrades = upgrade.blockingUpgrades?.any { playerUpgradeFlags.hasUpgrade(it) } ?: false
-            if (hasBlockingUpgrades) continue
+            if (upgrade.path != playerPath && upgrade.path != null && playerPath != null) continue
 
             val level = if (!playerUpgradeFlags.hasUpgrade(idx)) {
                 1
@@ -178,8 +208,8 @@ class UpgradesManager(
     }
 
     companion object {
-        fun create(numberOfUpgrades: Int, numberOfTiers: Int, init: UpgradesBuilder.() -> Unit): UpgradesManager {
-            val builder = UpgradesBuilder(numberOfUpgrades, numberOfTiers)
+        fun create(numberOfUpgrades: Int, numberOfTiers: Int, numberOfPaths: Int, init: UpgradesBuilder.() -> Unit): UpgradesManager {
+            val builder = UpgradesBuilder(numberOfUpgrades, numberOfTiers, numberOfPaths)
             builder.init()
             return builder.build()
         }
@@ -192,9 +222,12 @@ class UpgradesManager(
 }
 
 @UpgradesDsl
-class UpgradesBuilder(numberOfUpgrades: Int, numberOfTiers: Int) {
+class UpgradesBuilder(numberOfUpgrades: Int, numberOfTiers: Int, numberOfPaths: Int) {
     private val upgrades: Array<UpgradeBranch<*>?> = Array(numberOfUpgrades) { null }
-    private val tiers: Array<Int> = Array(numberOfTiers) { 0 }
+    private val tiers: Array<Array<PathBounds>> =
+        Array(numberOfTiers) {
+            Array(numberOfPaths + 1) { PathBounds(65,0) }
+        }
 
     fun tier(index: Int, init: TierBuilder.() -> Unit) {
         val builder = TierBuilder(index, upgrades, tiers)
@@ -210,31 +243,57 @@ class UpgradesBuilder(numberOfUpgrades: Int, numberOfTiers: Int) {
 class TierBuilder(
     private val tierIndex: Int,
     private val upgrades: Array<UpgradeBranch<*>?>,
-    private val tiers: Array<Int>,
+    private val tiers: Array<Array<PathBounds>>,
 ) {
+
+    private fun addPathInfo(icon: ItemStack, pathName: String?) {
+        val name = pathName ?: "<gray>Neutral"
+        icon.updateItem{
+            val pathInfo = """
+                
+                <white>Path: $name
+            """.trimIndent()
+            description += pathInfo
+        }
+    }
+
     fun <T> upgrade(
         id: Int,
         type: UpgradeType,
         cost: Int,
-        blockingUpgrades: List<Int>?,
+        path: Int?,
+        pathName: String?,
         init: UpgradeBuilder<T>.() -> Unit
     ) {
-        val builder = UpgradeBuilder<T>(id, type, cost, blockingUpgrades)
+        val builder = UpgradeBuilder<T>(id, type,path, cost)
         builder.init()
         val branch = builder.build()
 
+        val pathIdx = branch.path ?: tiers[0].lastIndex
+
         upgrades[id] = branch
-        tiers[tierIndex] = max(tiers[tierIndex], id + branch.levels.size)
+        tiers[tierIndex][pathIdx].start = min(tiers[tierIndex][pathIdx].start, id)
+        tiers[tierIndex][pathIdx].end = max(tiers[tierIndex][pathIdx].end, id + branch.levels.size - 1)
+        addPathInfo(branch.icon, pathName)
+    }
+
+    fun <T, E> upgrade(
+        id: Enum<*>,
+        type: UpgradeType,
+        cost: Int,
+        path: E,
+        init: UpgradeBuilder<T>.() -> Unit
+    ) where E : Enum<E>, E : BasePath{
+        upgrade(id.ordinal, type, cost, path.ordinal, path.pathName, init)
     }
 
     fun <T> upgrade(
         id: Enum<*>,
         type: UpgradeType,
         cost: Int,
-        blockingUpgrades: List<Enum<*>>? = null,
         init: UpgradeBuilder<T>.() -> Unit
     ) {
-        upgrade(id.ordinal, type, cost, blockingUpgrades?.map { it.ordinal }, init)
+        upgrade(id.ordinal, type, cost, null, null, init)
     }
 }
 
@@ -242,8 +301,8 @@ class TierBuilder(
 class UpgradeBuilder<T>(
     private val id: Int,
     private val type: UpgradeType,
-    private val cost: Int,
-    private val blockingUpgrades: List<Int>? = null
+    private val path: Int?,
+    private val cost: Int
 ) {
     private val levels = ArrayList<UpgradeLevel<T>>(5)
     private val actions = ArrayList<(Player, T) -> Unit>(3)
@@ -261,7 +320,7 @@ class UpgradeBuilder<T>(
         icon.editPersistentDataContainer { container ->
             container.set(UpgradesManager.UPGRADE_KEY, PersistentDataType.INTEGER, id)
         }
-        return UpgradeBranch(id, type, cost, levels.toList(), actions.toList(), blockingUpgrades, icon)
+        return UpgradeBranch(id, type, path, cost, levels.toList(), actions.toList(), icon)
     }
 }
 
