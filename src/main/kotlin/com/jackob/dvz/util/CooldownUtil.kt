@@ -53,4 +53,18 @@ class CooldownUtil(private val cooldownInMilliseconds: Long) {
         return cooldownMap.containsKey(player.uniqueId)
     }
 
+    /**
+     * @return null if player is not in the map
+      */
+    fun getRemainingTime(player: Player) : Long? {
+        val id = player.uniqueId
+        if (!cooldownMap.containsKey(id)) return null
+
+        val currentTimeStamp = System.currentTimeMillis()
+        val lastClick = cooldownMap.getLong(id)
+        val remainingTime = cooldownInMilliseconds - (currentTimeStamp - lastClick)
+
+        return if (remainingTime <= 0) 0 else remainingTime
+    }
+
 }

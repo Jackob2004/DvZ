@@ -10,12 +10,11 @@ object KitsManager {
     fun setKit(player: Player, type: KitType) {
         if (playerKits.containsKey(player.uniqueId)) return
 
-        playerKits[player.uniqueId] =
-            type.kitClass.getConstructor(String::class.java, UUID::class.java, Boolean::class.java)
-                .newInstance(type.toString().lowercase(), player.uniqueId, type.isHero)
-                .apply {
-                    onActivate()
-                }
+        val instance = type.kitClass.getConstructor(String::class.java, UUID::class.java, Boolean::class.java)
+            .newInstance(type.toString().lowercase(), player.uniqueId, type.isHero)
+
+        playerKits[player.uniqueId] = instance
+        instance.onActivate()
     }
 
     fun unsetKit(player: Player) {

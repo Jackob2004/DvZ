@@ -39,3 +39,7 @@ fun async(delay: Long = 0, period: Long, init: BukkitRunnable.() -> Unit): Bukki
 
     }.runTaskTimerAsynchronously(DvZ.INSTANCE, delay, period)
 }
+
+fun Long.toSeconds(): Long {
+    return this / 1000
+}
