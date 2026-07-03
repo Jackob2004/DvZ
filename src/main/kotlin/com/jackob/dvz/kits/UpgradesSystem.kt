@@ -23,14 +23,14 @@ data class UpgradeBranch<T>(
     val path: Int? = null,
     val cost: Int,
     val levels: List<UpgradeLevel<T>>,
-    val actions: List<(LivingEntity, T) -> Unit>,
+    val actions: List<(Player, LivingEntity?, T) -> Unit>,
     val icon: ItemStack
 ) {
-    fun applyUpgrade(livingEntity: LivingEntity, levelIndex: Int, actionIndex: Int = 0) {
+    fun applyUpgrade(player: Player,target: LivingEntity?, levelIndex: Int, actionIndex: Int = 0) {
         if (levels.isEmpty() || actions.isEmpty()) return
 
         val stats = levels[levelIndex].stats
-        actions[actionIndex](livingEntity, stats)
+        actions[actionIndex](player, target,stats)
     }
 }
 
@@ -185,7 +185,7 @@ class UpgradesManager(
             if (!playerUpgradeFlags.hasUpgrade(idx)) continue
 
             val level = findMaxUnlockedUpgrade(value, idx, playerUpgradeFlags)
-            value.applyUpgrade(player, level)
+            value.applyUpgrade(player, null,level)
         }
     }
 
@@ -193,8 +193,8 @@ class UpgradesManager(
      * Applies upgrade that is not UpgradeType.Modifier
      * Assumes the player has the passed upgrade
      */
-    fun applyAbility(target: LivingEntity, upgradeId: Enum<*>, fnIdx: Int) {
-        val id = target.uniqueId
+    fun applyAbility(player: Player, upgradeId: Enum<*>, fnIdx: Int, target: LivingEntity? = null) {
+        val id = player.uniqueId
         if (!playerUpgrades.containsKey(id)) return
 
         val playerUpgradeFlags: Long = playerUpgrades.getLong(id)
@@ -205,7 +205,7 @@ class UpgradesManager(
 
         val level = findMaxUnlockedUpgrade(upgrade, idx, playerUpgradeFlags)
 
-        upgrade.applyUpgrade(target, level, fnIdx)
+        upgrade.applyUpgrade(player, target, level, fnIdx)
     }
 
 
@@ -320,10 +320,10 @@ class UpgradeBuilder<T>(
     private val cost: Int
 ) {
     private val levels = ArrayList<UpgradeLevel<T>>(5)
-    private val actions = ArrayList<(LivingEntity, T) -> Unit>(3)
+    private val actions = ArrayList<(Player, LivingEntity?, T) -> Unit>(3)
     var icon: ItemStack = ItemStack(Material.DIRT)
 
-    fun action(block: (LivingEntity, T) -> Unit) {
+    fun action(block: (Player, LivingEntity?, T) -> Unit) {
         actions.add(block)
     }
 
