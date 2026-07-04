@@ -6,9 +6,14 @@ import com.jackob.dvz.core.events.AIZombieSpawnEvent
 import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.kits.*
 import com.jackob.dvz.util.*
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
+import me.libraryaddict.disguise.DisguiseAPI
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
+import me.libraryaddict.disguise.disguisetypes.MobDisguise
 import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
+import org.bukkit.Bukkit
 import org.bukkit.Color
 import org.bukkit.DyeColor
 import org.bukkit.Location
@@ -18,13 +23,17 @@ import org.bukkit.Sound
 import org.bukkit.attribute.Attribute
 import org.bukkit.block.banner.Pattern
 import org.bukkit.block.banner.PatternType
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.ItemDisplay
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.BannerMeta
 import org.bukkit.potion.PotionEffect
@@ -40,7 +49,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.ZOMBIE) { }
 
-    override val aiZombieEnabled: Boolean =false
+    override val aiZombieEnabled: Boolean = false
 
     init {
         ZombieListener
@@ -51,8 +60,14 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         val player = ownerId.toPlayer()!!
         startDisguise(player)
 
-        ZombieListener.upgrades.addPlayer(player)
-        ZombieListener.upgrades.applyModifiers(player)
+        val upgrades = ZombieListener.upgrades
+        upgrades.addPlayer(player)
+        upgrades.applyModifiers(player)
+
+        val upgrade = ZombieListener.ZombieUpgrade.GRAVEYARD_I
+        if (upgrades.hasUpgrade(player, upgrade)) {
+            upgrades.applyAbility(player, upgrade, 1)
+        }
     }
 
     override fun onDeactivate() {
@@ -89,13 +104,24 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         private val bannerMap = CooldownUtil(BANNER_COOLDOWN * 1000L)
 
+        private val rebirthMap = Int2LongOpenHashMap()
+
+        private val rebirthVisualMap = Int2ObjectOpenHashMap<UUID>()
+
         private val bannerItem = ItemStack(Material.GREEN_BANNER).apply {
             editMeta(BannerMeta::class.java) {
                 it.addPattern(Pattern(DyeColor.BLACK, PatternType.SKULL))
             }
         }
 
-        val upgrades = UpgradesManager.create(ZombieUpgrade.entries.size, 2, ZombiePath.entries.size) {
+        private val rebirthItem = createItem(Material.RED_CANDLE) {
+            name = "<dark_red>Rebirth"
+            description = """
+                  <gray>Click to be reborn in the place you died.
+            """
+        }
+
+        val upgrades = UpgradesManager.create(ZombieUpgrade.entries.size, 3, ZombiePath.entries.size) {
             tier(0) {
                 upgrade(ZombieUpgrade.INFECTION_I, UpgradeType.PASSIVE_ABILITY, 1, ZombiePath.UNDEAD) {
                     icon = createItem(Material.POISONOUS_POTATO) {
@@ -126,7 +152,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
                     (0..2).forEach { level(it) }
 
-                    action { zombiePlayer,_, modifier ->
+                    action { zombiePlayer, _, modifier ->
                         zombiePlayer.addPotionEffect(PotionEffect(PotionEffectType.ABSORPTION, Int.MAX_VALUE, modifier))
                     }
                 }
@@ -143,7 +169,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
                     (0..2).forEach { level(it) }
 
-                    action { zombieEntity, _,modifier ->
+                    action { zombieEntity, _, modifier ->
                         zombieEntity.addPotionEffect(PotionEffect(PotionEffectType.ABSORPTION, Int.MAX_VALUE, modifier))
                     }
                 }
@@ -182,7 +208,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     level(1.8)
                     level(2.2)
 
-                    action { zombiePlayer,_, modifier ->
+                    action { zombiePlayer, _, modifier ->
 
                         if (leapMap.isOnCooldown(zombiePlayer)) {
                             displayCooldown(zombiePlayer, leapMap)
@@ -218,7 +244,8 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     action { zombiePlayer, _, modifier ->
                         zombiePlayer.addPotionEffect(PotionEffect(PotionEffectType.STRENGTH, Int.MAX_VALUE, 0))
                         zombiePlayer.getAttribute(Attribute.GRAVITY)?.baseValue = 0.04
-                        zombiePlayer.getAttribute(Attribute.KNOCKBACK_RESISTANCE)?.baseValue = modifier.knockbackResistance
+                        zombiePlayer.getAttribute(Attribute.KNOCKBACK_RESISTANCE)?.baseValue =
+                            modifier.knockbackResistance
                         zombiePlayer.getAttribute(Attribute.SCALE)?.baseValue = modifier.scale
                         zombiePlayer.getAttribute(Attribute.MOVEMENT_SPEED)?.baseValue = modifier.speed
                         zombiePlayer.getAttribute(Attribute.JUMP_STRENGTH)?.baseValue = modifier.jump
@@ -297,6 +324,74 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                 }
             }
 
+            tier(2) {
+                upgrade(ZombieUpgrade.GRAVEYARD_I, UpgradeType.PASSIVE_ABILITY, 1, ZombiePath.UNDEAD) {
+                    icon = createItem(Material.RED_CANDLE) {
+                        name = "<white>Graveyard"
+                        description = """
+                           <gray>Gives you 20% chance to respawn in the place you died.
+                           <gray>Can be activated by clicking candle in your inventory.
+                           <gray>Chance increases by 10% each level.
+                           <gray>You have 6 sec after death to activate it.
+                        """
+                    }
+
+                    (20..40 step 10).forEach { level(it) }
+                    // on death
+                    action { zombiePlayer, _, chance ->
+                        if (Random.nextInt(100) >= chance) return@action
+                        val location = zombiePlayer.location
+                        val playerId = zombiePlayer.entityId
+
+                        rebirthMap.put(playerId, location.packCoordinates())
+
+                        val disguise = MobDisguise(DisguiseType.ZOMBIE)
+                        val watcher = disguise.watcher
+                        watcher.isSleeping = true
+
+                        DisguiseAPI.disguiseNextEntity(disguise)
+                        val dummy = location.world.spawnEntity(location, EntityType.ITEM_DISPLAY)
+                        rebirthVisualMap[playerId] = dummy.uniqueId
+
+                        sync(delay = TimeUnit.SECONDS(6)) {
+                            cancelRebirth(zombiePlayer)
+                        }
+                    }
+                    // on kit activate
+                    action { zombiePlayer, _, _ ->
+                        val id = zombiePlayer.entityId
+                        if (rebirthMap.contains(id)) {
+                            zombiePlayer.inventory.addItem(rebirthItem)
+                        }
+                    }
+                    // on item click
+                    action { zombiePlayer, _, _ ->
+                        val playerId = zombiePlayer.entityId
+                        val loc = rebirthMap.remove(playerId).unpackToLocation(zombiePlayer.world)
+
+                        zombiePlayer.teleport(loc)
+                        zombiePlayer.removeItem(rebirthItem, 1)
+                        Bukkit.getEntity(rebirthVisualMap.remove(playerId))?.remove()
+                    }
+
+                }
+
+                upgrade(ZombieUpgrade.MINER_I, UpgradeType.MODIFIER, 1) {
+                    icon = createItem(Material.GOLDEN_PICKAXE) {
+                        name = "<white>Miner"
+                        description = """
+                           <gray>Gives you golden pickaxe
+                        """
+                    }
+
+                    level(0)
+
+                    action { zombiePlayer, _, _ ->
+                        zombiePlayer.inventory.addItem(ItemStack(Material.GOLDEN_PICKAXE))
+                    }
+                }
+            }
+
         }
 
         init {
@@ -320,6 +415,15 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             }
         }
 
+        private fun cancelRebirth(player: Player) {
+            val id = player.entityId
+            if (rebirthMap.containsKey(id)) {
+                player.removeItem(rebirthItem, 1)
+                rebirthMap.remove(id)
+                Bukkit.getEntity(rebirthVisualMap.remove(id))?.remove()
+            }
+        }
+
         @EventHandler
         fun onZombieDealDamage(e: EntityDamageByEntityEvent) {
             val attacker = e.damager as? Player ?: return
@@ -327,7 +431,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             if (!upgrades.hasUpgrade(attacker, upgrade)) return
             if (KitsManager.getKit(attacker) !is Zombie) return
 
-            val dwarfVictim = e.entity  as? Player ?: return
+            val dwarfVictim = e.entity as? Player ?: return
 
             upgrades.applyAbility(attacker, upgrade, 0, dwarfVictim)
         }
@@ -349,7 +453,14 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             val player = e.player
 
             if (KitsManager.getKit(player) !is Zombie) return
-            if (e.rightClickItem?.type != Material.WOODEN_SWORD) return
+            val item = e.rightClickItem ?: return
+
+            if (item == rebirthItem) {
+                upgrades.applyAbility(player, ZombieUpgrade.GRAVEYARD_I, 2)
+                return
+            }
+
+            if (item.type != Material.WOODEN_SWORD) return
 
             if (upgrades.hasUpgrade(player, ZombieUpgrade.LEAP_I)) {
                 upgrades.applyAbility(player, ZombieUpgrade.LEAP_I, 0)
@@ -357,6 +468,21 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                 upgrades.applyAbility(player, ZombieUpgrade.BANNER_CARRIER_I, 0)
             }
 
+        }
+
+        @EventHandler(priority = EventPriority.LOWEST)
+        fun onPlayerDeath(e: PlayerDeathEvent) {
+            val player = e.player
+            val upgrade = ZombieUpgrade.GRAVEYARD_I
+            if (!upgrades.hasUpgrade(player, upgrade)) return
+            if (KitsManager.getKit(player) !is Zombie) return
+
+            upgrades.applyAbility(player, upgrade, 0)
+        }
+
+        @EventHandler
+        fun onPlayerLeave(e: PlayerQuitEvent) {
+            cancelRebirth(e.player)
         }
 
         enum class ZombieUpgrade {
@@ -383,6 +509,10 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             TOUGH_FLESH_II,
             TOUGH_FLESH_III,
             TOUGH_FLESH_IV,
+            GRAVEYARD_I,
+            GRAVEYARD_II,
+            GRAVEYARD_III,
+            MINER_I,
         }
 
         enum class ZombiePath(override val pathName: String) : BasePath {
