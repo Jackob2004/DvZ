@@ -67,4 +67,8 @@ class CooldownUtil(private val cooldownInMilliseconds: Long) {
         return if (remainingTime <= 0) 0 else remainingTime
     }
 
+    fun removeFromCooldown(player: Player) {
+        cooldownMap.removeLong(player.uniqueId)
+    }
+
 }

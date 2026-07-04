@@ -4,11 +4,13 @@ import com.destroystokyo.paper.ParticleBuilder
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.events.AIZombieSpawnEvent
+import com.jackob.dvz.core.events.ZombieDeathEvent
 import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.kits.*
 import com.jackob.dvz.util.*
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
+import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap
 import me.libraryaddict.disguise.DisguiseAPI
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
@@ -45,13 +47,12 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-
 class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<LivingWatcher> {
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.ZOMBIE) { }
 
-    override val aiZombieEnabled: Boolean = false
+    override val aiZombieEnabled: Boolean = true
 
     init {
         ZombieListener
@@ -66,15 +67,25 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         upgrades.addPlayer(player)
         upgrades.applyModifiers(player)
 
-        val upgrade = ZombieListener.ZombieUpgrade.GRAVEYARD_I
-        if (upgrades.hasUpgrade(player, upgrade)) {
-            upgrades.applyAbility(player, upgrade, 1)
+        val graveUpgrade = ZombieUpgrade.GRAVEYARD_I
+        val cryUpgrade = ZombieUpgrade.DESPERATE_CRY_I
+        if (upgrades.hasUpgrade(player, graveUpgrade)) {
+            upgrades.applyAbility(player, graveUpgrade, 1)
+        } else if (upgrades.hasUpgrade(player, cryUpgrade)) {
+            upgrades.applyAbility(player, cryUpgrade, 1)
         }
     }
 
     override fun onDeactivate() {
         super.onDeactivate()
-        stopDisguise(ownerId.toPlayer()!!)
+        val player = ownerId.toPlayer()!!
+        stopDisguise(player)
+
+        val upgrades = ZombieListener.upgrades
+        val upgrade = ZombieUpgrade.DESPERATE_CRY_I
+        if (upgrades.hasUpgrade(player, upgrade)) {
+            upgrades.applyAbility(player, upgrade, 2)
+        }
     }
 
     private fun spinOn(player: Player) {
@@ -104,6 +115,12 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         private const val HAMMER_COOLDOWN = 13
 
+        private const val DEATH_INTERVAL = 5
+
+        private const val CRY_DISTANCE = 10
+
+        private const val MIN_ZOMBIE_DEATHS = 5
+
         private val leapMap = CooldownUtil(LEAP_COOLDOWN * 1000L)
 
         private val bannerMap = CooldownUtil(BANNER_COOLDOWN * 1000L)
@@ -113,6 +130,10 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private val rebirthMap = Int2LongOpenHashMap()
 
         private val rebirthVisualMap = Int2ObjectOpenHashMap<UUID>()
+
+        private val deathInterval = CooldownUtil(DEATH_INTERVAL * 1000L)
+
+        private val deathsInInterval = Object2IntLinkedOpenHashMap<UUID>()
 
         private val bannerItem = ItemStack(Material.GREEN_BANNER).apply {
             editMeta(BannerMeta::class.java) {
@@ -405,6 +426,55 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     }
                 }
 
+                upgrade(ZombieUpgrade.DESPERATE_CRY_I, UpgradeType.PASSIVE_ABILITY, 1, ZombiePath.CAPTAIN) {
+                    icon = createItem(Material.GHAST_TEAR) {
+                        name = "<white>Desperate cry"
+                        description = """
+                           <gray>Gives you buff of strength and speed for 5 sec.
+                           <gray>It is triggered by $MIN_ZOMBIE_DEATHS zombies dying in the range.
+                           <gray>of $CRY_DISTANCE blocks near you in duration of $DEATH_INTERVAL seconds.
+                        """
+                    }
+
+                    (5..7).forEach { level(it) }
+                    // on ally zombie death
+                    action { zombiePlayer, deadZombieAlly, modifier ->
+                        val distance = zombiePlayer.location.distanceSquared(deadZombieAlly!!.location)
+                        if (distance > CRY_DISTANCE * CRY_DISTANCE) return@action
+
+                        val playerId = zombiePlayer.uniqueId
+                        if (deathInterval.isOnCooldownSafe(zombiePlayer)) {
+                            val deaths = deathsInInterval.getInt(playerId) + 1
+                            if (deaths >= MIN_ZOMBIE_DEATHS) {
+                                deathsInInterval.put(playerId, 0)
+                                deathInterval.removeFromCooldown(zombiePlayer)
+
+                                val duration = modifier * 20
+                                zombiePlayer.addPotionEffect(PotionEffect(PotionEffectType.STRENGTH, duration, 1))
+                                zombiePlayer.addPotionEffect(PotionEffect(PotionEffectType.SPEED, duration, 1))
+                                zombiePlayer.addPotionEffect(PotionEffect(PotionEffectType.REGENERATION, duration, 1))
+                                zombiePlayer.playSound(zombiePlayer.location, Sound.ENTITY_ZOMBIE_HURT, 1.0f, 1.0f)
+                            } else {
+                                deathsInInterval.put(playerId, deaths)
+                            }
+
+                        } else {
+                            deathInterval.putOnCooldown(zombiePlayer)
+                            deathsInInterval.put(playerId, 1)
+                        }
+                    }
+                    // on activate
+                    action { zombiePlayer, _, _ ->
+                        deathsInInterval.put(zombiePlayer.uniqueId, 0)
+                    }
+                    // on deactivate
+                    action { zombiePlayer, _, _ ->
+                        deathInterval.removeFromCooldown(zombiePlayer)
+                        deathsInInterval.removeInt(zombiePlayer.uniqueId)
+                    }
+
+                }
+
                 upgrade(ZombieUpgrade.MINER_I, UpgradeType.MODIFIER, 1) {
                     icon = createItem(Material.GOLDEN_PICKAXE) {
                         name = "<white>Miner"
@@ -569,37 +639,12 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             cancelRebirth(e.player)
         }
 
-        enum class ZombieUpgrade {
-            INFECTION_I,
-            INFECTION_II,
-            INFECTION_III,
-            HARDENED_FLESH_I,
-            HARDENED_FLESH_II,
-            HARDENED_FLESH_III,
-            LEADERSHIP_I,
-            LEADERSHIP_II,
-            LEADERSHIP_III,
-            RAW_DAMAGE_I,
-            RAW_DAMAGE_II,
-            RAW_DAMAGE_III,
-            RAW_DAMAGE_IV,
-            LEAP_I,
-            LEAP_II,
-            BIG_BOY_I,
-            BIG_BOY_II,
-            BANNER_CARRIER_I,
-            BANNER_CARRIER_II,
-            TOUGH_FLESH_I,
-            TOUGH_FLESH_II,
-            TOUGH_FLESH_III,
-            TOUGH_FLESH_IV,
-            GRAVEYARD_I,
-            GRAVEYARD_II,
-            GRAVEYARD_III,
-            SLEDGEHAMMER_I,
-            SLEDGEHAMMER_II,
-            SLEDGEHAMMER_III,
-            MINER_I,
+        @EventHandler
+        fun onZombieDeath(e: ZombieDeathEvent) {
+            for (id in deathsInInterval.keys) {
+                val player = Bukkit.getPlayer(id) ?: continue
+                upgrades.applyAbility(player, ZombieUpgrade.DESPERATE_CRY_I, 0, e.victim)
+            }
         }
 
         enum class ZombiePath(override val pathName: String) : BasePath {

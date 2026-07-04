@@ -492,7 +492,7 @@ class AttackState(
 
         if (e.entity.type == AIZombieScheduler.MOB_TYPE && attacker != null && isActiveDwarf(attacker)) {
             killedMonsters.incrementAndGet()
-            Bukkit.getPluginManager().callEvent(ZombieDeathEvent(attacker))
+            Bukkit.getPluginManager().callEvent(ZombieDeathEvent(attacker, e.entity))
         }
 
         e.droppedExp = 0
