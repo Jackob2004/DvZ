@@ -2,6 +2,7 @@ package com.jackob.dvz.kits.zombie.base
 
 import com.destroystokyo.paper.ParticleBuilder
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.events.AIZombieSpawnEvent
 import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.kits.*
@@ -38,6 +39,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.BannerMeta
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import org.joml.Matrix4f
 import java.util.*
 import kotlin.math.cos
 import kotlin.math.sin
@@ -100,9 +102,13 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         private const val BANNER_COOLDOWN = 16
 
+        private const val HAMMER_COOLDOWN = 13
+
         private val leapMap = CooldownUtil(LEAP_COOLDOWN * 1000L)
 
         private val bannerMap = CooldownUtil(BANNER_COOLDOWN * 1000L)
+
+        private val hammerMap = CooldownUtil(HAMMER_COOLDOWN * 1000L)
 
         private val rebirthMap = Int2LongOpenHashMap()
 
@@ -376,6 +382,29 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
                 }
 
+                upgrade(ZombieUpgrade.SLEDGEHAMMER_I, UpgradeType.ACTIVE_ABILITY, 1, ZombiePath.GIANT) {
+                    icon = createItem(Material.MACE) {
+                        name = "<white>Sledgehammer"
+                        description = """
+                           <gray>Gives you ability to create a hammer in front of you.
+                           <gray>It falls down knocking enemies off you and dealing damage.
+                           <gray>Right click on blade to activate it.
+                           <gray>Gets stronger each level.
+                           <gray>Cooldown ($HAMMER_COOLDOWN s)
+                        """
+                    }
+
+                    (2..6 step 2).forEach { level(it) }
+
+                    action { zombiePlayer, _, modifier ->
+                        if (hammerMap.isOnCooldown(zombiePlayer)) {
+                            displayCooldown(zombiePlayer, hammerMap)
+                        } else {
+                            playHammerEffect(zombiePlayer, modifier.toDouble())
+                        }
+                    }
+                }
+
                 upgrade(ZombieUpgrade.MINER_I, UpgradeType.MODIFIER, 1) {
                     icon = createItem(Material.GOLDEN_PICKAXE) {
                         name = "<white>Miner"
@@ -412,6 +441,59 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                 loc.add(x, 0.0, z)
                 effect.location(loc).receivers(12, true).spawn()
                 loc.subtract(x, 0.0, z)
+            }
+        }
+
+        private fun playHammerEffect(player: Player, modifier: Double) {
+            val directionVector = player.location.direction.normalize().multiply(3)
+            val displayLocation = player.location.add(directionVector).add(0.0, 2.0, 0.0)
+            val groundLocation = displayLocation.clone().subtract(0.0, 2.0, 0.0)
+
+            val display = player.world.spawn(displayLocation, ItemDisplay::class.java) { consumer ->
+                consumer.setItemStack(ItemStack(Material.MACE))
+                consumer.itemDisplayTransform = ItemDisplay.ItemDisplayTransform.FIXED
+            }
+            player.playSound(player.location, Sound.ITEM_MACE_SMASH_AIR, 1f, 1f)
+
+            val degreesInRadians = Math.toRadians(120.0).toFloat()
+            sync(delay = TimeUnit.SECONDS(1)) {
+                display.interpolationDuration = 20
+                display.interpolationDelay = 0
+
+                val horizontalMatrix = Matrix4f().rotateZ(degreesInRadians)
+                display.setTransformationMatrix(horizontalMatrix)
+            }
+
+            sync(delay = TimeUnit.SECONDS(3)) {
+                display.interpolationDuration = 7
+                display.interpolationDelay = 0
+
+                val horizontalMatrix = Matrix4f().translate(0f, -4f, 0f).rotateZ(degreesInRadians)
+                display.setTransformationMatrix(horizontalMatrix)
+            }
+
+            sync(delay = TimeUnit.TICKS(65)) {
+                val blockData = Material.STONE.createBlockData()
+                Particle.BLOCK.builder()
+                    .location(groundLocation)
+                    .data(blockData)
+                    .offset(0.3, 0.1, 0.3)
+                    .count(40)
+                    .extra(0.1)
+                    .receivers(15, true)
+                    .spawn()
+
+                groundLocation.getWorld().playSound(groundLocation, Sound.BLOCK_STONE_BREAK, 1.0f, 0.8f)
+
+                val range = 3.0
+                directionVector.y = 0.1
+                for (e in groundLocation.getNearbyEntities(range, range, range)) {
+                    if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) {
+                        e.velocity = directionVector
+                        e.damage(modifier, player)
+                    }
+                }
+                display.remove()
             }
         }
 
@@ -466,6 +548,8 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                 upgrades.applyAbility(player, ZombieUpgrade.LEAP_I, 0)
             } else if (upgrades.hasUpgrade(player, ZombieUpgrade.BANNER_CARRIER_I)) {
                 upgrades.applyAbility(player, ZombieUpgrade.BANNER_CARRIER_I, 0)
+            } else if (upgrades.hasUpgrade(player, ZombieUpgrade.SLEDGEHAMMER_I)) {
+                upgrades.applyAbility(player, ZombieUpgrade.SLEDGEHAMMER_I, 0)
             }
 
         }
@@ -512,6 +596,9 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             GRAVEYARD_I,
             GRAVEYARD_II,
             GRAVEYARD_III,
+            SLEDGEHAMMER_I,
+            SLEDGEHAMMER_II,
+            SLEDGEHAMMER_III,
             MINER_I,
         }
 
