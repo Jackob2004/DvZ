@@ -240,9 +240,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                         if (leapMap.isOnCooldown(zombiePlayer)) {
                             leapMap.displayCooldown(zombiePlayer)
                         } else {
-                            val vector = zombiePlayer.location.direction.normalize().multiply(modifier)
-                            vector.y = 0.7
-                            zombiePlayer.velocity = vector
+                            zombiePlayer.launchPlayer(modifier, 0.7)
 
                             (KitsManager.getKit(zombiePlayer) as Zombie).spinOn(zombiePlayer)
 

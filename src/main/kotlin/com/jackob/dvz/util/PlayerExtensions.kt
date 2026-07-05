@@ -5,6 +5,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Registry
+import org.bukkit.Sound
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -62,4 +63,10 @@ fun Entity.isInRegion(region: ProtectedRegion): Boolean {
     val weVector = BlockVector3.at(loc.x, loc.y, loc.z)
 
     return region.contains(weVector)
+}
+
+fun Player.launchPlayer(force: Double, yValue: Double) {
+    val directionVector = location.direction.normalize().multiply(force)
+    directionVector.y = yValue
+    velocity = directionVector
 }

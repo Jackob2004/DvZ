@@ -5,6 +5,7 @@ import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.util.CooldownUtil
 import com.jackob.dvz.util.TimeUnit
+import com.jackob.dvz.util.launchPlayer
 import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
@@ -52,11 +53,7 @@ class Warrior(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             leapCooldowns.displayCooldown(player)
         } else {
             player.getAttribute(Attribute.FALL_DAMAGE_MULTIPLIER)?.baseValue = 0.0
-
-            val directionVector = player.location.direction.normalize().multiply(2.8)
-            directionVector.y = 0.9
-            player.velocity = directionVector
-
+            player.launchPlayer(2.8, 0.9)
             player.playSound(player.location, Sound.ENTITY_BREEZE_WIND_BURST, 1f, 1f)
 
             fallDamageOnTask = sync(delay = TimeUnit.SECONDS(NO_FALL_DAMAGE_TIME.toLong())) {
