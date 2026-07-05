@@ -155,7 +155,7 @@ class PreparationState(
         dwarfTeam.addMember(player)
         player.teleport(gameMap.dwarfSpawn)
         KitsManager.setKit(player, kitType)
-        player.inventory.addItem(dwarvenCompass.retrieveItem())
+        player.inventory.addItem(dwarvenCompass.receiveItem())
     }
 
     private fun createKitSelectionMenu(): PagerMenu {
