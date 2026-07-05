@@ -25,6 +25,12 @@ class Warrior(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     private var fallDamageOnTask: BukkitTask? = null
 
+    companion object {
+        private const val NO_FALL_DAMAGE_TIME = 4
+
+        private val leapCooldowns = CooldownUtil(15 * 1000)
+    }
+
     init {
         WarriorListener
     }
@@ -36,12 +42,6 @@ class Warrior(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             fallDamageOnTask!!.cancel()
             fallDamageOnTask = null
         }
-    }
-
-    companion object {
-        private const val NO_FALL_DAMAGE_TIME = 4
-
-        private val leapCooldowns = CooldownUtil(15 * 1000)
     }
 
     private fun turnFallDamageOn(p: Player) {
