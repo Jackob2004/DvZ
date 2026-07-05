@@ -15,9 +15,10 @@ kits:
           - ""
           - "<green>[Right] <white>- click to activate ability"
           - "Launches you forward and upward"
+          - "Gives you fall damage immunity for 4 sec"
           - "Cooldown (15 s)"
         enchantments:
-          unbreaking: 3
+          unbreaking: 4
 
       - material: "IRON_HELMET"
         name: "<red>Helmet"
@@ -26,6 +27,7 @@ kits:
           - "<gray>Rusty helmet."
         enchantments:
           unbreaking: 3
+
       - material: "DIAMOND_CHESTPLATE"
         name: "<b><red>Hardened plate"
         lore:
@@ -36,6 +38,7 @@ kits:
           unbreaking: 3
         trimMaterial: "iron"
         trimPattern: "sentry"
+
       - material: "IRON_LEGGINGS"
         name: "<red>Leggings"
         lore:
@@ -78,13 +81,64 @@ kits:
         amount: 4.0
 
     items:
+      - material: "BOW"
+        name: "<b><green>Light bow"
+        lore:
+          - ""
+          - "<green>[Left] <white>- click to activate ability"
+          - "Launches you backwards and lets you fall down slowly"
+          - "Cooldown (10 s)"
+        enchantments:
+          unbreaking: 4
+
+      - material: "CHAINMAIL_HELMET"
+        name: "<green>Helmet"
+        lore:
+          - ""
+          - "Old piece of armor"
+        enchantments:
+          unbreaking: 3
+          projectile_protection: 1
+
       - material: "LEATHER_CHESTPLATE"
         name: "<b><green>Light plate"
         lore:
-          - "<gray>Light as feather."
+          - ""
+          - "Light as a feather."
         enchantments:
           protection: 4
           unbreaking: 3
+          projectile_protection: 3
+        trimMaterial: "iron"
+        trimPattern: "raiser"
+
+      - material: "CHAINMAIL_LEGGINGS"
+        name: "<green>Leggings"
+        lore:
+          - ""
+          - "Old piece of armor"
+        enchantments:
+          unbreaking: 3
+          projectile_protection: 1
+      - material: "CHAINMAIL_BOOTS"
+        name: "<green>Boots"
+        lore:
+          - ""
+          - "Old piece of armor"
+        enchantments:
+          unbreaking: 3
+          projectile_protection: 1
+
+      - material: "POTION"
+        name: "<green><u>Agility Potion"
+        potionColor: "#BD1313"
+        potionEffects:
+          - type: "SPEED"
+            durationSeconds: 120
+            amplifier: 1
+          - type: "JUMP_BOOST"
+            durationSeconds: 15
+            amplifier: 1
 
     kitAttributes:
       rampage: 1
