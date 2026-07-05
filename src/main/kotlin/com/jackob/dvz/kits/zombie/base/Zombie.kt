@@ -238,7 +238,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     action { zombiePlayer, _, modifier ->
 
                         if (leapMap.isOnCooldown(zombiePlayer)) {
-                            displayCooldown(zombiePlayer, leapMap)
+                            leapMap.displayCooldown(zombiePlayer)
                         } else {
                             val vector = zombiePlayer.location.direction.normalize().multiply(modifier)
                             vector.y = 0.7
@@ -297,7 +297,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
                     action { zombiePlayer, _, modifier ->
                         if (bannerMap.isOnCooldown(zombiePlayer)) {
-                            displayCooldown(zombiePlayer, bannerMap)
+                            bannerMap.displayCooldown(zombiePlayer)
                             return@action
                         }
 
@@ -419,7 +419,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
                     action { zombiePlayer, _, modifier ->
                         if (hammerMap.isOnCooldown(zombiePlayer)) {
-                            displayCooldown(zombiePlayer, hammerMap)
+                            hammerMap.displayCooldown(zombiePlayer)
                         } else {
                             playHammerEffect(zombiePlayer, modifier.toDouble())
                         }
@@ -497,11 +497,6 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         init {
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
-        }
-
-        private fun displayCooldown(player: Player, map: CooldownUtil) {
-            val time = map.getRemainingTime(player)!!.toSeconds().toInt()
-            player.sendActionBar("<gold>Wait <gray>${time}s <gold>to use the ability".mm())
         }
 
         private fun playCircleEffect(effect: ParticleBuilder, loc: Location) {

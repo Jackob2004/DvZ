@@ -71,4 +71,12 @@ class CooldownUtil(private val cooldownInMilliseconds: Long) {
         cooldownMap.removeLong(player.uniqueId)
     }
 
+    /**
+     * Assumes that the cooldown map contains player
+     */
+    fun displayCooldown(player: Player ) {
+        val time = getRemainingTime(player)!!.toSeconds().toInt()
+        player.sendActionBar("<gold>Wait <gray>${time}s <gold>to use the ability".mm())
+    }
+
 }
