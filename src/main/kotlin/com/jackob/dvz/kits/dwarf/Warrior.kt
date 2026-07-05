@@ -9,6 +9,7 @@ import com.jackob.dvz.util.launchPlayer
 import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
+import com.jackob.dvz.util.withCooldown
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.attribute.Attribute
@@ -48,20 +49,16 @@ class Warrior(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         attr?.baseValue = attr.defaultValue
     }
 
-    private fun leapAbility(player: Player) {
-        if (leapCooldowns.isOnCooldown(player)) {
-            leapCooldowns.displayCooldown(player)
-        } else {
-            player.getAttribute(Attribute.FALL_DAMAGE_MULTIPLIER)?.baseValue = 0.0
-            player.launchPlayer(2.8, 0.9)
-            player.playSound(player.location, Sound.ENTITY_BREEZE_WIND_BURST, 1f, 1f)
+    private fun leapAbility(player: Player) = player.withCooldown(leapCooldowns) {
+        getAttribute(Attribute.FALL_DAMAGE_MULTIPLIER)?.baseValue = 0.0
+        launchPlayer(2.8, 0.9)
+        playSound(location, Sound.ENTITY_BREEZE_WIND_BURST, 1f, 1f)
 
-            fallDamageOnTask = sync(delay = TimeUnit.SECONDS(NO_FALL_DAMAGE_TIME.toLong())) {
-                ownerId.toPlayer()?.takeIf { it.isOnline }?.let { p ->
-                    turnFallDamageOn(p)
-                }
-                fallDamageOnTask = null
+        fallDamageOnTask = sync(delay = TimeUnit.SECONDS(NO_FALL_DAMAGE_TIME.toLong())) {
+            ownerId.toPlayer()?.takeIf { it.isOnline }?.let { p ->
+                turnFallDamageOn(p)
             }
+            fallDamageOnTask = null
         }
     }
 

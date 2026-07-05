@@ -70,3 +70,11 @@ fun Player.launchPlayer(force: Double, yValue: Double) {
     directionVector.y = yValue
     velocity = directionVector
 }
+
+inline fun Player.withCooldown(cooldown: CooldownUtil, action: Player.() -> Unit) {
+    if (cooldown.isOnCooldown(this)) {
+        cooldown.displayCooldown(this)
+    } else {
+        this.action()
+    }
+}
