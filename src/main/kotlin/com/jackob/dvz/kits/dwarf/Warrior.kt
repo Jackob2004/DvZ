@@ -42,7 +42,7 @@ class Warrior(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         private val leapCooldowns = CooldownUtil(15 * 1000)
     }
 
-    private fun turnFallDamageOn(p : Player) {
+    private fun turnFallDamageOn(p: Player) {
         val attr = p.getAttribute(Attribute.FALL_DAMAGE_MULTIPLIER)
         attr?.baseValue = attr.defaultValue
     }
@@ -92,7 +92,7 @@ class Warrior(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
 
         @EventHandler
-        fun onPlayerQuit(e: PlayerQuitEvent){
+        fun onPlayerQuit(e: PlayerQuitEvent) {
             val player = e.player
             val kit = KitsManager.getKit(player) as? Warrior ?: return
 

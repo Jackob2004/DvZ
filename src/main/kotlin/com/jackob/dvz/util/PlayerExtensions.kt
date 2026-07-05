@@ -42,6 +42,8 @@ fun Player.resetAll() {
     allowFlight = false
     isCollidable = true
     gameMode = GameMode.SURVIVAL
+    level = 0
+    exp = 0f
 }
 
 fun UUID.toPlayer() : Player? = Bukkit.getPlayer(this)

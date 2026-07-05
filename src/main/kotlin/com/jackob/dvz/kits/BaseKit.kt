@@ -1,5 +1,7 @@
 package com.jackob.dvz.kits
 
+import com.jackob.dvz.core.equipment.CustomItemType
+import com.jackob.dvz.core.equipment.EquipmentRegister
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.toPlayer
 import org.bukkit.Bukkit
@@ -23,9 +25,22 @@ abstract class BaseKit(val internalName: String, val ownerId: UUID, val isHero: 
         applyAttributeModifiers()
         giveItems()
         sendActivationMessage()
+
+        if (aiZombieEnabled == null) {
+            val ale = CustomItemType.HEALING_ALE
+            val player = ownerId.toPlayer()!!
+
+            player.inventory.addItem(EquipmentRegister.getItem(ale)!!)
+            EquipmentRegister.runOnReceive(ale, ownerId.toPlayer()!!)
+        }
     }
 
-    open fun onDeactivate() { }
+    open fun onDeactivate() {
+        if (aiZombieEnabled == null) {
+            val ale = CustomItemType.HEALING_ALE
+            EquipmentRegister.runOnLose(ale, ownerId.toPlayer()!!)
+        }
+    }
 
     protected fun applyPotionEffects() {
         ownerId.toPlayer()?.addPotionEffects(KitConfigsCache.retrieveKitPotions(internalName))
