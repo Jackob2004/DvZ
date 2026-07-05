@@ -6,5 +6,6 @@ enum class CustomItemType {
     WIGGLY_WRENCH,
     DWARVEN_COMPASS,
     MORTAR,
-    SUPER_MORTAR
+    SUPER_MORTAR,
+    HEALING_ALE
 }
