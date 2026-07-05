@@ -430,9 +430,9 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     icon = createItem(Material.GHAST_TEAR) {
                         name = "<white>Desperate cry"
                         description = """
-                           <gray>Gives you buff of strength and speed for 5 sec.
-                           <gray>It is triggered by $MIN_ZOMBIE_DEATHS zombies dying in the range.
-                           <gray>of $CRY_DISTANCE blocks near you in duration of $DEATH_INTERVAL seconds.
+                           <gray>Gives you buff of strength, speed and regeneration for 5 s.
+                           <gray>It is triggered by min $MIN_ZOMBIE_DEATHS zombie deaths in the range
+                           <gray>of $CRY_DISTANCE blocks near you in interval of $DEATH_INTERVAL seconds.
                         """
                     }
 
@@ -446,7 +446,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                         if (deathInterval.isOnCooldownSafe(zombiePlayer)) {
                             val deaths = deathsInInterval.getInt(playerId) + 1
                             if (deaths >= MIN_ZOMBIE_DEATHS) {
-                                deathsInInterval.put(playerId, 0)
+                                deathsInInterval.put(playerId, -MIN_ZOMBIE_DEATHS)
                                 deathInterval.removeFromCooldown(zombiePlayer)
 
                                 val duration = modifier * 20
@@ -460,7 +460,9 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
                         } else {
                             deathInterval.putOnCooldown(zombiePlayer)
-                            deathsInInterval.put(playerId, 1)
+                            val deaths = deathsInInterval.getInt(playerId)
+                            val updatedDeaths = if (deaths <= 0 ) deaths + 1 else 1
+                            deathsInInterval.put(playerId, updatedDeaths)
                         }
                     }
                     // on activate
