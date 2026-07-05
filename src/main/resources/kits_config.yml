@@ -9,15 +9,47 @@ kits:
         amount: 10.0
 
     items:
+      - material: "DIAMOND_AXE"
+        name: "<b><red>Hardened sword"
+        lore:
+          - ""
+          - "<green>[Right] <white>- click to activate ability"
+          - "Launches you forward and upward"
+          - "Cooldown (15 s)"
+        enchantments:
+          unbreaking: 3
+
+      - material: "IRON_HELMET"
+        name: "<red>Helmet"
+        lore:
+          - ""
+          - "<gray>Rusty helmet."
+        enchantments:
+          unbreaking: 3
       - material: "DIAMOND_CHESTPLATE"
         name: "<b><red>Hardened plate"
         lore:
-          - "<gray>Be proud wearing it."
+          - ""
+          - "Be proud wearing it."
         enchantments:
           protection: 4
           unbreaking: 3
         trimMaterial: "iron"
         trimPattern: "sentry"
+      - material: "IRON_LEGGINGS"
+        name: "<red>Leggings"
+        lore:
+          - ""
+          - "Rusty leggings."
+        enchantments:
+          unbreaking: 3
+      - material: "IRON_BOOTS"
+        name: "<red>Boots"
+        lore:
+          - ""
+          - "Rusty boots."
+        enchantments:
+          unbreaking: 3
 
       - material: "POTION"
         name: "<red><u>Battle Potion"
@@ -25,7 +57,10 @@ kits:
         potionEffects:
           - type: "STRENGTH"
             durationSeconds: 120
-            amplifier: 2
+            amplifier: 1
+          - type: "REGENERATION"
+            durationSeconds: 15
+            amplifier: 1
 
     customItems:
       - id: RADIANCE_SHROOM
