@@ -28,3 +28,8 @@ enderman:
   name: <dark_green>Enderman
   description:
     - <gray>I can teleport!
+skeleton:
+  icon: SKELETON_SKULL
+  name: <aqua>Skeleton
+  description:
+    - <gray>I am bony!

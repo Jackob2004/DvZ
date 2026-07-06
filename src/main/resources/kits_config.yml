@@ -199,3 +199,18 @@ kits:
 
     kitAttributes:
       rampageImmune: false
+
+  skeleton:
+    activateMessage:
+      message: "<aqua>You arrived to battle as a skeleton"
+      broadcast: false
+
+    items:
+      - material: "BOW"
+        name: "<b><aqua>Dusty Bow"
+      - material: "ARROW"
+        name: "<gray>Arrow"
+        amount: 32
+
+    kitAttributes:
+      rampageImmune: false
