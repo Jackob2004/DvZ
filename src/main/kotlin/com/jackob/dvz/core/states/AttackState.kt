@@ -26,6 +26,7 @@ import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.kits.UpgradesManager
+import com.jackob.dvz.kits.zombie.base.Skeleton
 import com.jackob.dvz.kits.zombie.base.Zombie
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.storage.GameMap
@@ -236,6 +237,27 @@ class AttackState(
         }
     }
 
+    private fun getUpgradesMenu(itemType: Material): Pair<UpgradesManager, String>? {
+        var upgrades: UpgradesManager
+        var upgradeMenuTitle: String
+
+        when (itemType) {
+            Material.ZOMBIE_SPAWN_EGG -> {
+                upgrades = Zombie.ZombieListener.upgrades
+                upgradeMenuTitle = "<dark_green>Zombie upgrades"
+            }
+
+            Material.SKELETON_SPAWN_EGG -> {
+                upgrades = Skeleton.SkeletonListener.upgrades
+                upgradeMenuTitle = "<dark_aqua>Skeleton upgrades"
+            }
+
+            else -> return null
+        }
+
+        return Pair(upgrades, upgradeMenuTitle)
+    }
+
     private fun createKitSelectionMenu(): PagerMenu {
         val basicZombieKits = KitType.entries
             .filter { !it.isHero && it.team == TeamType.ZOMBIE }
@@ -245,6 +267,10 @@ class AttackState(
             name = "<dark_green>Open zombie upgrades menu"
         }
 
+        val skeletonUpgrades = createItem(Material.SKELETON_SPAWN_EGG) {
+            name = "<dark_aqua>Open skeleton upgrades menu"
+        }
+
         wavesScheduler.currentKit?.let {
             basicZombieKits.add(it)
         }
@@ -252,16 +278,17 @@ class AttackState(
         return object : PagerMenu(basicZombieKits, canDeactivate = true, title = "<gray><b>Select kit") {
             init {
                 menu.setItem(36, zombieUpgrades)
+                menu.setItem(37, skeletonUpgrades)
             }
 
             override fun handleClick(slot: Int, player: Player) {
                 super.handleClick(slot, player)
 
                 menu.getItem(slot)?.let { item ->
-                    if (item.type == Material.ZOMBIE_SPAWN_EGG) {
-                        val upgrades = Zombie.ZombieListener.upgrades
-                        upgrades.addPlayer(player)
-                        openUpgradesMenu(player, upgrades, "<dark_green>Zombie upgrades")
+                    val upgradesMenu = getUpgradesMenu(item.type)
+                    if (upgradesMenu != null) {
+                        upgradesMenu.first.addPlayer(player)
+                        openUpgradesMenu(player, upgradesMenu.first, upgradesMenu.second)
                         return@handleClick
                     }
 
@@ -282,7 +309,7 @@ class AttackState(
         }
     }
 
-    private fun getUpgrades(player: Player, upgrades: UpgradesManager) : Pair<List<ItemStack>, Int>? {
+    private fun getUpgrades(player: Player, upgrades: UpgradesManager): Pair<List<ItemStack>, Int>? {
         val applicableUpgradesData = upgrades.getApplicableUpgradesData(player) ?: return null
         val upgradeIcons = applicableUpgradesData.map {
             it.icon.updateItem {
@@ -314,7 +341,8 @@ class AttackState(
 
                 menu.getItem(slot)?.let { item ->
                     val container = item.persistentDataContainer
-                    val cost = container.get(UpgradesManager.UPGRADE_COST_KEY, PersistentDataType.INTEGER) ?: return@handleClick
+                    val cost = container.get(UpgradesManager.UPGRADE_COST_KEY, PersistentDataType.INTEGER)
+                        ?: return@handleClick
 
                     if (!manaManager.consumeMana(player, cost)) {
                         player.playSound(player.location, Sound.ENTITY_WANDERING_TRADER_NO, 1f, 1f)
@@ -329,7 +357,7 @@ class AttackState(
 
                     if (updatedData != null) {
                         this.updateMenu(updatedData.first, "<dark_purple>Mana: ${updatedData.second}")
-                    } else{
+                    } else {
                         player.closeInventory()
                         player.sendMessage("<green>All $title <green>has been unlocked".mm())
                     }
