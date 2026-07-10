@@ -1,10 +1,12 @@
 package com.jackob.dvz.kits.zombie.base
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.BasePath
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitsManager
+import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.kits.UpgradeType
 import com.jackob.dvz.kits.UpgradesManager
 import com.jackob.dvz.util.CooldownUtil
@@ -18,15 +20,22 @@ import com.jackob.dvz.util.withCooldown
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.watchers.SkeletonWatcher
+import org.bukkit.Color
 import org.bukkit.Material
 import org.bukkit.Sound
+import org.bukkit.attribute.Attribute
+import org.bukkit.attribute.AttributeModifier
 import org.bukkit.enchantments.Enchantment
+import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.inventory.meta.PotionMeta
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import java.util.UUID
+import kotlin.random.Random
 
 class Skeleton(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<SkeletonWatcher> {
@@ -60,7 +69,7 @@ class Skeleton(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
 
         private val cloakCooldowns = CooldownUtil(20 * 1000)
 
-        val upgrades = UpgradesManager.create(SkeletonUpgrade.entries.size, 1, SkeletonPath.entries.size) {
+        val upgrades = UpgradesManager.create(SkeletonUpgrade.entries.size, 2, SkeletonPath.entries.size) {
             tier(0) {
                 upgrade(SkeletonUpgrade.CLOAK_I, UpgradeType.ACTIVE_ABILITY, 1, SkeletonPath.INFILTRATOR) {
                     icon = createItem(Material.POTION) {
@@ -122,6 +131,82 @@ class Skeleton(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
                 }
 
             }
+
+            tier(1) {
+                upgrade(SkeletonUpgrade.SLIM_BLADE_I, UpgradeType.MODIFIER, 1, SkeletonPath.INFILTRATOR) {
+                    icon = createItem(Material.COPPER_SWORD) {
+                        name = "<aqua>Slim Blade"
+                        description = """
+                            <gray>Gives you a copper sword with sharpness I
+                            <gray>Holding it gives you speed buff
+                            <gray>Both sharpness and speed increase each upgrade
+                        """
+                    }
+
+                    level(1)
+                    level(2)
+
+                    action { skeletonPlayer, _, multiplier ->
+                        val attr = Attribute.MOVEMENT_SPEED
+                        val modifier =
+                            AttributeModifier(attr.key, 0.04 * multiplier, AttributeModifier.Operation.ADD_NUMBER)
+                        val blade = createItem(Material.COPPER_SWORD) {
+                            name = "<gray>Slim Blade"
+                            enchant(Enchantment.SHARPNESS, multiplier)
+                            addAttributeModifier(attr, modifier)
+                        }
+
+                        skeletonPlayer.inventory.addItem(blade)
+                    }
+
+                }
+
+                upgrade(SkeletonUpgrade.POISONED_ARROW_I, UpgradeType.MODIFIER, 1, SkeletonPath.SHARPSHOOTER) {
+                    icon = createItem(Material.TIPPED_ARROW) {
+                        name = "<dark_aqua>Poisoned Arrow"
+                        description = """
+                            <gray>Gives you 16x wither arrows
+                            <gray>+ 8 each upgrade
+                        """
+                    }
+
+                    level(16)
+                    level(24)
+
+                    action { skeletonPlayer, _, amountOfArrows ->
+                        val effect = PotionEffect(PotionEffectType.WITHER, 8 * 20 * 8, 0)
+                        val arrows = createItem<PotionMeta>(Material.TIPPED_ARROW, amountOfArrows) {
+                            name = "<dark_green>Dipped in wither's blood"
+                            addCustomEffect(effect, true)
+                            color = Color.GREEN
+                        }
+
+                        skeletonPlayer.inventory.addItem(arrows)
+                    }
+
+                }
+
+                upgrade(SkeletonUpgrade.BAG_OF_BONES_I, UpgradeType.PASSIVE_ABILITY, 1) {
+                    icon = createItem(Material.BONE) {
+                        name = "<white>Bag Of Bones"
+                        description = """
+                            <gray>Gives you 10% chance to gain instant health on any projectile hit
+                            <gray>+ 10% each upgrade
+                        """
+                    }
+
+                    (10..40 step 10).forEach { level(it) }
+
+                    action { skeletonPlayer, _, chance ->
+                        if (Random.nextInt(100) >= chance) return@action
+                        val effect = PotionEffect(PotionEffectType.INSTANT_HEALTH, 1, 0)
+                        skeletonPlayer.addPotionEffect(effect)
+                        skeletonPlayer.playSound(skeletonPlayer.location, Sound.ENTITY_WANDERING_TRADER_DRINK_POTION, 1f, 1f)
+                    }
+
+                }
+
+            }
         }
 
         init {
@@ -139,6 +224,20 @@ class Skeleton(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
             if (item.type != Material.BOW) return
 
             upgrades.applyAbility(player, upgrade, 0)
+        }
+
+        @EventHandler
+        fun onProjectileHit(e: ProjectileHitEvent) {
+            val playerVictim = e.hitEntity as? Player ?: return
+            val shooter = e.entity.shooter as? Player ?: return
+            if (GameManager.getPlayerTeam(shooter) != TeamType.DWARF) return
+
+            val upgrade = SkeletonUpgrade.BAG_OF_BONES_I
+
+            if (!upgrades.hasUpgrade(playerVictim, upgrade)) return
+            if (KitsManager.getKit(playerVictim) !is Skeleton) return
+
+            upgrades.applyAbility(playerVictim, upgrade, 0)
         }
 
         enum class SkeletonPath(override val pathName: String) : BasePath {
