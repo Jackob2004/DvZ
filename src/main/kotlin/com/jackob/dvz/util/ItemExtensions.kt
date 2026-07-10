@@ -19,6 +19,21 @@ fun createItem(material: Material, amount: Int = 1, init: ItemMeta.() -> Unit): 
     return item
 }
 
+@JvmName("createItemGeneric")
+inline fun <reified T : ItemMeta> createItem(
+    material: Material,
+    amount: Int = 1,
+    init: T.() -> Unit
+): ItemStack {
+    val item = ItemStack(material, amount)
+
+    val meta = item.itemMeta as? T ?: return item
+    meta.apply(init)
+    item.itemMeta = meta
+
+    return item
+}
+
 fun ItemStack.updateItem(init: ItemMeta.() -> Unit) {
     val meta = itemMeta
     meta.apply(init)
