@@ -146,6 +146,7 @@ class MapSetupProcess @Throws(IllegalStateException::class) constructor(
         setFlag(Flags.GHAST_FIREBALL, StateFlag.State.DENY)
         setFlag(Flags.WATER_FLOW, StateFlag.State.DENY)
         setFlag(Flags.LAVA_FLOW, StateFlag.State.DENY)
+        setFlag(Flags.PVP, StateFlag.State.ALLOW)
     }
 
     fun setBasicInfo(mapName: String, numberOfShrines: Int) {
