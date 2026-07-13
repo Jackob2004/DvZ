@@ -6,6 +6,7 @@ import com.jackob.dvz.kits.dwarf.Warrior
 import com.jackob.dvz.kits.dwarf.hero.Elf
 import com.jackob.dvz.kits.zombie.base.Zombie
 import com.jackob.dvz.kits.zombie.special.Enderman
+import com.jackob.dvz.kits.zombie.base.Creeper
 import com.jackob.dvz.kits.zombie.base.Skeleton
 import com.jackob.dvz.kits.zombie.special.SuperCreeper
 import com.jackob.dvz.storage.KitDisplay
@@ -31,7 +32,8 @@ enum class KitType(
     ZOMBIE(Zombie::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("zombie")),
     SUPER_CREEPER(SuperCreeper::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("super_creeper"), 0.3f),
     ENDERMAN(Enderman::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("enderman"), 0.0f),
-    SKELETON(Skeleton::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("skeleton"));
+    SKELETON(Skeleton::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("skeleton")),
+    CREEPER(Creeper::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("creeper"));
 
     val key: NamespacedKey by lazy {
         NamespacedKey(DvZ.INSTANCE, this.name.lowercase())

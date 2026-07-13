@@ -33,3 +33,8 @@ skeleton:
   name: <aqua>Skeleton
   description:
     - <gray>I am bony!
+creeper:
+  icon: CREEPER_HEAD
+  name: <green>Creeper
+  description:
+    - <gray>I explode!

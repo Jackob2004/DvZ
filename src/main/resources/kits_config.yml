@@ -214,3 +214,15 @@ kits:
 
     kitAttributes:
       rampageImmune: false
+
+  creeper:
+    activateMessage:
+      message: "<green>You arrived to battle as a creeper"
+      broadcast: false
+
+    items:
+      - material: "GUNPOWDER"
+        name: "<green>Kaboom"
+
+    kitAttributes:
+      rampageImmune: false
