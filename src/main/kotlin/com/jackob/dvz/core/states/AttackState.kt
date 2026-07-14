@@ -26,6 +26,7 @@ import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.kits.UpgradesManager
+import com.jackob.dvz.kits.zombie.base.Creeper
 import com.jackob.dvz.kits.zombie.base.Skeleton
 import com.jackob.dvz.kits.zombie.base.Zombie
 import com.jackob.dvz.storage.ConfigStorage
@@ -252,6 +253,11 @@ class AttackState(
                 upgradeMenuTitle = "<dark_aqua>Skeleton upgrades"
             }
 
+            Material.CREEPER_SPAWN_EGG -> {
+                upgrades = Creeper.CreeperListener.upgrades
+                upgradeMenuTitle = "<green>Creeper upgrades"
+            }
+
             else -> return null
         }
 
@@ -271,6 +277,10 @@ class AttackState(
             name = "<dark_aqua>Open skeleton upgrades menu"
         }
 
+        val creeperUpgrades = createItem(Material.CREEPER_SPAWN_EGG) {
+            name = "<green>Open creeper upgrades menu"
+        }
+
         wavesScheduler.currentKit?.let {
             basicZombieKits.add(it)
         }
@@ -279,6 +289,7 @@ class AttackState(
             init {
                 menu.setItem(36, zombieUpgrades)
                 menu.setItem(37, skeletonUpgrades)
+                menu.setItem(38, creeperUpgrades)
             }
 
             override fun handleClick(slot: Int, player: Player) {
