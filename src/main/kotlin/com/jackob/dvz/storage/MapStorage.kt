@@ -52,6 +52,7 @@ object MapStorage {
         setGameRule(GameRules.SPAWN_WANDERING_TRADERS, false)
         setGameRule(GameRules.SPAWN_WARDENS, false)
         setGameRule(GameRules.RAIDS, false)
+        setGameRule(GameRules.MOB_GRIEFING, true)
 
         time = 6000
         setStorm(false)
@@ -75,10 +76,10 @@ object MapStorage {
         val gameManager = container.get(BukkitAdapter.adapt(gameMapWorld))
             ?: throw MapLoadException(gameMapWorld.name, "WorldGuard RegionManager for game map missing.")
 
-        for (templateRegion in templateManager.getRegions().values) {
+        for (templateRegion in templateManager.regions.values) {
             if (templateRegion.id == "__global__") {
                 val gameGlobal = gameManager.getRegion("__global__")
-                gameGlobal?.setFlags(templateRegion.flags)
+                gameGlobal?.flags = templateRegion.flags
                 continue
             }
 
