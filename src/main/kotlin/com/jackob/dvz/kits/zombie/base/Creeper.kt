@@ -1,25 +1,44 @@
 package com.jackob.dvz.kits.zombie.base
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.kits.BaseKit
+import com.jackob.dvz.kits.BasePath
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitsManager
+import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.kits.UpgradeType
+import com.jackob.dvz.kits.UpgradesManager
+import com.jackob.dvz.util.CooldownUtil
 import com.jackob.dvz.util.TimeUnit
+import com.jackob.dvz.util.createItem
+import com.jackob.dvz.util.description
 import com.jackob.dvz.util.leftClickItem
+import com.jackob.dvz.util.name
 import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
+import com.jackob.dvz.util.withCooldown
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.watchers.CreeperWatcher
+import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.Particle
 import org.bukkit.Sound
+import org.bukkit.block.Block
+import org.bukkit.entity.Arrow
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
+import kotlin.random.Random
 
 class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<CreeperWatcher> {
@@ -36,7 +55,17 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     override fun onActivate() {
         super.onActivate()
-        startDisguise(ownerId.toPlayer()!!)
+        val player = ownerId.toPlayer()!!
+        startDisguise(player)
+
+        val upgrades = CreeperListener.upgrades
+        upgrades.addPlayer(player)
+        upgrades.applyModifiers(player)
+
+        val upgrade = CreeperUpgrades.WALL_CRUSHER_I
+        if (upgrades.hasUpgrade(player, upgrade)) {
+            upgrades.applyAbility(player, upgrade, 0)
+        }
     }
 
     override fun onDeactivate() {
@@ -87,8 +116,98 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     object CreeperListener : Listener {
 
+        private const val WALL_CRUSHER_COOLDOWN = 12
+
+        private val hammer = createItem(Material.IRON_INGOT) {
+            name = "<yellow>Wall crusher"
+            description = """
+                <green>[Right] <white>click on the block to destroy it
+                <gray> Cooldown $WALL_CRUSHER_COOLDOWN sec
+            """
+        }
+
+        private val crusherCooldowns = CooldownUtil(WALL_CRUSHER_COOLDOWN * 1000L)
+
+        val upgrades = UpgradesManager.create(CreeperUpgrades.entries.size, 1, CreeperPath.entries.size) {
+            tier(0) {
+                upgrade(CreeperUpgrades.SHALLOW_WOUND_I, UpgradeType.PASSIVE_ABILITY, 1, CreeperPath.TRICKSTER) {
+                    icon = createItem(Material.ROTTEN_FLESH) {
+                        name = "<light_purple>Shallow Wound"
+                        description = """
+                            <gray>Gives you 20% chance to get regeneration effect after being hit by an arrow
+                            <gray>+5% each upgrade
+                        """
+                    }
+
+                    (20..35 step 5).forEach { level(it) }
+
+                    action { creeperPlayer, _, chance ->
+                        if (Random.nextInt(100) >= chance) return@action
+
+                        val regenEffect = PotionEffect(PotionEffectType.REGENERATION, 3 * 20, 1)
+                        creeperPlayer.addPotionEffect(regenEffect)
+                    }
+                }
+
+                upgrade(CreeperUpgrades.WALL_CRUSHER_I, UpgradeType.ACTIVE_ABILITY, 1, CreeperPath.DEMOLISHER) {
+                    icon = createItem(Material.IRON_INGOT) {
+                        name = "<light_purple>Wall Crusher"
+                        description = """
+                            <gray>Gives you a hammer that can break blocks instantly
+                            <gray>Cooldown $WALL_CRUSHER_COOLDOWN sec
+                            <gray>Each upgrade gives you +10% chance to cancel cooldown after usage
+                        """
+                    }
+
+                    (10..30 step 10).forEach { level(it) }
+
+                    action { creeperPlayer, _, _ ->
+                        creeperPlayer.inventory.addItem(hammer)
+                    }
+
+                    action { creeperPlayer, _, chance ->
+                        if (Random.nextInt(100) >= chance) return@action
+                        crusherCooldowns.removeFromCooldown(creeperPlayer)
+                        creeperPlayer.playSound(creeperPlayer.location, Sound.ENTITY_CREEPER_HURT, 1f, 1f)
+                    }
+                }
+
+                upgrade(CreeperUpgrades.HARDENING_I, UpgradeType.MODIFIER, 1) {
+                    icon = createItem(Material.SHIELD) {
+                        name = "<light_purple>Hardening"
+                        description = """
+                            <gray>Gives you resistance I effect
+                        """
+                    }
+
+                    level(0)
+
+                    action { creeperPlayer, _, modifier ->
+                        val resistanceEffect =
+                            PotionEffect(PotionEffectType.RESISTANCE, Int.MAX_VALUE, modifier, false, false)
+                        creeperPlayer.addPotionEffect(resistanceEffect)
+                    }
+                }
+
+            }
+        }
+
         init {
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+        }
+
+        @Suppress("UnstableApiUsage")
+        private fun destroyBlock(player: Player, block: Block) = player.withCooldown(crusherCooldowns) {
+            val blockBreak = BlockBreakEvent(block, this)
+            Bukkit.getPluginManager().callEvent(blockBreak)
+
+            if (!blockBreak.isCancelled) {
+                block.breakNaturally(true)
+            }
+
+            world.spawnParticle(Particle.EXPLOSION, block.location, 1)
+            playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 1f, 1f)
+            upgrades.applyAbility(player, CreeperUpgrades.WALL_CRUSHER_I, 1)
         }
 
         @EventHandler
@@ -96,12 +215,35 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             val player = e.player
             val creeperKit = KitsManager.getKit(player) as? Creeper ?: return
 
-            if (e.rightClickItem?.type == Material.GUNPOWDER) {
+            val rightItem = e.rightClickItem
+            if (rightItem?.type == Material.GUNPOWDER) {
                 creeperKit.startIgnition(player)
             } else if (e.leftClickItem?.type == Material.GUNPOWDER) {
                 creeperKit.stopIgnition(player)
+            } else if (rightItem?.type == hammer.type) {
+                e.clickedBlock?.let { destroyBlock(player, it) }
             }
 
+        }
+
+        @EventHandler
+        fun onArrowDamage(e: ProjectileHitEvent) {
+            if (e.entity !is Arrow) return
+            val creeperVictim = e.hitEntity as? Player ?: return
+            if (KitsManager.getKit(creeperVictim) !is Creeper) return
+
+            val attacker = e.entity.shooter as? Player ?: return
+            if (GameManager.getPlayerTeam(attacker) != TeamType.DWARF) return
+
+            val upgrade = CreeperUpgrades.SHALLOW_WOUND_I
+            if (!upgrades.hasUpgrade(creeperVictim, upgrade)) return
+
+            upgrades.applyAbility(creeperVictim, upgrade, 0)
+        }
+
+        enum class CreeperPath(override val pathName: String) : BasePath {
+            TRICKSTER("<i><light_purple>Trickster"),
+            DEMOLISHER("<i><green>Demolisher")
         }
     }
 }
