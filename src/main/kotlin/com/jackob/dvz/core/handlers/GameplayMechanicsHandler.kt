@@ -180,7 +180,7 @@ class GameplayMechanicsHandler : CoreHandler {
                 soundEffect = Sound.BLOCK_FIRE_AMBIENT
             }
 
-            Material.BOWL if (clickedBlock == Material.SPONGE) -> {
+            Material.GRAY_DYE if (clickedBlock == Material.SPONGE) -> {
                 item = EquipmentRegister.getItem(CustomItemType.MORTAR)!!
                 soundEffect = Sound.BLOCK_STONE_HIT
             }
