@@ -2,6 +2,7 @@ package com.jackob.dvz.kits.zombie.base
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.events.ZombieDeathEvent
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.BasePath
 import com.jackob.dvz.kits.Disguisable
@@ -20,6 +21,7 @@ import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
 import com.jackob.dvz.util.withCooldown
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.watchers.CreeperWatcher
@@ -35,6 +37,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.potion.PotionEffect
@@ -49,7 +52,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.CREEPER) { }
 
-    override val aiZombieEnabled: Boolean = true
+    override val aiZombieEnabled: Boolean = false
 
     private var explosionTask: BukkitTask? = null
 
@@ -82,15 +85,17 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         world.createExplosion(location, explosionPower, false, true, player)
 
         val upgrades = CreeperListener.upgrades
-        val sheepUpgrade = CreeperUpgrades.SHEEPS_CLOTHING_I
-        val chainUpgrade = CreeperUpgrades.CHAIN_REACTION_I
+        val explosionAlteringUpgrades = arrayOf(
+            CreeperUpgrades.SHEEPS_CLOTHING_I,
+            CreeperUpgrades.CHAIN_REACTION_I,
+            CreeperUpgrades.HAVOC_I,
+            CreeperUpgrades.REVENGE_I
+        )
 
-        if (upgrades.hasUpgrade(player, sheepUpgrade)) {
-            upgrades.applyAbility(player, sheepUpgrade, 0)
-        }
-
-        if (upgrades.hasUpgrade(player, chainUpgrade)) {
-            upgrades.applyAbility(player, chainUpgrade, 0)
+        for (upgrade in explosionAlteringUpgrades) {
+            if (upgrades.hasUpgrade(player, upgrade)) {
+                upgrades.applyAbility(player, upgrade, 0)
+            }
         }
 
         player.health = 0.0
@@ -115,8 +120,15 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
 
         player.modifyMobDisguise {
-            isPowered = true
+            isIgnited = true
         }
+
+        val upgrades = CreeperListener.upgrades
+        val upgrade = CreeperUpgrades.ADRENALINE_I
+        if (upgrades.hasUpgrade(player, upgrade)) {
+            upgrades.applyAbility(player, upgrade, 0)
+        }
+
         world.playSound(player.location, Sound.ENTITY_CREEPER_PRIMED, 1f, 1f)
     }
 
@@ -127,7 +139,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
             player.exp = 0f
             player.modifyMobDisguise {
-                isPowered = false
+                isIgnited = false
             }
             player.playSound(player.location, Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f)
         }
@@ -148,7 +160,11 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
         private val crusherCooldowns = CooldownUtil(WALL_CRUSHER_COOLDOWN * 1000L)
 
-        val upgrades = UpgradesManager.create(CreeperUpgrades.entries.size, 2, CreeperPath.entries.size) {
+        private val adrenalineSet = HashSet<UUID>()
+
+        private val latestKillersMap = Object2ObjectOpenHashMap<UUID, UUID>()
+
+        val upgrades = UpgradesManager.create(CreeperUpgrades.entries.size, 3, CreeperPath.entries.size) {
             tier(0) {
                 upgrade(CreeperUpgrades.SHALLOW_WOUND_I, UpgradeType.PASSIVE_ABILITY, 1, CreeperPath.TRICKSTER) {
                     icon = createItem(Material.ROTTEN_FLESH) {
@@ -159,7 +175,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                         """
                     }
 
-                    (20..35 step 5).forEach { level(it) }
+                    (20..30 step 5).forEach { level(it) }
 
                     action { creeperPlayer, _, chance ->
                         if (Random.nextInt(100) >= chance) return@action
@@ -232,7 +248,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                         for (l in nearbyBlocksLocations) {
                             val block = l.block
                             val blockType = block.type
-                            if (blockType== Material.AIR || blockType  == replaceMaterial) continue
+                            if (blockType == Material.AIR || blockType == replaceMaterial || blockType == Material.BEDROCK) continue
 
                             val blockBreak = BlockBreakEvent(block, creeperPlayer)
                             Bukkit.getPluginManager().callEvent(blockBreak)
@@ -267,7 +283,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                             var currReactions = reactions - 1
                             var newRootLocation: Location? = null
 
-                            val entitiesInRange = rootLocation.getNearbyEntities(effectRange, effectRange , effectRange)
+                            val entitiesInRange = rootLocation.getNearbyEntities(effectRange, effectRange, effectRange)
                             for (e in entitiesInRange) {
                                 val victim = e as? Player ?: continue
                                 val id = victim.uniqueId
@@ -309,10 +325,100 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                 }
 
             }
+
+            tier(2) {
+                upgrade(CreeperUpgrades.HAVOC_I, UpgradeType.PASSIVE_ABILITY, 1, CreeperPath.TRICKSTER) {
+                    icon = createItem(Material.FIRE_CHARGE) {
+                        name = "<light_purple>Havoc"
+                        description = """
+                            <gray>Your explosions now have 10% chance to reorder dwarves inventories
+                            <gray>Effect range is 7 blocks
+                            <gray>Each level chance increases by 5%
+                        """
+                    }
+
+                    (10..20 step 5).forEach { level(it) }
+
+                    action { creeperPlayer, _, chance ->
+                        if (Random.nextInt(100) >= chance) return@action
+
+                        val effectRange = 7.0
+                        val nearbyEntities =
+                            creeperPlayer.location.getNearbyEntities(effectRange, effectRange, effectRange)
+
+                        for (e in nearbyEntities) {
+                            val dwarfVictim = e as? Player ?: continue
+                            if (GameManager.getPlayerTeam(dwarfVictim) != TeamType.DWARF) continue
+
+                            val reorderedInventory = dwarfVictim.inventory.storageContents.apply { shuffle() }
+
+                            dwarfVictim.inventory.storageContents = reorderedInventory
+                            dwarfVictim.playSound(dwarfVictim.location, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1f, 1f)
+                        }
+                    }
+                }
+
+                upgrade(CreeperUpgrades.REVENGE_I, UpgradeType.PASSIVE_ABILITY, 1, CreeperPath.DEMOLISHER) {
+                    icon = createItem(Material.TNT) {
+                        name = "<green>Revenge"
+                        description = """
+                            <gray>Your explosion now gives negative effects to your latest killer
+                            <gray>Triggers only if he was maximally 8 blocks away from you
+                        """
+                    }
+
+                    (0..2).forEach { level(it) }
+
+                    // on creeper explode
+                    action { creeperPlayer, _, modifier ->
+                        val latestKiller = latestKillersMap[creeperPlayer.uniqueId]?.toPlayer() ?: return@action
+                        if (latestKiller.location.distanceSquared(creeperPlayer.location) > 8 * 8) return@action
+
+                        val  poisonEffect = PotionEffect(PotionEffectType.POISON, 8 * 20, modifier, false, false)
+                        val nauseaEffect = PotionEffect(PotionEffectType.NAUSEA, 4 * 20, modifier, false, false)
+
+                        latestKiller.addPotionEffect(poisonEffect)
+                        latestKiller.addPotionEffect(nauseaEffect)
+                    }
+
+                    // on creeper death
+                    action { creeperPlayer, dwarfKiller, _->
+                        latestKillersMap[creeperPlayer.uniqueId] = dwarfKiller!!.uniqueId
+                    }
+                }
+
+                upgrade(CreeperUpgrades.ADRENALINE_I, UpgradeType.PASSIVE_ABILITY, 1) {
+                    icon = createItem(Material.LINGERING_POTION) {
+                        name = "<white>Adrenaline"
+                        description = """
+                            <gray>Gives speed I effect (3s) on starting the fuse ignition
+                            <gray>This is one time ability
+                        """
+                    }
+
+                    level(0)
+                    level(1)
+
+                    action { creeperPlayer, _, modifier ->
+                        val id = creeperPlayer.uniqueId
+                        if (adrenalineSet.contains(id)) return@action
+                        adrenalineSet.add(id)
+
+                        val speedEffect = PotionEffect(PotionEffectType.SPEED, 4 * 20, modifier, false, false)
+                        creeperPlayer.addPotionEffect(speedEffect)
+                    }
+                }
+
+            }
         }
 
         init {
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+        }
+
+        private fun cleanupUpgradesCaches(player: Player) {
+            adrenalineSet.remove(player.uniqueId)
+            crusherCooldowns.removeFromCooldown(player)
         }
 
         @Suppress("UnstableApiUsage")
@@ -320,7 +426,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             val blockBreak = BlockBreakEvent(block, this)
             Bukkit.getPluginManager().callEvent(blockBreak)
 
-            if (!blockBreak.isCancelled) {
+            if (!blockBreak.isCancelled && block.type != Material.BEDROCK) {
                 block.breakNaturally(true)
             }
 
@@ -364,6 +470,22 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             if (!upgrades.hasUpgrade(creeperVictim, upgrade)) return
 
             upgrades.applyAbility(creeperVictim, upgrade, 0)
+        }
+
+        @EventHandler
+        fun onCreeperDeath(e: ZombieDeathEvent) {
+            val creeperPlayer = e.victim as? Player ?: return
+            if (KitsManager.getKit(creeperPlayer) !is Creeper) return
+
+            val upgrade = CreeperUpgrades.REVENGE_I
+            if (upgrades.hasUpgrade(creeperPlayer, upgrade)) {
+                upgrades.applyAbility(creeperPlayer, upgrade, 1, e.killer)
+            }
+        }
+
+        @EventHandler
+        fun onPlayerDeath(e: PlayerDeathEvent) {
+            cleanupUpgradesCaches(e.player)
         }
 
         enum class CreeperPath(override val pathName: String) : BasePath {
