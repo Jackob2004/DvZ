@@ -17,4 +17,12 @@ enum class CreeperUpgrades {
     NITROGLYCERIN_I,
     NITROGLYCERIN_II,
     NITROGLYCERIN_III,
+    HAVOC_I,
+    HAVOC_II,
+    HAVOC_III,
+    REVENGE_I,
+    REVENGE_II,
+    REVENGE_III,
+    ADRENALINE_I,
+    ADRENALINE_II
 }
