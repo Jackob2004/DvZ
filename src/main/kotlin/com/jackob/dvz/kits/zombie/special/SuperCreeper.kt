@@ -13,7 +13,7 @@ import java.util.UUID
 class SuperCreeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero), Disguisable<CreeperWatcher> {
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.CREEPER) {
-        isIgnited = true
+        isPowered = true
     }
 
     override val aiZombieEnabled: Boolean = true
