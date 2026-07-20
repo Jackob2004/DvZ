@@ -145,20 +145,93 @@ kits:
 
   elf:
     activateMessage:
-      message: "<green>Elf from Mirkwood has arrived"
+      message: "<b><green>Elf from Mirkwood has arrived"
       broadcast: true
 
     attributes:
       - type: "MAX_HEALTH"
         amount: 20.0
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
+
+    potions:
+      - type: "SPEED"
+        durationSeconds: 1000000
+        amplifier: 1
+      - type: "JUMP_BOOST"
+        durationSeconds: 1000000
+        amplifier: 1
 
     items:
       - material: "BOW"
         name: "<b><green>Nature's Wrath"
+        lore:
+          - ""
+          - "<green>[Left] <white>- click to activate ability"
+          - "Stand still to craft new arrows"
         enchantments:
-          power: 5
-          punch: 2
+          power: 2
+          punch: 1
           unbreaking: 3
+
+      - material: "DIAMOND_PICKAXE"
+        name: "<b><green>Elven Blade"
+        lore:
+          - ""
+          - "<green>[Right] <white>- click to activate ability"
+          - "Launches you in in the direction your are looking"
+          - "Cooldown 12 seconds"
+        enchantments:
+          sharpness: 4
+          unbreaking: 3
+
+      - material: "LEATHER_HELMET"
+        name: "<b><green>Light Helmet"
+        lore:
+          - ""
+          - "Forged by the elves of Mirkwood"
+        enchantments:
+          protection: 3
+          projectile_protection: 2
+          unbreaking: 3
+        trimMaterial: "emerald"
+        trimPattern: "silence"
+
+      - material: "LEATHER_CHESTPLATE"
+        name: "<b><green>Light Plate"
+        lore:
+          - ""
+          - "Forged by the elves of Mirkwood"
+        enchantments:
+          protection: 3
+          projectile_protection: 2
+          unbreaking: 3
+        trimMaterial: "emerald"
+        trimPattern: "silence"
+
+      - material: "LEATHER_LEGGINGS"
+        name: "<b><green>Light Leggings"
+        lore:
+          - ""
+          - "Forged by the elves of Mirkwood"
+        enchantments:
+          protection: 3
+          projectile_protection: 2
+          unbreaking: 3
+        trimMaterial: "emerald"
+        trimPattern: "silence"
+
+      - material: "LEATHER_BOOTS"
+        name: "<b><green>Light Boots"
+        lore:
+          - ""
+          - "Forged by the elves of Mirkwood"
+        enchantments:
+          protection: 3
+          projectile_protection: 2
+          unbreaking: 3
+        trimMaterial: "emerald"
+        trimPattern: "silence"
 
     kitAttributes:
       rampage: 1
