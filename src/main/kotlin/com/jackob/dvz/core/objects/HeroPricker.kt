@@ -2,6 +2,7 @@ package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.kits.KitType
+import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.createItem
@@ -79,7 +80,7 @@ class HeroPricker(players: Collection<UUID>) : Listener {
 
     private fun assignRandomHeroes(): Collection<Pair<UUID, KitType>> {
         val heroes = ArrayList<Pair<UUID, KitType>>(heroesNumber)
-        val availableTypes = KitType.entries.filter { it.isHero }
+        val availableTypes = KitType.entries.filter { it.isHero && it.team == TeamType.DWARF }
 
         if (availableTypes.size < heroesNumber) {
             selectedPlayers.forEach {
