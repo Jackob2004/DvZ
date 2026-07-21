@@ -18,5 +18,5 @@ dependencies:
       load: BEFORE
       required: true
     LibsDisguises:
-      load: AFTER
+      load: BEFORE
       required: true

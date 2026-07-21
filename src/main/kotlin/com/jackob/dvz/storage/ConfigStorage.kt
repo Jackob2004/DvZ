@@ -1,6 +1,8 @@
 package com.jackob.dvz.storage
 
 import com.jackob.dvz.DvZ
+import org.bukkit.Bukkit
+import org.bukkit.plugin.Plugin
 
 object ConfigStorage {
     val REQUIRED_PLAYERS = DvZ.INSTANCE.config.getInt("required-players")
@@ -14,4 +16,19 @@ object ConfigStorage {
     val ARMOR_REPAIR_COST = DvZ.INSTANCE.config.getInt("armor-repair-cost")
     val AI_ZOMBIE_MULTIPLIER = DvZ.INSTANCE.config.getDouble("ai-zombie-multiplier")
     val ZOMBIE_WAVE_INTERVAL = DvZ.INSTANCE.config.getInt("zombie-wave-interval")
+
+    fun registerSkinIfNeeded(plugin: Plugin, saveName: String, fileName: String) {
+        val configPath = "disguise-skins-saved.$saveName"
+
+        if (!plugin.config.getBoolean(configPath)) {
+            plugin.logger.info("Registering custom skin '$fileName' as '$saveName'...")
+
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "saveskin $saveName $fileName")
+
+            plugin.config.set(configPath, true)
+            plugin.saveConfig()
+
+            plugin.logger.info("Skin generation sent to MineSkin.")
+        }
+    }
 }
