@@ -29,6 +29,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityTargetEvent
 import org.bukkit.inventory.ItemStack
+import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
 import java.util.ArrayDeque
 import java.util.Queue
@@ -58,7 +59,8 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
         private val MULTIPLIER = ConfigStorage.AI_ZOMBIE_MULTIPLIER
     }
 
-    private fun spawningOperationsCap(): Int = BASE_OPERATIONS + (MULTIPLIER * sqrt(onlinePlayers.size.toDouble())).toInt()
+    private fun spawningOperationsCap(): Int =
+        BASE_OPERATIONS + (MULTIPLIER * sqrt(onlinePlayers.size.toDouble())).toInt()
 
     private fun spawnZombie(loc: Location): LivingEntity {
         val zombieDisguise = MobDisguise(DisguiseType.ZOMBIE)
@@ -176,7 +178,7 @@ class AIZombieScheduler(private val onlinePlayers: Collection<Player>, regions: 
         if (event.entity.type != MOB_TYPE) return
 
         val target = event.target as? Player ?: return
-        if (GameManager.getPlayerTeam(target) == TeamType.DWARF) return
+        if (GameManager.getPlayerTeam(target) == TeamType.DWARF && !target.hasPotionEffect(PotionEffectType.INVISIBILITY)) return
 
         event.isCancelled = true
     }
