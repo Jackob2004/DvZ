@@ -7,5 +7,6 @@ enum class CustomItemType {
     DWARVEN_COMPASS,
     MORTAR,
     SUPER_MORTAR,
-    HEALING_ALE
+    HEALING_ALE,
+    PURIFYING_LEAF
 }

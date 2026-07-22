@@ -234,6 +234,14 @@ kits:
         trimMaterial: "emerald"
         trimPattern: "silence"
 
+    customItems:
+      - id: RADIANCE_SHROOM
+        amount: 3
+      - id: PURIFYING_LEAF
+        amount: 4
+      - id: RADIANCE_TORCH
+        amount: 6
+
     kitAttributes:
       rampage: 1
 

@@ -13,7 +13,8 @@ object EquipmentRegister {
         WigglyWrench(),
         Mortar(),
         SuperMortar(),
-        HealingAle()
+        HealingAle(),
+        PurifyingLeaf()
     )
 
     private val itemMap: Map<CustomItemType, CustomItem> = items.associateBy {
