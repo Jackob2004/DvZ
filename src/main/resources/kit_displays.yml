@@ -22,7 +22,8 @@ super_creeper:
   icon: CREEPER_HEAD
   name: <dark_green>Super Creeper
   description:
-    - <gray>BOOM
+    - <gray>Your explosion is way stronger than the creeper base one
+    - <gray>Moreover your explosion will send dwarves high to the sky!
 enderman:
   icon: ENDER_PEARL
   name: <dark_green>Enderman

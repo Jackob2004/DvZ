@@ -259,17 +259,15 @@ kits:
 
     kitAttributes:
       rampageImmune: false
+
   super_creeper:
     activateMessage:
       message: "<green>You arrived to battle as a super creeper"
       broadcast: false
 
-    items:
-      - material: "GUNPOWDER"
-        name: "<b><dark_green>boom"
-
     kitAttributes:
       rampageImmune: false
+
   enderman:
     activateMessage:
       message: "<green>You arrived to battle as an enderman"
