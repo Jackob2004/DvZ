@@ -180,7 +180,7 @@ kits:
           - ""
           - "<green>[Right] <white>- click to activate ability"
           - "Launches you in in the direction your are looking"
-          - "Cooldown 12 seconds"
+          - "Cooldown 8 seconds"
         enchantments:
           sharpness: 4
           unbreaking: 3

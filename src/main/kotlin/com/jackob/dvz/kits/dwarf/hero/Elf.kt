@@ -46,9 +46,15 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
 
         private const val DISGUISE_DURATION = 15
 
+        private const val JUMP_COOLDOWN = 8
+
+        private val ELVEN_BLADE = Material.DIAMOND_PICKAXE
+
         private val hiddenArmorPiece = ItemStack(Material.AIR)
 
         private val disguiseCooldowns = CooldownUtil(DISGUISE_COOLDOWN * 1000L)
+
+        private val jumpCooldowns = CooldownUtil(JUMP_COOLDOWN* 1000L)
 
         private val DISGUISE_ABILITY_ITEM = createItem(Material.OAK_LEAVES) {
             name = "<green><u>Forest Disguise"
@@ -148,9 +154,18 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
         if (startBaseDisguise) {
             startDisguise(player)
             player.removePotionEffect(PotionEffectType.INVISIBILITY)
+
             player.sendActionBar("<red>Leaf disguise deactivated".mm())
             player.playSound(player.location, Sound.BLOCK_CONDUIT_DEACTIVATE, 1f, 1f)
         }
+    }
+
+    private fun jumpAbility(player: Player) = player.withCooldown(jumpCooldowns) {
+        val loc = eyeLocation
+        val vector = loc.direction.normalize().multiply(1.6)
+        velocity = vector
+
+        playSound(loc, Sound.ENTITY_PHANTOM_FLAP, 1f, 1f)
     }
 
     object ElfListener : Listener {
@@ -170,6 +185,8 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
                 elfKit.activateDisguiseAbility(player)
             } else if (leftClickedItem == DISGUISE_ABILITY_ITEM) {
                 elfKit.nextDisguise(player)
+            } else if (rightClickedItem?.type == ELVEN_BLADE){
+               elfKit.jumpAbility(player)
             }
         }
 
