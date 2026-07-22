@@ -302,14 +302,5 @@ kits:
       message: "<green>You arrived to battle as a creeper"
       broadcast: false
 
-    items:
-      - material: "GUNPOWDER"
-        name: "<green>Kaboom"
-        lore:
-          - ""
-          - "Use to detonate yourself, it takes 3 seconds"
-          - "<green>[Right] <white>click to start ignition"
-          - "<green>[Left] <white>click to stop ignition"
-
     kitAttributes:
       rampageImmune: false

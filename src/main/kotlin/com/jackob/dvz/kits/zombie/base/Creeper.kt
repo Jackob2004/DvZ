@@ -2,6 +2,7 @@ package com.jackob.dvz.kits.zombie.base
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.equipment.ExplosiveCharge
 import com.jackob.dvz.core.events.ZombieDeathEvent
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.BasePath
@@ -15,7 +16,6 @@ import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
 import com.jackob.dvz.util.getSphere
-import com.jackob.dvz.util.leftClickItem
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
@@ -30,7 +30,6 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Particle
 import org.bukkit.Sound
-import org.bukkit.World
 import org.bukkit.block.Block
 import org.bukkit.entity.Arrow
 import org.bukkit.entity.Player
@@ -42,7 +41,6 @@ import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
-import org.bukkit.scheduler.BukkitTask
 import java.util.HashSet
 import java.util.UUID
 import kotlin.random.Random
@@ -52,9 +50,10 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.CREEPER) { }
 
-    override val aiZombieEnabled: Boolean = false
+    override val aiZombieEnabled: Boolean = true
 
-    private var explosionTask: BukkitTask? = null
+    private val explosive: ExplosiveCharge =
+        ExplosiveCharge(::startIgnition, ::stopIgnition, ::explode, 2.5f, owner)
 
     init {
         CreeperListener
@@ -73,17 +72,20 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         if (upgrades.hasUpgrade(player, upgrade)) {
             upgrades.applyAbility(player, upgrade, 0)
         }
+
+        player.inventory.addItem(explosive.receiveItem())
+        explosive.onReceive(player)
     }
 
     override fun onDeactivate() {
         super.onDeactivate()
-        stopDisguise(ownerId.toPlayer()!!)
+        val player = ownerId.toPlayer()!!
+
+        stopDisguise(player)
+        explosive.onLose(player)
     }
 
-    private fun explode(player: Player, world: World, explosionPower: Float) {
-        val location = player.location.add(0.0, 1.0, 0.0)
-        world.createExplosion(location, explosionPower, false, true, player)
-
+    private fun explode(player: Player) {
         val upgrades = CreeperListener.upgrades
         val explosionAlteringUpgrades = arrayOf(
             CreeperUpgrades.SHEEPS_CLOTHING_I,
@@ -97,28 +99,9 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                 upgrades.applyAbility(player, upgrade, 0)
             }
         }
-
-        player.health = 0.0
     }
 
-    private fun startIgnition(player: Player, explosionPower: Float = 2.5f) {
-        if (explosionTask != null) return
-
-        val timeToExplosion = TimeUnit.SECONDS(3)
-        val world = player.world
-
-        var timer = timeToExplosion
-        explosionTask = sync(period = TimeUnit.TICKS(1)) {
-            player.exp = (timer * 100 / timeToExplosion / 100f).coerceIn(0f, 1f)
-
-            timer--
-            if (timer <= 0) {
-                cancel()
-                explosionTask = null
-                explode(player, world, explosionPower)
-            }
-        }
-
+    private fun startIgnition(player: Player) {
         player.modifyMobDisguise {
             isIgnited = true
         }
@@ -128,23 +111,13 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         if (upgrades.hasUpgrade(player, upgrade)) {
             upgrades.applyAbility(player, upgrade, 0)
         }
-
-        world.playSound(player.location, Sound.ENTITY_CREEPER_PRIMED, 1f, 1f)
     }
 
     private fun stopIgnition(player: Player) {
-        if (explosionTask != null) {
-            explosionTask!!.cancel()
-            explosionTask = null
-
-            player.exp = 0f
-            player.modifyMobDisguise {
-                isIgnited = false
-            }
-            player.playSound(player.location, Sound.BLOCK_BEACON_DEACTIVATE, 1f, 1f)
+        player.modifyMobDisguise {
+            isIgnited = false
         }
     }
-
 
     object CreeperListener : Listener {
 
@@ -306,7 +279,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                     }
                 }
 
-                upgrade(CreeperUpgrades.NITROGLYCERIN_I, UpgradeType.PASSIVE_ABILITY, 1) {
+                upgrade(CreeperUpgrades.NITROGLYCERIN_I, UpgradeType.MODIFIER, 1) {
                     icon = createItem(Material.TNT) {
                         name = "<white>Nitroglycerin"
                         description = """
@@ -320,7 +293,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
                     action { creeperPlayer, _, modifier ->
                         val creeperKit = KitsManager.getKit(creeperPlayer) as Creeper
-                        creeperKit.startIgnition(creeperPlayer, modifier)
+                        creeperKit.explosive.explosionPower = modifier
                     }
                 }
 
@@ -374,7 +347,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                         val latestKiller = latestKillersMap[creeperPlayer.uniqueId]?.toPlayer() ?: return@action
                         if (latestKiller.location.distanceSquared(creeperPlayer.location) > 8 * 8) return@action
 
-                        val  poisonEffect = PotionEffect(PotionEffectType.POISON, 8 * 20, modifier, false, false)
+                        val poisonEffect = PotionEffect(PotionEffectType.POISON, 8 * 20, modifier, false, false)
                         val nauseaEffect = PotionEffect(PotionEffectType.NAUSEA, 4 * 20, modifier, false, false)
 
                         latestKiller.addPotionEffect(poisonEffect)
@@ -382,7 +355,7 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                     }
 
                     // on creeper death
-                    action { creeperPlayer, dwarfKiller, _->
+                    action { creeperPlayer, dwarfKiller, _ ->
                         latestKillersMap[creeperPlayer.uniqueId] = dwarfKiller!!.uniqueId
                     }
                 }
@@ -436,22 +409,11 @@ class Creeper(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
 
         @EventHandler
-        fun onGunpowderClick(e: PlayerInteractEvent) {
+        fun onHammerClick(e: PlayerInteractEvent) {
             val player = e.player
-            val creeperKit = KitsManager.getKit(player) as? Creeper ?: return
+            if (KitsManager.getKit(player) !is Creeper) return
 
-            val rightItem = e.rightClickItem
-            val upgrade = CreeperUpgrades.NITROGLYCERIN_I
-
-            if (rightItem?.type == Material.GUNPOWDER) {
-                if (upgrades.hasUpgrade(player, upgrade)) {
-                    upgrades.applyAbility(player, upgrade, 0)
-                } else {
-                    creeperKit.startIgnition(player)
-                }
-            } else if (e.leftClickItem?.type == Material.GUNPOWDER) {
-                creeperKit.stopIgnition(player)
-            } else if (rightItem?.type == hammer.type) {
+            if (e.rightClickItem?.type == hammer.type) {
                 e.clickedBlock?.let { destroyBlock(player, it) }
             }
 
