@@ -168,7 +168,8 @@ kits:
         lore:
           - ""
           - "<green>[Left] <white>- click to activate ability"
-          - "Stand still to craft new arrows"
+          - "Stand still to craft new arrows, crafting takes 3 seconds"
+          - "Cooldown 4 seconds"
         enchantments:
           power: 2
           punch: 1

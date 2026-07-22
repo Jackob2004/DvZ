@@ -11,6 +11,7 @@ import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.MiscDisguise
 import me.libraryaddict.disguise.disguisetypes.watchers.FallingBlockWatcher
 import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.enchantments.Enchantment
@@ -48,13 +49,17 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
 
         private const val JUMP_COOLDOWN = 8
 
+        private const val CRAFT_ARROWS_COOLDOWN = 4
+
         private val ELVEN_BLADE = Material.DIAMOND_PICKAXE
 
         private val hiddenArmorPiece = ItemStack(Material.AIR)
 
         private val disguiseCooldowns = CooldownUtil(DISGUISE_COOLDOWN * 1000L)
 
-        private val jumpCooldowns = CooldownUtil(JUMP_COOLDOWN* 1000L)
+        private val jumpCooldowns = CooldownUtil(JUMP_COOLDOWN * 1000L)
+
+        private val craftCooldowns = CooldownUtil(CRAFT_ARROWS_COOLDOWN * 1000L)
 
         private val DISGUISE_ABILITY_ITEM = createItem(Material.OAK_LEAVES) {
             name = "<green><u>Forest Disguise"
@@ -133,13 +138,11 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
         disguiseTask = sync(period = TimeUnit.SECONDS(1)) {
             timer--
 
-            val hasMoved = lastLocation.distanceSquared(location) > 1
-
-            if (timer <= 0 || hasMoved) {
-                deactivateDisguiseAbility(player, true)
+            if (timer <= 0 || hasMoved(lastLocation)) {
+                deactivateDisguiseAbility(this@withCooldown, true)
                 return@sync
             }
-            player.sendActionBar("<green>Forest disguise active".mm())
+            sendActionBar("<green>Forest disguise active".mm())
         }
 
         playSound(lastLocation, Sound.BLOCK_CHERRY_LEAVES_FALL, 1f, 1f)
@@ -168,6 +171,35 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
         playSound(loc, Sound.ENTITY_PHANTOM_FLAP, 1f, 1f)
     }
 
+    private fun craftArrowsAbility(player: Player) = player.withCooldown(craftCooldowns) {
+        val craftingDuration = CRAFT_ARROWS_COOLDOWN - 1
+        val lastLocation = location
+
+        var timer = 0
+        sync(period = TimeUnit.SECONDS(1)) {
+
+            if (hasMoved(lastLocation)) {
+                cancel()
+                exp = 0f
+                playSound(location, Sound.BLOCK_ANVIL_DESTROY, 1f, 1f)
+                return@sync
+            }
+
+            timer++
+            if (timer > craftingDuration) {
+                cancel()
+                exp = 0f
+                inventory.addItem(ItemStack(Material.ARROW, 16))
+                return@sync
+            }
+
+            exp = (timer * 100 / craftingDuration / 100f).coerceIn(0f, 1f)
+            playSound(lastLocation, Sound.BLOCK_ANVIL_USE, 1f, 1f)
+        }
+    }
+
+    fun Player.hasMoved(lastLocation: Location) = lastLocation.distanceSquared(location) > 1
+
     object ElfListener : Listener {
         init {
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
@@ -183,10 +215,12 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
 
             if (rightClickedItem == DISGUISE_ABILITY_ITEM) {
                 elfKit.activateDisguiseAbility(player)
+            } else if (rightClickedItem?.type == ELVEN_BLADE) {
+                elfKit.jumpAbility(player)
             } else if (leftClickedItem == DISGUISE_ABILITY_ITEM) {
                 elfKit.nextDisguise(player)
-            } else if (rightClickedItem?.type == ELVEN_BLADE){
-               elfKit.jumpAbility(player)
+            } else if (leftClickedItem?.type == Material.BOW) {
+                elfKit.craftArrowsAbility(player)
             }
         }
 
