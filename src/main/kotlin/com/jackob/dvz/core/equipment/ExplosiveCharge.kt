@@ -32,8 +32,8 @@ class ExplosiveCharge(
 
     override val item: ItemStack = createItem(Material.GUNPOWDER) {
         name = "<green>Explosive Charge"
-
         description = """
+            
             Start the ignition to detonate yourself, fuse burn time is <gray>${FUSE_BURN_TIME}3s
             <green>[Right] <white>- click to start ignition
             <green>[Left] <white>- click to stop ignition
