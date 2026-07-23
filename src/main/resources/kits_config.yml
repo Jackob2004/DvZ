@@ -302,3 +302,15 @@ kits:
 
     kitAttributes:
       rampageImmune: false
+
+  iron_golem:
+    activateMessage:
+      message: "<white>You arrived to battle as an Iron Golem"
+      broadcast: false
+
+    items:
+      - material: "COPPER_PICKAXE"
+        name: "<b><white>Old pickaxe"
+
+    kitAttributes:
+      rampageImmune: true

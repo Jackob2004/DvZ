@@ -39,3 +39,8 @@ creeper:
   name: <green>Creeper
   description:
     - <gray>I explode!
+iron_golem:
+  icon: IRON_BLOCK
+  name: <white>Iron Golem
+  description:
+    - <gray>placeholder
