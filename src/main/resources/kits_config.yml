@@ -308,9 +308,34 @@ kits:
       message: "<white>You arrived to battle as an Iron Golem"
       broadcast: false
 
+    potions:
+      - type: "REGENERATION"
+        durationSeconds: 1000000
+        amplifier: 1
+      - type: "ABSORPTION"
+        durationSeconds: 1000000
+        amplifier: 34
+      - type: "RESISTANCE"
+        durationSeconds: 1000000
+        amplifier: 3
+
     items:
       - material: "COPPER_PICKAXE"
         name: "<b><white>Old pickaxe"
+        enchantments:
+          unbreaking: 10
+
+      - material: "COPPER_HELMET"
+        name: "<b><dark_purple>Cursed Helmet"
+        enchantments:
+          binding_curse: 1
+        attributes:
+          - type: "KNOCKBACK_RESISTANCE"
+            amount: 1.0
+            slot: "HEAD"
+          - type: "ATTACK_DAMAGE"
+            amount: 10.0
+            slot: "HEAD"
 
     kitAttributes:
       rampageImmune: true

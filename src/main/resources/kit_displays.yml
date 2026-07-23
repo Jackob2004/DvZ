@@ -41,6 +41,9 @@ creeper:
     - <gray>I explode!
 iron_golem:
   icon: IRON_BLOCK
-  name: <white>Iron Golem
+  name: <white><b>Iron Golem
   description:
-    - <gray>placeholder
+    - <gray>Golem is a powerful hitter and wall destroyer equipped with a pickaxe
+    - <gray>Having extra golden hearts and rampage immunity makes
+      <gray>you a force to recon with
+    - <gray>Once your piece of armor breaks you loose your strength
