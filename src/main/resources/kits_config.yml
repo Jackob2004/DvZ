@@ -339,3 +339,15 @@ kits:
 
     kitAttributes:
       rampageImmune: true
+
+  spider:
+    activateMessage:
+      message: "<green>You arrived to battle as a spider"
+      broadcast: false
+
+    items:
+      - material: "SPIDER_EYE"
+        name: "<dark_green>todo"
+
+    kitAttributes:
+      rampageImmune: false

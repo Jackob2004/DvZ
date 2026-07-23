@@ -47,3 +47,8 @@ iron_golem:
     - <gray>Having extra golden hearts and rampage immunity makes
       <gray>you a force to recon with
     - <gray>Once your piece of armor breaks you loose your strength
+spider:
+  icon: SPIDER_EYE
+  name: <dark_green>Spider
+  description:
+    - <gray>todo
