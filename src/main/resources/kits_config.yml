@@ -373,3 +373,22 @@ kits:
 
     kitAttributes:
       rampageImmune: false
+
+  witch:
+    activateMessage:
+      message: "<green>You arrived to battle as a witch"
+      broadcast: false
+
+    potions:
+      - type: "ABSORPTION"
+        durationSeconds: 1000000
+        amplifier: 19
+      - type: "SPEED"
+        durationSeconds: 1000000
+        amplifier: 1
+      - type: "RESISTANCE"
+        durationSeconds: 1000000
+        amplifier: 2
+
+    kitAttributes:
+      rampageImmune: false

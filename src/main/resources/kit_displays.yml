@@ -53,3 +53,8 @@ spider:
   description:
     - <gray>Swift support unit capable of trapping enemies in cobweb
     - <gray>and poisoning them
+witch:
+  icon: SPLASH_POTION
+  name: <dark_purple>Witch
+  description:
+    - <gray>todo
