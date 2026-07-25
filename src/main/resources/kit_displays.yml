@@ -51,4 +51,5 @@ spider:
   icon: SPIDER_EYE
   name: <dark_green>Spider
   description:
-    - <gray>todo
+    - <gray>Swift support unit capable of trapping enemies in cobweb
+    - <gray>and poisoning them

@@ -345,9 +345,31 @@ kits:
       message: "<green>You arrived to battle as a spider"
       broadcast: false
 
+    potions:
+      - type: "ABSORPTION"
+        durationSeconds: 1000000
+        amplifier: 9
+      - type: "SPEED"
+        durationSeconds: 1000000
+        amplifier: 1
+      - type: "WEAVING"
+        durationSeconds: 1000000
+        amplifier: 0
+      - type: "JUMP_BOOST"
+        durationSeconds: 1000000
+        amplifier: 1
+      - type: "RESISTANCE"
+        durationSeconds: 1000000
+        amplifier: 1
+
     items:
       - material: "SPIDER_EYE"
-        name: "<dark_green>todo"
+        name: "<dark_green>Spider's bite"
+        lore:
+          - ""
+          - "Gives dwarves negative effects on hitting them"
+        enchantments:
+          sharpness: 5
 
     kitAttributes:
       rampageImmune: false
