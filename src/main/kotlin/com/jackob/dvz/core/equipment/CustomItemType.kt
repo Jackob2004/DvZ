@@ -9,5 +9,6 @@ enum class CustomItemType {
     SUPER_MORTAR,
     HEALING_ALE,
     PURIFYING_LEAF,
-    EXPLOSIVE_CHARGE
+    EXPLOSIVE_CHARGE,
+    DEATH_SCROLL,
 }

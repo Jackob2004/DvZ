@@ -26,12 +26,14 @@ abstract class BaseKit(val internalName: String, val ownerId: UUID, val isHero: 
         giveItems()
         sendActivationMessage()
 
+        val player = ownerId.toPlayer()!!
         if (aiZombieEnabled == null) {
             val ale = CustomItemType.HEALING_ALE
-            val player = ownerId.toPlayer()!!
 
             player.inventory.addItem(EquipmentRegister.getItem(ale)!!)
             EquipmentRegister.runOnReceive(ale, ownerId.toPlayer()!!)
+        } else if (aiZombieEnabled != null) {
+            player.inventory.setItem(17, EquipmentRegister.getItem(CustomItemType.DEATH_SCROLL)!!)
         }
     }
 
