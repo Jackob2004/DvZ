@@ -11,7 +11,6 @@ import com.jackob.dvz.util.*
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
-import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.block.Block
@@ -20,7 +19,6 @@ import org.bukkit.entity.Player
 import org.bukkit.entity.Snowball
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerInteractEvent
@@ -29,15 +27,18 @@ import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import java.util.*
+import kotlin.random.Random
 
 class Spider(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<LivingWatcher> {
 
     override val disguiseTemplate: Disguise = createMobDisguise(DisguiseType.CAVE_SPIDER) { }
 
-    override val aiZombieEnabled: Boolean = false
+    override val aiZombieEnabled: Boolean = true
 
     private val venomProjectiles = HashSet<UUID>(8)
+
+    private val webProjectiles = HashSet<UUID>(8)
 
     companion object {
         private val biteItem = Material.SPIDER_EYE
@@ -50,13 +51,27 @@ class Spider(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         private const val VENOM_COOLDOWN = 8
 
-        private val venomCooldowns = CooldownUtil(VENOM_COOLDOWN* 1000L)
+        private const val WEB_COOLDOWN = 10
+
+        private val venomCooldowns = CooldownUtil(VENOM_COOLDOWN * 1000L)
+
+        private val webCooldowns = CooldownUtil(WEB_COOLDOWN * 1000L)
 
         private val venomItem = createItem(Material.SLIME_BLOCK) {
             name = "<green>Spider's venom"
             description = """
                 Spits poisonous venom which weakens walls and poisons dwarves
                 Cooldown <gray>${VENOM_COOLDOWN}s
+                <green>[Right] <white>- click to use the ability
+            """
+            persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
+        }
+
+        private val cobwebItem = createItem(Material.COBWEB) {
+            name = "<green>Spider's web"
+            description = """
+                Launches cobweb which traps dwarves on hit
+                Cooldown <gray>${WEB_COOLDOWN}s
                 <green>[Right] <white>- click to use the ability
             """
             persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
@@ -72,12 +87,15 @@ class Spider(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         val player = ownerId.toPlayer()!!
 
         startDisguise(player)
-        player.inventory.addItem(venomItem)
+        player.inventory.addItem(venomItem, cobwebItem)
     }
 
     override fun onDeactivate() {
         super.onDeactivate()
         stopDisguise(ownerId.toPlayer()!!)
+
+        venomProjectiles.clear()
+        webProjectiles.clear()
     }
 
     private fun bitePassiveAbility(dwarfVictim: Player) {
@@ -85,17 +103,23 @@ class Spider(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         dwarfVictim.addPotionEffect(bitePoisonEffect)
     }
 
-    private fun venomAbility(spiderPlayer: Player) = spiderPlayer.withCooldown(venomCooldowns) {
+    private fun launchProjectiles(
+        projectileItem: ItemStack?,
+        shooter: Player,
+        projectilePool: HashSet<UUID>,
+        sound: Sound
+    ) {
         val maxLaunches = 8
-        val slimeBall = ItemStack(Material.SLIME_BALL)
         val period = TimeUnit.TICKS(5)
 
         var launches = maxLaunches
         sync(period = period) {
-            val vector = eyeLocation.direction.normalize().multiply(1.3)
-            val slimeProjectile: Snowball = launchProjectile(Snowball::class.java, vector)
-            slimeProjectile.item = slimeBall
-            venomProjectiles.add(slimeProjectile.uniqueId)
+            val vector = shooter.eyeLocation.direction.normalize().multiply(1.3)
+            val slimeProjectile: Snowball = shooter.launchProjectile(Snowball::class.java, vector)
+            if (projectileItem != null) {
+                slimeProjectile.item = projectileItem
+            }
+            projectilePool.add(slimeProjectile.uniqueId)
 
             launches--
 
@@ -104,13 +128,35 @@ class Spider(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             }
         }
 
-        addPotionEffect(PotionEffect(PotionEffectType.SLOWNESS, (period * maxLaunches).toInt(), 1, false, false))
-        playSound(location, Sound.ENTITY_SPIDER_AMBIENT, 1f, 1f)
+        shooter.addPotionEffect(
+            PotionEffect(
+                PotionEffectType.SLOWNESS,
+                (period * maxLaunches).toInt(),
+                1,
+                false,
+                false
+            )
+        )
+        shooter.playSound(shooter.location, sound, 1f, 1f)
     }
 
-    @Suppress("UnstableApiUsage")
-    private fun venomOnHit(projectileID: UUID, victim: Entity?, hitBlock: Block?, shooter: Player) {
-        if (!venomProjectiles.remove(projectileID)) return
+    private fun venomAbility(spiderPlayer: Player) = spiderPlayer.withCooldown(venomCooldowns) {
+        launchProjectiles(ItemStack(Material.SLIME_BALL), this, venomProjectiles, Sound.ENTITY_SPIDER_AMBIENT)
+    }
+
+    private fun cobwebAbility(spiderPlayer: Player) = spiderPlayer.withCooldown(webCooldowns) {
+        launchProjectiles(null, this, webProjectiles, Sound.ENTITY_SPIDER_STEP)
+    }
+
+    private fun handleProjectileHit(projectileID: UUID, victim: Entity?, hitBlock: Block?, shooter: Player) {
+        if (venomProjectiles.remove(projectileID)) {
+            onVenomHit(victim, hitBlock, shooter)
+        } else if (webProjectiles.remove(projectileID)) {
+            onCobwebHit(victim, shooter)
+        }
+    }
+
+    private fun onVenomHit(victim: Entity?, hitBlock: Block?, shooter: Player) {
         val poisonedBlock = Material.GREEN_WOOL
 
         if (victim != null) {
@@ -118,13 +164,25 @@ class Spider(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             if (GameManager.getPlayerTeam(dwarfVictim) != TeamType.DWARF) return
 
             victim.addPotionEffect(venomEffect)
-        } else if (hitBlock != null && hitBlock.type != poisonedBlock && hitBlock.type != Material.BEDROCK) {
-            val blockBreakSimulate = BlockBreakEvent(hitBlock, shooter)
-            Bukkit.getPluginManager().callEvent(blockBreakSimulate)
+        } else if (hitBlock != null && hitBlock.type != poisonedBlock && hitBlock.isBreakable(shooter)) {
+            hitBlock.type = poisonedBlock
+        }
+    }
 
-            if (!blockBreakSimulate.isCancelled) {
-                hitBlock.type = poisonedBlock
-            }
+    private fun onCobwebHit(victim: Entity?, shooter: Player) {
+        val dwarfVictim = victim as? Player ?: return
+        if (GameManager.getPlayerTeam(dwarfVictim) != TeamType.DWARF) return
+
+        val spiderWeb = Material.COBWEB
+
+        val block = if (Random.nextInt(2) == 1) {
+            dwarfVictim.location.block
+        } else {
+            dwarfVictim.eyeLocation.block
+        }
+
+        if (block.type != spiderWeb && block.isBreakable(shooter)) {
+            block.type = spiderWeb
         }
     }
 
@@ -152,9 +210,11 @@ class Spider(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             val spiderKit = KitsManager.getKit(player) as? Spider ?: return
 
             val rightClickedItem = e.rightClickItem
-            if (rightClickedItem != venomItem) return
-
-            spiderKit.venomAbility(player)
+            if (rightClickedItem == venomItem) {
+                spiderKit.venomAbility(player)
+            } else if (rightClickedItem == cobwebItem) {
+                spiderKit.cobwebAbility(player)
+            }
         }
 
         @EventHandler
@@ -162,7 +222,7 @@ class Spider(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             val shooter = e.entity.shooter as? Player ?: return
             val spiderKit = KitsManager.getKit(shooter) as? Spider ?: return
 
-            spiderKit.venomOnHit(e.entity.uniqueId, e.hitEntity, e.hitBlock, shooter)
+            spiderKit.handleProjectileHit(e.entity.uniqueId, e.hitEntity, e.hitBlock, shooter)
         }
 
     }

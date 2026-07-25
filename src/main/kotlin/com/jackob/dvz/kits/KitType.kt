@@ -36,8 +36,8 @@ enum class KitType(
     ENDERMAN(Enderman::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("enderman"), 0.0f),
     SKELETON(Skeleton::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("skeleton")),
     CREEPER(Creeper::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("creeper")),
-    IRON_GOLEM(IronGolem::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("iron_golem")),
-    SPIDER(Spider::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("spider"));
+    IRON_GOLEM(IronGolem::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("iron_golem"), 0.1f),
+    SPIDER(Spider::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("spider"), 0.4f);
 
     val key: NamespacedKey by lazy {
         NamespacedKey(DvZ.INSTANCE, this.name.lowercase())
