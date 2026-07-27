@@ -5,6 +5,7 @@ import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.CustomItemType
 import com.jackob.dvz.core.equipment.EquipmentRegister
 import com.jackob.dvz.core.events.DwarfGoldCollectEvent
+import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
@@ -29,12 +30,14 @@ import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent
 import org.bukkit.event.entity.EntityChangeBlockEvent
+import org.bukkit.event.entity.PotionSplashEvent
 import org.bukkit.event.inventory.CraftItemEvent
 import org.bukkit.event.inventory.PrepareAnvilEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
+import org.bukkit.potion.PotionEffectType
 import kotlin.random.Random
 
 private const val EQUIPMENT_COOLDOWN = 500L
@@ -55,10 +58,38 @@ class GameplayMechanicsHandler : CoreHandler {
 
     companion object {
         val UNPLACEABLE_KEY = NamespacedKey(DvZ.INSTANCE, "unplaceable")
+
+        private val negativeEffects = arrayOf(
+            PotionEffectType.POISON,
+            PotionEffectType.NAUSEA,
+            PotionEffectType.WITHER,
+            PotionEffectType.SLOWNESS,
+            PotionEffectType.WEAKNESS,
+        )
     }
 
     private fun handleObtainableItems(clickedBlock: Material): Pair<ItemStack, Sound>? {
         return obtainables[clickedBlock]
+    }
+
+    @EventHandler
+    fun onPotionBreak(e: PotionSplashEvent) {
+        if (!e.potion.effects.any { it.type in negativeEffects }) return
+
+        val shooter = e.entity.shooter as? Player ?: return
+        val shooterTeam = GameManager.getPlayerTeam(shooter) ?: return
+
+        for (entity in e.affectedEntities) {
+            if (shooterTeam == TeamType.ZOMBIE && entity.type == AIZombieScheduler.MOB_TYPE) {
+                e.setIntensity(entity, 0.0)
+                continue
+            }
+
+            val victim = entity as? Player ?: continue
+            if (GameManager.getPlayerTeam(victim) == shooterTeam) {
+                e.setIntensity(victim, 0.0)
+            }
+        }
     }
 
     @EventHandler
