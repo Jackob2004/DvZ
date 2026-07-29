@@ -1,34 +1,40 @@
 package com.jackob.dvz.kits.zombie.special
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler.Companion.UNPLACEABLE_KEY
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitsManager
-import com.jackob.dvz.util.CooldownUtil
-import com.jackob.dvz.util.createItem
-import com.jackob.dvz.util.description
-import com.jackob.dvz.util.mm
-import com.jackob.dvz.util.name
-import com.jackob.dvz.util.rightClickItem
-import com.jackob.dvz.util.toPlayer
-import com.jackob.dvz.util.withCooldown
+import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.util.*
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.watchers.WitchWatcher
 import org.bukkit.Color
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
+import org.bukkit.Tag
+import org.bukkit.block.Block
+import org.bukkit.entity.BlockDisplay
+import org.bukkit.entity.Display
+import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
+import org.bukkit.entity.TextDisplay
 import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
+import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.meta.PotionMeta
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
-import java.util.UUID
+import java.util.*
 import kotlin.random.Random
+
 
 class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<WitchWatcher> {
@@ -39,10 +45,16 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
 
     override val aiZombieEnabled: Boolean = false
 
+    private val magicCauldron = MagicCauldron(owner)
+
     companion object {
         private const val BREWING_COOLDOWN = 25
 
+        private const val CAULDRON_COOLDOWN = 2
+
         private val brewingCooldowns = CooldownUtil(BREWING_COOLDOWN * 1000L)
+
+        private val cauldronCooldowns = CooldownUtil(CAULDRON_COOLDOWN * 1000L)
 
         private val magicBrewingStand = createItem(Material.BREWING_STAND) {
             name = "<light_purple>Magic Brewing Stand"
@@ -50,6 +62,14 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
                 Produces three random batches of potions
                 Cooldown <gray>${BREWING_COOLDOWN}s
                 <green>[Right] <white>-click to use
+            """
+            persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
+        }
+
+        private val magicCauldronItem = createItem(Material.CAULDRON) {
+            name = "<light_purple>Magic Cauldron"
+            description = """
+                ?
             """
             persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
         }
@@ -99,7 +119,7 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
         val player = ownerId.toPlayer()!!
         startDisguise(player)
 
-        player.inventory.addItem(magicBrewingStand)
+        player.inventory.addItem(magicBrewingStand, magicCauldronItem)
         player.playSound(player.location, Sound.ENTITY_WITCH_AMBIENT, 1f, 1f)
     }
 
@@ -109,6 +129,7 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
         stopDisguise(player)
 
         brewingCooldowns.removeFromCooldown(player)
+        magicCauldron.unregisterCauldron()
     }
 
     private fun brewPotions(witchPlayer: Player) = witchPlayer.withCooldown(brewingCooldowns) {
@@ -131,6 +152,11 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
         playSound(location, Sound.BLOCK_BREWING_STAND_BREW, 1f, 1f)
     }
 
+    private fun spawnCauldron(witchPlayer: Player, clickedBlock: Block?) = witchPlayer.withCooldown(cauldronCooldowns) {
+        val location = clickedBlock?.location?.add(0.0, 1.0, 0.0) ?: return@withCooldown
+        magicCauldron.spawnCauldron(location)
+    }
+
     object WitchListener : Listener {
         init {
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
@@ -144,9 +170,111 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
             val rightClickedItem = e.rightClickItem
             if (rightClickedItem == magicBrewingStand) {
                 witchKit.brewPotions(player)
+            } else if (rightClickedItem == magicCauldronItem) {
+                witchKit.spawnCauldron(player, e.clickedBlock)
             }
         }
     }
+
+    private class MagicCauldron(val owner: UUID): Listener {
+
+        private var display: BlockDisplay? = null
+
+        private var hitbox: Interaction? = null
+
+        private var healthBar: TextDisplay? = null
+
+        private var health: Int = 0
+
+        private var lastHit: Long = 0
+
+        companion object {
+            private const val MAX_HEALTH = 10
+
+            private const val HIT_INTERVAL = 1000
+        }
+
+        init {
+            DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+        }
+
+        fun spawnCauldron(location: Location) {
+            removeCauldron()
+
+            health = MAX_HEALTH
+            val cauldronData = Material.CAULDRON.createBlockData()
+
+            display = location.world.spawn(location, BlockDisplay::class.java) { display ->
+                display.block = cauldronData
+            }
+
+            hitbox = spawnHitbox(location.clone().add(0.5,0.0,0.5))
+            healthBar = spawnHealthBar(location.clone().add(0.5, 1.5, 0.5))
+        }
+
+
+        private fun removeCauldron() {
+            if (display == null) return
+
+            display!!.remove()
+            display = null
+
+            hitbox!!.remove()
+            hitbox = null
+
+            healthBar!!.remove()
+            healthBar = null
+            health = 0
+        }
+
+        fun unregisterCauldron() {
+            HandlerList.unregisterAll(this)
+            removeCauldron()
+        }
+
+        private fun spawnHitbox(location: Location): Interaction {
+            return location.world.spawn<Interaction>(location, Interaction::class.java) { interaction ->
+                interaction.isResponsive = true
+            }
+        }
+
+        private fun spawnHealthBar(location: Location): TextDisplay {
+            return location.world.spawn(location, TextDisplay::class.java) { display ->
+                display.text("<green>$health/$MAX_HEALTH".mm())
+                display.billboard = Display.Billboard.CENTER
+            }
+        }
+
+        private fun takeDamage(damager: Player) {
+            if (!Tag.ITEMS_PICKAXES.isTagged(damager.inventory.itemInMainHand.type)) return
+
+            val now = System.currentTimeMillis()
+            if (now - lastHit < HIT_INTERVAL) return
+            lastHit = now
+
+            health--
+            healthBar!!.text("<green>$health/$MAX_HEALTH".mm())
+
+            if (health <= 0) {
+                removeCauldron()
+            }
+        }
+
+        @EventHandler
+        fun onInteractionHit(e: EntityDamageByEntityEvent) {
+            if (e.entity != hitbox) return
+            val damager = e.damager as? Player ?: return
+            if (GameManager.getPlayerTeam(damager) != TeamType.DWARF) return
+
+            takeDamage(damager)
+        }
+
+        @EventHandler
+        fun onInteractionRightClick(event: PlayerInteractEntityEvent) {
+            // todo
+        }
+    }
+
 
     data class CustomPotion(val potion: PotionEffect, val color: Color, val name: String)
 }
