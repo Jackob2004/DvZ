@@ -9,6 +9,7 @@ import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Team
+import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
@@ -192,6 +193,12 @@ class PreparationState(
         player.sendMessage(message)
     }
 
+    private fun updatePlayerDisguise(player: Player) {
+        val kit = KitsManager.getKit(player) as? Disguisable<*> ?: return
+
+        kit.startDisguise(player)
+    }
+
     fun startNextPhase(): Boolean {
         if (countdownTask == null) return false
         if (countdownTask!!.isCancelled) return false
@@ -220,6 +227,7 @@ class PreparationState(
         onlinePlayers.add(player)
         Team.refreshTeamVisibility(player)
         gameStatusSidebar.sendSidebar(listOf(player))
+        updatePlayerDisguise(player)
 
         if (!isActiveDwarf(player)) {
             lobbyStateHandler.refreshToLobbyState(player)
@@ -238,6 +246,9 @@ class PreparationState(
         if (isActiveDwarf(player)) {
             dwarfTeam.decreaseOnlineCount()
         }
+
+        val kit = KitsManager.getKit(player) as? Disguisable<*> ?: return
+        kit.stopDisguise(player)
     }
 
     @EventHandler(ignoreCancelled = true)
