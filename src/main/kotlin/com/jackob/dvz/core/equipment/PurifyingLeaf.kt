@@ -55,6 +55,8 @@ class PurifyingLeaf : CustomItem(), Listener {
         PotionEffectType.WITHER,
         PotionEffectType.NAUSEA,
         PotionEffectType.BLINDNESS,
+        PotionEffectType.MINING_FATIGUE,
+        PotionEffectType.DARKNESS,
     )
 
     private fun purify(player: Player, leafItem: ItemStack) = player.withCooldown(leafCooldowns) {
