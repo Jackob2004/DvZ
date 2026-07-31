@@ -25,6 +25,7 @@ import org.bukkit.Sound
 import org.bukkit.Tag
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.block.Action
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockPlaceEvent
@@ -65,6 +66,9 @@ class GameplayMechanicsHandler : CoreHandler {
             PotionEffectType.WITHER,
             PotionEffectType.SLOWNESS,
             PotionEffectType.WEAKNESS,
+            PotionEffectType.INSTANT_DAMAGE,
+            PotionEffectType.MINING_FATIGUE,
+            PotionEffectType.DARKNESS
         )
     }
 
@@ -72,7 +76,7 @@ class GameplayMechanicsHandler : CoreHandler {
         return obtainables[clickedBlock]
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOW)
     fun onPotionBreak(e: PotionSplashEvent) {
         if (!e.potion.effects.any { it.type in negativeEffects }) return
 
