@@ -57,4 +57,7 @@ witch:
   icon: SPLASH_POTION
   name: <dark_purple>Witch
   description:
-    - <gray>todo
+    - <gray>Specializes in producing splash potions of great variety.
+    - <gray>But focuses mainly on negative potion effects.
+    - <gray>Its magic cauldron ability can collect enemies blood to produce
+    - <gray>deadly unique potions.
