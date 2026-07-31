@@ -51,7 +51,7 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
     companion object {
         private const val BREWING_COOLDOWN = 25
 
-        private const val CAULDRON_COOLDOWN = 2
+        private const val CAULDRON_COOLDOWN = 15
 
         private val brewingCooldowns = CooldownUtil(BREWING_COOLDOWN * 1000L)
 
@@ -60,9 +60,9 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
         private val magicBrewingStand = createItem(Material.BREWING_STAND) {
             name = "<light_purple>Magic Brewing Stand"
             description = """
-                Produces three random batches of potions
-                Cooldown <gray>${BREWING_COOLDOWN}s
-                <green>[Right] <white>- click to use
+                Produces three random batches of potions.
+                Cooldown <gray>${BREWING_COOLDOWN}s.
+                <green>[Right] <white>- click to use.
             """
             persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
         }
@@ -70,7 +70,14 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
         private val magicCauldronItem = createItem(Material.CAULDRON) {
             name = "<light_purple>Magic Cauldron"
             description = """
-                ?
+                Collects blood of enemies damaged by your instant damage
+                potions. Collecting only happens if enemy was near the cauldron.
+                Once the cauldron fills up it can produce powerful death
+                potions.
+                Enemies can damage cauldron with their pickaxes which drains it
+                and heals them.
+                <green>[Right] <white>- click to use and drain cauldron.
+                Cooldown <gray>${CAULDRON_COOLDOWN}s.
             """
             persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
         }
@@ -208,7 +215,7 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
         companion object {
             private const val MAX_HEALTH = 10
 
-            private const val HIT_INTERVAL = 1500
+            private const val HIT_INTERVAL = 1000
 
             private const val MAX_LEVEL = 30
 
