@@ -44,7 +44,7 @@ class Witch(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(intern
         isAggressive = true
     }
 
-    override val aiZombieEnabled: Boolean = false
+    override val aiZombieEnabled: Boolean = true
 
     private val magicCauldron = MagicCauldron(owner)
 
