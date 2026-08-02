@@ -1,7 +1,9 @@
 package com.jackob.dvz.kits.zombie.special
 
+import com.destroystokyo.paper.event.player.PlayerJumpEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.handlers.GameplayMechanicsHandler.Companion.UNPLACEABLE_KEY
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitsManager
@@ -10,16 +12,29 @@ import com.jackob.dvz.util.*
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.watchers.EndermanWatcher
+import net.kyori.adventure.title.Title
 import org.bukkit.*
 import org.bukkit.Vibration.Destination.BlockDestination
-import org.bukkit.entity.LivingEntity
+import org.bukkit.entity.ArmorStand
+import org.bukkit.entity.BlockDisplay
+import org.bukkit.entity.Display
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
+import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.PlayerToggleSneakEvent
+import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import org.bukkit.scheduler.BukkitTask
+import org.joml.Matrix4f
 import java.util.*
+import kotlin.random.Random
+
 
 class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<EndermanWatcher> {
@@ -35,14 +50,30 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
 
         private const val SCREAM_COOLDOWN = 3
 
+        private const val SHARD_COOLDOWN = 3
+
         private val teleportCooldowns = CooldownUtil(TELEPORT_COOLDOWN * 1000L)
 
-        private val screamCooldowns = CooldownUtil(SCREAM_COOLDOWN* 1000L)
+        private val screamCooldowns = CooldownUtil(SCREAM_COOLDOWN * 1000L)
+
+        private val shardCooldowns = CooldownUtil(SHARD_COOLDOWN * 1000L)
+
+        private val chainItem = createItem(Material.WAXED_EXPOSED_COPPER_CHAIN) {
+            name = "<b><gray>Rusty Chain"
+            description = """
+                ?
+            """
+            persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
+        }
     }
 
     override fun onActivate() {
         super.onActivate()
-        startDisguise(ownerId.toPlayer()!!)
+        val player = ownerId.toPlayer()!!
+        startDisguise(player)
+
+        player.inventory.addItem(chainItem)
+        player.playSound(player.location, Sound.ENTITY_ENDERMAN_AMBIENT, 1f, 1f)
     }
 
     override fun onDeactivate() {
@@ -116,7 +147,7 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
             rangeCovered += step.toInt()
 
             for (e in currPoint.getNearbyEntities(step, step, step)) {
-                val dwarfEnemy = e as? Player?: continue
+                val dwarfEnemy = e as? Player ?: continue
                 if (GameManager.getPlayerTeam(dwarfEnemy) != TeamType.DWARF) continue
                 if (dwarfEnemy.uniqueId == ownerId) continue
 
@@ -167,6 +198,47 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
         addPotionEffect(PotionEffect(PotionEffectType.SLOWNESS, (repetitions * period), 4, false, false))
     }
 
+    private fun launchChain(endermanPlayer: Player) = endermanPlayer.withCooldown(shardCooldowns) {
+        val chain = ChainWound.spawnChain(eyeLocation) {
+            translate(-0.5f, 0f, 0f)
+        }
+
+        val stand = world.spawn(eyeLocation, ArmorStand::class.java) { s ->
+            s.isInvisible = true
+            s.addPassenger(chain)
+            s.velocity = this.eyeLocation.direction.normalize().multiply(3.0)
+        }
+
+        val particles = Particle.REVERSE_PORTAL.builder().extra(0.0).count(5).offset(0.0, 0.0, 0.0)
+
+        val htiAreaRadius = 1.0
+
+        sync(period = TimeUnit.TICKS(1), delay = TimeUnit.TICKS(1)) {
+            if (stand.isOnGround) {
+                cancel()
+                chain.remove()
+                stand.remove()
+                return@sync
+            }
+            val location = stand.location
+            val entity = location.getNearbyPlayers(htiAreaRadius)
+                .firstOrNull { ChainWound.canInflict(it) }
+
+            if (entity != null) {
+                entity.damage(6.0, this@withCooldown)
+                cancel()
+                chain.remove()
+                stand.remove()
+
+                ChainWound(ownerId, entity)
+            }
+
+            particles.location(location).receivers(20, true).spawn()
+        }
+
+        playSound(location, Sound.ENTITY_ENDER_PEARL_THROW, 1f, 1f)
+    }
+
     object EndermanListener : Listener {
 
         init {
@@ -182,9 +254,193 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
             when (rightClicked.type) {
                 Material.COMPASS -> endermanKit.teleport(player)
                 Material.WARD_ARMOR_TRIM_SMITHING_TEMPLATE -> endermanKit.scream(player)
+                chainItem.type -> endermanKit.launchChain(player)
                 else -> Unit
             }
 
         }
+    }
+
+    private class ChainWound(val endermanPlayerId: UUID, victim: Player) : Listener {
+
+        private val victimId = victim.uniqueId
+
+        private var display: BlockDisplay? = null
+
+        private var healingProcess: BukkitTask? = null
+
+        private var bleedingTask: BukkitTask? = null
+
+        init {
+            DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+            createChain(victim)
+        }
+
+        companion object {
+            fun canInflict(player: Player): Boolean {
+                return GameManager.getPlayerTeam(player) != TeamType.ZOMBIE && player.passengers.isEmpty()
+            }
+
+            fun spawnChain(location: Location, modifyMatrix: Matrix4f.() -> Unit): BlockDisplay {
+                val matrix = Matrix4f()
+                    .scale(2.5f, 2.5f, 5f)
+                    .rotateX(Math.toRadians(90.0).toFloat())
+                matrix.modifyMatrix()
+
+                return location.world.spawn(location, BlockDisplay::class.java) { display ->
+                    display.brightness = Display.Brightness(15, 15)
+                    display.block = chainItem.type.createBlockData()
+                    display.setTransformationMatrix(matrix)
+                }
+            }
+
+            private val bloodParticles = Particle.BLOCK.builder()
+                .data(Material.REDSTONE_BLOCK.createBlockData())
+                .offset(0.5, 0.5, 0.5)
+                .count(10)
+                .extra(0.0)
+
+            private val slowness = PotionEffect(PotionEffectType.SLOWNESS, 5 * 20, 1, false, false)
+
+            private val nausea = PotionEffect(PotionEffectType.NAUSEA, 7 * 20, 1, false, false)
+        }
+
+        private fun createChain(victim: Player) {
+            display = spawnChain(victim.location) {
+                translate(-0.5f, -0.5f, -0.25f)
+            }
+
+            victim.addPassenger(display!!)
+            victim.addPotionEffect(PotionEffect(PotionEffectType.WEAKNESS, 1000000, 1, false, false))
+            startBleedingTask()
+        }
+
+        private fun startBleedingTask() {
+            val delay = 7L + Random.nextInt(10)
+            bleedingTask = sync(delay = TimeUnit.SECONDS(delay)) {
+                val victim = victimId.toPlayer()
+                if (victim == null) {
+                    cancel()
+                    return@sync
+                }
+
+                woundBleedEffect(victim, 2.0, nausea)
+                startBleedingTask()
+            }
+        }
+
+        private fun removeWound() {
+            HandlerList.unregisterAll(this)
+            display!!.remove()
+            display = null
+
+            if (healingProcess != null) {
+                healingProcess!!.cancel()
+                healingProcess = null
+            }
+
+            if (bleedingTask != null) {
+                bleedingTask!!.cancel()
+                bleedingTask = null
+            }
+        }
+
+        private fun woundBleedEffect(victim: Player, damage: Double, potionEffect: PotionEffect) {
+            val location = victim.location
+            val damager = endermanPlayerId.toPlayer()?.takeIf { KitsManager.getKit(it) == Enderman }
+
+            victim.damage(damage, damager)
+            victim.playSound(location, Sound.ENTITY_ENDERMAN_HURT, 1f, 1f)
+            victim.showTitle(Title.title("<dark_red>Wound bleeding".mm(), "".mm()))
+            victim.addPotionEffect(potionEffect)
+
+            bloodParticles
+                .location(location.add(0.0, 1.2, 0.0))
+                .receivers(15, true)
+                .spawn()
+        }
+
+        private fun startHealing(victim: Player) {
+            if (healingProcess != null) return
+            val timeToHeal = 10
+
+            var counter = 0
+            healingProcess = sync(period = TimeUnit.SECONDS(1)) {
+                if (!victim.isOnline) {
+                    cancel()
+                    return@sync
+                }
+
+                counter++
+                victim.showTitle(Title.title("<aqua>$counter/$timeToHeal".mm(), "<green>Healing".mm()))
+
+                if (counter >= timeToHeal) {
+                    cancel()
+                    removeWound()
+                    victim.removePotionEffect(PotionEffectType.WEAKNESS)
+                    sync(delay = TimeUnit.SECONDS(1)) {
+                        victim.showTitle(Title.title("<green>Fully healed".mm(), "".mm()))
+                    }
+                }
+            }
+        }
+
+        private fun stopHealing(victim: Player) {
+            if (healingProcess == null) return
+            healingProcess!!.cancel()
+            healingProcess = null
+
+            victim.showTitle(Title.title("<yellow>Healing interrupted".mm(), "".mm()))
+        }
+
+        @EventHandler
+        fun onVictimSneak(e: PlayerToggleSneakEvent) {
+            val player = e.player
+            if (player.uniqueId != victimId) return
+
+            if (e.isSneaking) {
+                startHealing(player)
+            } else {
+                stopHealing(player)
+            }
+
+        }
+
+        @EventHandler
+        fun onVictimJump(e: PlayerJumpEvent) {
+            if (e.player.uniqueId == victimId) {
+                woundBleedEffect(e.player, 4.0, slowness)
+            }
+        }
+
+        @EventHandler
+        fun onVictimDeath(e: PlayerDeathEvent) {
+            if (e.player.uniqueId == victimId) {
+                removeWound()
+            }
+        }
+
+        @EventHandler
+        fun onVictimQuit(e: PlayerQuitEvent) {
+            if (e.player.uniqueId != victimId) return
+
+            if (display != null) {
+                display!!.remove()
+                display = null
+            }
+
+            if (bleedingTask != null) {
+                bleedingTask!!.cancel()
+                bleedingTask = null
+            }
+        }
+
+        @EventHandler
+        fun onVictimRejoin(e: PlayerJoinEvent) {
+            if (e.player.uniqueId == victimId) {
+                createChain(e.player)
+            }
+        }
+
     }
 }
