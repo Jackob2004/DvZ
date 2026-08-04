@@ -1,5 +1,6 @@
 package com.jackob.dvz.util
 
+import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.block.Block
@@ -58,4 +59,15 @@ fun Long.unpackToLocation(world: World): Location {
     val y = ((this and 0xFFF).toInt() shl 20) shr 20
 
     return Location(world, x.toDouble(), y.toDouble(), z.toDouble())
+}
+
+fun getRegionCenterLocation(world: World, region: ProtectedRegion): Location {
+    val min = region.minimumPoint
+    val max = region.maximumPoint
+
+    val centerX = (min.x() + max.x()) / 2.0
+    val centerY = (min.y() + max.y()) / 2.0
+    val centerZ = (min.z() + max.z()) / 2.0
+
+    return Location(world, centerX, centerY, centerZ)
 }

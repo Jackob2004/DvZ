@@ -2,12 +2,14 @@ package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.events.PortalCreateEvent
 import com.jackob.dvz.core.events.ShrineDamageEvent
 import com.jackob.dvz.core.events.ShrineFallEvent
 import com.jackob.dvz.core.events.ShrineGoldDepositEvent
 import com.jackob.dvz.core.events.ShrineTrespassEvent
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.util.getRegionCenterLocation
 import com.jackob.dvz.util.isInRegion
 import com.jackob.dvz.util.removeItem
 import com.sk89q.worldguard.protection.managers.RegionManager
@@ -156,6 +158,14 @@ class Shrine(
         val amount = 1
         player.removeItem(item, amount)
         Bukkit.getPluginManager().callEvent(ShrineGoldDepositEvent(player, amount))
+    }
+
+    @EventHandler
+    fun onPortalCreate(e: PortalCreateEvent) {
+        val loc = e.creationLocation
+        val distance = getRegionCenterLocation(loc.world, innerShrine).distanceSquared(loc)
+        val canCreate = distance > 7 * 7 && distance <= 40 * 40
+        e.isCancelled = !canCreate
     }
 
     private enum class ShrineState {
