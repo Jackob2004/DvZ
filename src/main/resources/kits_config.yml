@@ -270,12 +270,35 @@ kits:
 
   enderman:
     activateMessage:
-      message: "<green>You arrived to battle as an enderman"
-      broadcast: false
+      message: "<dark_purple>Enderman the lord of shadows has arrived!"
+      broadcast: true
+
+    potions:
+      - type: "ABSORPTION"
+        durationSeconds: 1000000
+        amplifier: 14
+      - type: "SPEED"
+        durationSeconds: 1000000
+        amplifier: 0
+      - type: "RESISTANCE"
+        durationSeconds: 1000000
+        amplifier: 2
 
     items:
-      - material: "ENDER_PEARL"
-        name: "<b><dark_green>pearl"
+      - material: "COMPASS"
+        name: "<b><dark_purple>Teleport"
+        lore:
+          - ""
+          - "Teleport to the block you are looking at in the range of 40 blocks."
+          - "Cooldown <gray>10s"
+          - "<green>[Right] <white>- click to use"
+      - material: "WARD_ARMOR_TRIM_SMITHING_TEMPLATE"
+        name: "<b><dark_purple>Scream"
+        lore:
+          - ""
+          - "Scream at your enemies damaging them and reducing their movements."
+          - "Cooldown <gray>15s"
+          - "<green>[Right] <white>- click to use"
 
     kitAttributes:
       rampageImmune: false

@@ -39,7 +39,6 @@ import org.joml.Matrix4f
 import java.util.*
 import kotlin.random.Random
 
-
 class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<EndermanWatcher> {
 
@@ -50,22 +49,24 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
     override val aiZombieEnabled: Boolean = false
 
     companion object {
-        private const val TELEPORT_COOLDOWN = 3
+        private const val TELEPORT_COOLDOWN = 10
 
-        private const val SCREAM_COOLDOWN = 3
+        private const val SCREAM_COOLDOWN = 15
 
-        private const val SHARD_COOLDOWN = 3
+        private const val CHAIN_COOLDOWN = 40
 
         private val teleportCooldowns = CooldownUtil(TELEPORT_COOLDOWN * 1000L)
 
         private val screamCooldowns = CooldownUtil(SCREAM_COOLDOWN * 1000L)
 
-        private val shardCooldowns = CooldownUtil(SHARD_COOLDOWN * 1000L)
+        private val chainCooldowns = CooldownUtil(CHAIN_COOLDOWN * 1000L)
 
         private val chainItem = createItem(Material.WAXED_EXPOSED_COPPER_CHAIN) {
             name = "<b><gray>Rusty Chain"
             description = """
-                ?
+                Throws large chain which inflicts a wound on impact.
+                Cooldown <gray>${CHAIN_COOLDOWN}s.
+                <green>[Right] <white>- click to use.
             """
             persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
         }
@@ -73,7 +74,9 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
         private val portalItem = createItem(Material.END_STONE) {
             name = "<b><light_purple>Portal"
             description = """
-                ?
+                Creates portal through which zombie players can teleport.
+                Can only be spawned near the active shrine, but not to close to it.
+                <green>[Right] <white>- click to use
             """
             persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
         }
@@ -210,7 +213,7 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
         addPotionEffect(PotionEffect(PotionEffectType.SLOWNESS, (repetitions * period), 4, false, false))
     }
 
-    private fun launchChain(endermanPlayer: Player) = endermanPlayer.withCooldown(shardCooldowns) {
+    private fun launchChain(endermanPlayer: Player) = endermanPlayer.withCooldown(chainCooldowns) {
         val chain = ChainWound.spawnChain(eyeLocation) {
             translate(-0.5f, 0f, 0f)
         }

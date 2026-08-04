@@ -28,7 +28,9 @@ enderman:
   icon: ENDER_PEARL
   name: <dark_green>Enderman
   description:
-    - <gray>I can teleport!
+    - <gray>Lord of the shadows capable of teleporting and creating portal.
+    - <gray>Moreover, Enderman can scream at enemies immobilising them or
+    - <gray>inflict severe wound that needs to be slowly healed.
 skeleton:
   icon: SKELETON_SKULL
   name: <aqua>Skeleton
