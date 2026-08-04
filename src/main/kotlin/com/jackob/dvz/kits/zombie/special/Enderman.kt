@@ -3,7 +3,9 @@ package com.jackob.dvz.kits.zombie.special
 import com.destroystokyo.paper.event.player.PlayerJumpEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.equipment.PortalScroll
 import com.jackob.dvz.core.events.PortalCreateEvent
+import com.jackob.dvz.core.events.PortalTeleportEvent
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler.Companion.UNPLACEABLE_KEY
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.Disguisable
@@ -22,6 +24,7 @@ import org.bukkit.entity.Display
 import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageByEntityEvent
@@ -418,14 +421,9 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
         }
 
         @EventHandler
-        fun onScrollClick(e: PlayerInteractEvent) {
-            val rightClicked = e.rightClickItem ?: return
-            if (rightClicked.type != Material.FLOWER_BANNER_PATTERN) return
-            val player = e.player
-            if (GameManager.getPlayerTeam(player) != TeamType.ZOMBIE) return
-
-            player.removeItem(rightClicked, 1)
-            player.teleport(location)
+        fun onPortalTeleport(e: PortalTeleportEvent) {
+            e.isCancelled = false
+            e.zombiePlayer.teleport(location)
         }
 
         @EventHandler
@@ -442,6 +440,13 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
         @EventHandler
         fun onPortalEnter(e: EntityPortalEnterEvent) {
             e.isCancelled = true
+        }
+
+        @EventHandler(priority = EventPriority.HIGHEST)
+        fun onPortalCreateEvent(event: PortalCreateEvent) {
+            if (!event.isCancelled) {
+                removePortal()
+            }
         }
     }
 

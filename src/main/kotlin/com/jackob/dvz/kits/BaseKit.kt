@@ -34,6 +34,7 @@ abstract class BaseKit(val internalName: String, val ownerId: UUID, val isHero: 
             EquipmentRegister.runOnReceive(ale, ownerId.toPlayer()!!)
         } else if (aiZombieEnabled != null) {
             player.inventory.setItem(17, EquipmentRegister.getItem(CustomItemType.DEATH_SCROLL)!!)
+            player.inventory.setItem(8, EquipmentRegister.getItem(CustomItemType.PORTAL_SCROLL)!!)
         }
     }
 

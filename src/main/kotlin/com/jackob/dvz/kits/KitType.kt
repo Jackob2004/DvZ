@@ -34,7 +34,7 @@ enum class KitType(
     ELF(Elf::class.java, TeamType.DWARF, true, KitDisplaysStorage.getKitDisplayData("elf")),
     ZOMBIE(Zombie::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("zombie")),
     SUPER_CREEPER(SuperCreeper::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("super_creeper"), 0.3f),
-    ENDERMAN(Enderman::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("enderman"), 0.0f),
+    ENDERMAN(Enderman::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("enderman"), 0.0f),
     SKELETON(Skeleton::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("skeleton")),
     CREEPER(Creeper::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("creeper")),
     IRON_GOLEM(IronGolem::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("iron_golem"), 0.1f),

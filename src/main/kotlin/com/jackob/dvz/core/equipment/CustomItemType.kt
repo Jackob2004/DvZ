@@ -11,4 +11,5 @@ enum class CustomItemType {
     PURIFYING_LEAF,
     EXPLOSIVE_CHARGE,
     DEATH_SCROLL,
+    PORTAL_SCROLL,
 }

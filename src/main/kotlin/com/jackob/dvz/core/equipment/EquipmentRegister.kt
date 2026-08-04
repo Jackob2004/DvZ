@@ -15,7 +15,8 @@ object EquipmentRegister {
         SuperMortar(),
         HealingAle(),
         PurifyingLeaf(),
-        DeathScroll()
+        DeathScroll(),
+        PortalScroll()
     )
 
     private val itemMap: Map<CustomItemType, CustomItem> = items.associateBy {
