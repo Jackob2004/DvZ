@@ -3,6 +3,7 @@ package com.jackob.dvz.kits.zombie.special
 import com.destroystokyo.paper.event.player.PlayerJumpEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.events.PortalCreateEvent
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler.Companion.UNPLACEABLE_KEY
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.Disguisable
@@ -18,10 +19,13 @@ import org.bukkit.Vibration.Destination.BlockDestination
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.BlockDisplay
 import org.bukkit.entity.Display
+import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
+import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityPortalEnterEvent
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
@@ -65,6 +69,14 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
             """
             persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
         }
+
+        private val portalItem = createItem(Material.END_STONE) {
+            name = "<b><light_purple>Portal"
+            description = """
+                ?
+            """
+            persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
+        }
     }
 
     override fun onActivate() {
@@ -72,7 +84,7 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
         val player = ownerId.toPlayer()!!
         startDisguise(player)
 
-        player.inventory.addItem(chainItem)
+        player.inventory.addItem(chainItem, portalItem)
         player.playSound(player.location, Sound.ENTITY_ENDERMAN_AMBIENT, 1f, 1f)
     }
 
@@ -239,6 +251,29 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
         playSound(location, Sound.ENTITY_ENDER_PEARL_THROW, 1f, 1f)
     }
 
+    private fun spawnPortal(endermanPlayer: Player) {
+        val heightOffset = 2.0
+        val vector = endermanPlayer.eyeLocation.direction.normalize().multiply(4.0)
+        val location = endermanPlayer.location.add(0.0,heightOffset, 0.0).add(vector)
+        val portalEvent = PortalCreateEvent(location)
+        portalEvent.callEvent()
+
+        if (portalEvent.isCancelled) {
+            endermanPlayer.sendActionBar("<yellow>Cannot create portal here!".mm())
+            return
+        }
+
+        endermanPlayer.sendActionBar("<green>created!".mm())
+
+        if (!Portal.canCreate(location, endermanPlayer)) {
+            endermanPlayer.sendActionBar("<yellow>Cannot create portal here!".mm())
+            return
+        }
+
+        Portal(location, heightOffset, endermanPlayer)
+        endermanPlayer.removeItem(portalItem, 1)
+    }
+
     object EndermanListener : Listener {
 
         init {
@@ -255,9 +290,155 @@ class Enderman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(int
                 Material.COMPASS -> endermanKit.teleport(player)
                 Material.WARD_ARMOR_TRIM_SMITHING_TEMPLATE -> endermanKit.scream(player)
                 chainItem.type -> endermanKit.launchChain(player)
+                portalItem.type -> endermanKit.spawnPortal(player)
                 else -> Unit
             }
 
+        }
+    }
+
+    private class Portal(val location: Location, val heightOffset: Double, val endermanPlayer: Player): Listener {
+
+        private val portalBlockLocations: ArrayList<Location> = ArrayList()
+
+        private val fragments: ArrayList<BlockDisplay> = ArrayList(FRAGMENTS_COUNT)
+
+        private var hitbox: Interaction? = null
+
+        private var health: Int = MAX_HEALTH
+
+        private var lastHit: Long = 0
+
+        private var removalTask: BukkitTask? = null
+
+        companion object {
+            private const val FRAGMENTS_COUNT = 12
+            private const val PORTAL_RADIUS = 3
+            private const val HIT_INTERVAL = 800
+            private const val MAX_HEALTH = 40
+
+            fun canCreate(location: Location, player: Player) : Boolean {
+                val sphere = location.getSphere(PORTAL_RADIUS, true)
+
+                return !sphere.any { !it.block.isBreakable(player) || it.block.type != Material.AIR }
+            }
+        }
+
+        init {
+            DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+            createPortal(location)
+        }
+
+        private fun createHitbox(location: Location) {
+            hitbox = location.world.spawn(location, Interaction::class.java) {
+                val dimensions = 5f
+                it.interactionWidth = dimensions
+                it.interactionHeight= dimensions
+                it.isResponsive = true
+            }
+        }
+
+        private fun startRemovalTask() {
+            removalTask = sync(delay = TimeUnit.SECONDS(MAX_HEALTH.toLong())) {
+                removePortal()
+            }
+        }
+
+        private fun createPortal(location: Location) {
+            val world = location.world
+            location.getSphere(PORTAL_RADIUS, true).forEach { portalBlockLocations.add(it) }
+            for (l in portalBlockLocations) {
+                l.block.type = Material.END_PORTAL
+            }
+
+            val matrix = Matrix4f().scale(0.4f)
+
+            for (i in 1..FRAGMENTS_COUNT) {
+                val offsetX = Random.nextDouble(-3.0, 3.0)
+                val offsetY = Random.nextDouble(-3.0, 3.0)
+                val offsetZ = Random.nextDouble(-3.0, 3.0)
+                val rndAngle = Random.nextDouble(50.0, 180.0)
+                val loc = location.clone().add(offsetX, offsetY, offsetZ)
+
+                val fragmentDisplay = world.spawn(loc, BlockDisplay::class.java) {
+                    it.block = Material.CRYING_OBSIDIAN.createBlockData()
+                    it.brightness = Display.Brightness(15, 15)
+                    it.interpolationDelay = 20
+                    it.interpolationDuration = 60
+                }
+                sync(delay = TimeUnit.SECONDS(1)) {
+                    val angle = Math.toRadians(rndAngle).toFloat()
+                    fragmentDisplay.setTransformationMatrix(matrix.rotateX(angle).rotateY(angle).rotateZ(angle))
+                }
+
+                fragments.add(fragmentDisplay)
+            }
+
+            createHitbox(location.clone().subtract(0.0,heightOffset,0.0))
+            startRemovalTask()
+            world.playSound(location, Sound.BLOCK_END_PORTAL_SPAWN, 1f, 1f)
+        }
+
+        private fun removePortal() {
+            for (f in fragments) {
+                f.remove()
+            }
+
+            for (b in portalBlockLocations) {
+                b.block.type = Material.AIR
+            }
+            hitbox!!.remove()
+            hitbox = null
+
+            if (!removalTask!!.isCancelled) {
+                removalTask!!.cancel()
+            }
+            removalTask = null
+
+            HandlerList.unregisterAll(this)
+            location.subtract(0.0,heightOffset,0.0).createExplosion(endermanPlayer,3f, false, false)
+        }
+
+        private fun takeDamage() {
+            val now = System.currentTimeMillis()
+            if (now - lastHit < HIT_INTERVAL) return
+            lastHit = now
+
+            health--
+
+            if (health <= 0) {
+                removePortal()
+            }
+
+            portalBlockLocations.removeLastOrNull()?.block?.type = Material.AIR
+            portalBlockLocations.removeLastOrNull()?.block?.type = Material.AIR
+        }
+
+        @EventHandler
+        fun onScrollClick(e: PlayerInteractEvent) {
+            val rightClicked = e.rightClickItem ?: return
+            if (rightClicked.type != Material.FLOWER_BANNER_PATTERN) return
+            val player = e.player
+            if (GameManager.getPlayerTeam(player) != TeamType.ZOMBIE) return
+
+            player.removeItem(rightClicked, 1)
+            player.teleport(location)
+        }
+
+        @EventHandler
+        fun onHitboxHit(e: EntityDamageByEntityEvent) {
+            if (hitbox == null) return
+
+            if (e.entity != hitbox) return
+            val damager = e.damager as? Player ?: return
+            if (GameManager.getPlayerTeam(damager) != TeamType.DWARF) return
+
+            takeDamage()
+        }
+
+        @EventHandler
+        fun onPortalEnter(e: EntityPortalEnterEvent) {
+            e.isCancelled = true
         }
     }
 
