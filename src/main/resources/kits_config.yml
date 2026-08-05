@@ -143,6 +143,18 @@ kits:
     kitAttributes:
       rampage: 1
 
+  builder:
+    activateMessage:
+      message: "<green>You arrived to battle a builder!"
+      broadcast: false
+
+    attributes:
+      - type: "MAX_HEALTH"
+        amount: 6.0
+
+    kitAttributes:
+      rampage: 1
+
   elf:
     activateMessage:
       message: "<b><green>Elf from Mirkwood has arrived"

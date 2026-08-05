@@ -8,6 +8,11 @@ archer:
   name: <green>Archer
   description:
     - <gray>Good at shooting
+builder:
+  icon: IRON_PICKAXE
+  name: <green>Builder
+  description:
+    - <gray>Let's build
 elf:
   icon: BIRCH_SAPLING
   name: <green>Elf
