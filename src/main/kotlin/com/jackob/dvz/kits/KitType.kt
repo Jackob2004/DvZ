@@ -1,8 +1,8 @@
 package com.jackob.dvz.kits
 
 import com.jackob.dvz.DvZ
-import com.jackob.dvz.kits.dwarf.Archer
-import com.jackob.dvz.kits.dwarf.Warrior
+import com.jackob.dvz.kits.dwarf.base.Archer
+import com.jackob.dvz.kits.dwarf.base.Warrior
 import com.jackob.dvz.kits.dwarf.hero.Elf
 import com.jackob.dvz.kits.zombie.base.Zombie
 import com.jackob.dvz.kits.zombie.special.Enderman

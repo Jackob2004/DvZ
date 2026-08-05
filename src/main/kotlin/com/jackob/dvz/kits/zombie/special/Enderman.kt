@@ -3,7 +3,6 @@ package com.jackob.dvz.kits.zombie.special
 import com.destroystokyo.paper.event.player.PlayerJumpEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
-import com.jackob.dvz.core.equipment.PortalScroll
 import com.jackob.dvz.core.events.PortalCreateEvent
 import com.jackob.dvz.core.events.PortalTeleportEvent
 import com.jackob.dvz.core.handlers.GameplayMechanicsHandler.Companion.UNPLACEABLE_KEY

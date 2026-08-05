@@ -1,4 +1,4 @@
-package com.jackob.dvz.kits.dwarf
+package com.jackob.dvz.kits.dwarf.base
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.kits.BaseKit
@@ -72,7 +72,7 @@ class Warrior(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     object WarriorListener : Listener {
         init {
-            DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+            DvZ.Companion.INSTANCE.server.pluginManager.registerEvents(this, DvZ.Companion.INSTANCE)
         }
 
         @EventHandler
