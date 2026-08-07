@@ -11,15 +11,19 @@ import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
 import io.papermc.paper.entity.LookAnchor
+import org.bukkit.Color
+import org.bukkit.FireworkEffect
 import org.bukkit.FluidCollisionMode
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.Particle
 import org.bukkit.Sound
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Display
-import org.bukkit.entity.EntityType
+import org.bukkit.entity.Firework
 import org.bukkit.entity.Interaction
 import org.bukkit.entity.ItemDisplay
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.entity.TextDisplay
 import org.bukkit.event.EventHandler
@@ -30,10 +34,14 @@ import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.scheduler.BukkitTask
+import org.bukkit.util.Transformation
 import org.bukkit.util.Vector
 import org.joml.Matrix4f
+import org.joml.Quaternionf
+import org.joml.Vector3f
 import java.util.UUID
 import kotlin.math.max
+import kotlin.random.Random
 
 class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero) {
 
@@ -49,10 +57,9 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         super.onDeactivate()
     }
 
-    private fun buildTower(builderPlayer: Player) {
-        val ballista = Ballista()
 
-        ballista.spawn(builderPlayer.location, builderPlayer)
+    private fun buildTower(builderPlayer: Player) {
+        Mortar().spawn(builderPlayer.location, builderPlayer)
     }
 
     object BuilderListener : Listener {
@@ -296,6 +303,234 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             }
 
             return true
+        }
+
+    }
+
+    private class Mortar() : Building(10) {
+
+        private var shootingTask: BukkitTask? = null
+
+        companion object {
+            private val flightParticles = Particle.END_ROD.builder().extra(0.0).count(2)
+            private val rocketScale = Vector3f(1.5f, 1.5f, 1.5f)
+
+            private const val PARTICLES_VIEW_RANGE = 40
+            private const val ROCKET_DAMAGE = 12.0
+        }
+
+        override fun canSpawn(playerLocation: Location): Boolean {
+            return true
+        }
+
+        override fun getBuildingConfig(): BuildingConfig {
+            return BuildingConfig(
+                ItemStack(Material.LEATHER),
+                Matrix4f(),
+                Vector(0.0, 0.5, 0.0),
+                HitboxDimensions(1.5f, 1.5f),
+                Vector(0.0, 0.0, 0.0),
+                Vector(0.0, 2.0, 0.0),
+                "<gold><b>Mortar"
+            )
+        }
+
+        override fun spawn(playerLocation: Location, builderPlayer: Player): Boolean {
+            if (!super.spawn(playerLocation, builderPlayer)) return false
+
+            val maxTargets = 4
+            val range = 15.0
+            val targets = HashSet<LivingEntity>(maxTargets)
+            val baseLoc = display!!.location.clone().add(0.0, 1.0, 0.0)
+
+            shootingTask = sync(period = TimeUnit.SECONDS(8)) {
+                for (e in baseLoc.getNearbyLivingEntities(range)) {
+                    if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) continue
+                    else if (e !is Player && e.type != AIZombieScheduler.MOB_TYPE) continue
+
+                    targets.add(e)
+                    if (targets.size == maxTargets) {
+                        break
+                    }
+                }
+
+                val maxHorizontalOffset = 10.0
+                for ((i, t) in targets.withIndex()) {
+                    val xOffset = Random.nextDouble(-maxHorizontalOffset, maxHorizontalOffset)
+                    val zOffset = Random.nextDouble(-maxHorizontalOffset, maxHorizontalOffset)
+                    val middlePoint = baseLoc.clone().add(xOffset, 25.0, zOffset)
+
+                    sync(delay = TimeUnit.TICKS(6 * i.toLong())) {
+                        launchRocketWithAscend(baseLoc, middlePoint, t, builderPlayer)
+                        baseLoc.world.playSound(baseLoc, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1f, 1f)
+                    }
+                }
+                targets.clear()
+            }
+
+            return true
+        }
+
+        override fun remove() {
+            shootingTask!!.cancel()
+            shootingTask = null
+            super.remove()
+        }
+
+        private fun spawnFireworkExplosion(location: Location, shooter: Player) {
+            val world = location.world
+            world.spawn(location, Firework::class.java) {
+                it.shooter = shooter
+                it.setGravity(false)
+                val meta = it.fireworkMeta
+                meta.addEffect(
+                    FireworkEffect.builder()
+                        .with(FireworkEffect.Type.BURST)
+                        .withColor(Color.BLACK, Color.ORANGE)
+                        .withFlicker()
+                        .withTrail()
+                        .build()
+                )
+                it.fireworkMeta = meta
+            }.detonate()
+        }
+
+        private fun spawnRocketDisplay(location: Location, transformation: Transformation): ItemDisplay {
+            val world = location.world
+            return world.spawn(location, ItemDisplay::class.java) { display ->
+                display.setItemStack(ItemStack(Material.FIREWORK_ROCKET))
+                display.billboard = Display.Billboard.FIXED
+                display.teleportDuration = 2
+                display.interpolationDelay = 0
+                display.interpolationDuration = 2
+                display.transformation = transformation
+            }
+        }
+
+        fun bezierInto(t: Double, out: Vector, start: Location, middle: Location, end: Location) {
+            val u = 1 - t
+            val x = u * u * start.x + 2 * u * t * middle.x + t * t * end.x
+            val y = u * u * start.y + 2 * u * t * middle.y + t * t * end.y
+            val z = u * u * start.z + 2 * u * t * middle.z + t * t * end.z
+            out.x = x
+            out.y = y
+            out.z = z
+        }
+
+        private fun launchRocketWithAscend(
+            startLocation: Location,
+            intermediateLoc: Location,
+            target: LivingEntity,
+            shooter: Player
+        ) {
+            val world = startLocation.world
+
+            val ascendDuration = TimeUnit.TICKS(10)
+            val ascendTarget = startLocation.clone().add(0.0, 20.0, 0.0)
+
+            val rocketLoc = Location(world, startLocation.x, startLocation.y, startLocation.z)
+            val transformTranslation = Vector3f(0f, 0f, 0f)
+
+            val rocket = spawnRocketDisplay(
+                startLocation,
+                Transformation(transformTranslation, Quaternionf(), rocketScale, Quaternionf())
+            )
+
+            var currTick = 0
+            sync(period = TimeUnit.TICKS(1)) {
+                if (currTick > ascendDuration || rocket.isDead) {
+                    cancel()
+
+                    if (rocket.isDead) return@sync
+
+                    redirectRocket(
+                        startLocation = rocketLoc.clone(),
+                        intermediateLoc = intermediateLoc,
+                        target = target,
+                        shooter = shooter,
+                        rocket = rocket
+                    )
+                    return@sync
+                }
+
+                val t = currTick.toDouble() / ascendDuration
+
+                rocketLoc.x = startLocation.x
+                rocketLoc.y = startLocation.y + (ascendTarget.y - startLocation.y) * t
+                rocketLoc.z = startLocation.z
+
+                rocket.teleport(rocketLoc)
+                flightParticles.location(rocketLoc).receivers(PARTICLES_VIEW_RANGE, true).spawn()
+
+                currTick++
+            }
+        }
+
+        private fun redirectRocket(
+            startLocation: Location,
+            intermediateLoc: Location,
+            target: LivingEntity,
+            shooter: Player,
+            rocket: ItemDisplay
+        ) {
+            val targetLoc = target.location
+            val world = targetLoc.world
+
+            val flightDuration = TimeUnit.SECONDS(1)
+
+            val rocketLoc = Location(world, 0.0, 0.0, 0.0)
+            val currentVec = Vector(0.0, 0.0, 0.0)
+            val nextVec = Vector(0.0, 0.0, 0.0)
+            val directionVec = Vector(0.0, 0.0, 0.0)
+
+            val fromAxis = Vector3f(0f, 1f, 0f)
+            val toAxis = Vector3f()
+            val rotation = Quaternionf()
+            val transformTranslation = Vector3f(0f, 0f, 0f)
+
+            var currTick = 0
+            sync(period = TimeUnit.TICKS(1)) {
+                if (currTick > flightDuration || rocket.isDead || (rocketLoc.block.isSolid && currTick != 0)) {
+                    rocket.remove()
+                    spawnFireworkExplosion(rocketLoc, shooter)
+
+                    cancel()
+                    return@sync
+                }
+
+                val t = currTick.toDouble() / flightDuration
+                val tNext = ((currTick + 1).toDouble() / flightDuration).coerceAtMost(1.0)
+
+                bezierInto(t, currentVec, startLocation, intermediateLoc, targetLoc)
+                bezierInto(tNext, nextVec, startLocation, intermediateLoc, targetLoc)
+
+                directionVec.x = nextVec.x - currentVec.x
+                directionVec.y = nextVec.y - currentVec.y
+                directionVec.z = nextVec.z - currentVec.z
+
+                if (directionVec.lengthSquared() > 1.0E-6) {
+                    directionVec.normalize()
+                    toAxis.set(directionVec.x.toFloat(), directionVec.y.toFloat(), directionVec.z.toFloat())
+                    rotation.rotationTo(fromAxis, toAxis)
+
+                    rocket.transformation =
+                        Transformation(transformTranslation, rotation, rocketScale, Quaternionf())
+                }
+
+                rocketLoc.x = currentVec.x
+                rocketLoc.y = currentVec.y
+                rocketLoc.z = currentVec.z
+                rocket.teleport(rocketLoc)
+                flightParticles.location(rocketLoc).receivers(PARTICLES_VIEW_RANGE, true).spawn()
+
+                currTick++
+            }
+        }
+
+        @EventHandler
+        fun onFireworkHit(e: EntityDamageByEntityEvent) {
+            if (e.damager !is Firework) return
+            e.damage = ROCKET_DAMAGE
         }
 
     }
