@@ -6,6 +6,7 @@ import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
+import com.jackob.dvz.util.CooldownUtil
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
@@ -19,6 +20,7 @@ import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
 import com.jackob.dvz.util.updateItem
+import com.jackob.dvz.util.withCooldown
 import io.papermc.paper.entity.LookAnchor
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import net.kyori.adventure.title.Title
@@ -42,9 +44,14 @@ import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityInteractEvent
 import org.bukkit.event.entity.ProjectileHitEvent
+import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.PotionMeta
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
 import org.bukkit.util.Transformation
 import org.bukkit.util.Vector
@@ -54,6 +61,7 @@ import org.joml.Vector3f
 import java.util.UUID
 import kotlin.math.max
 import kotlin.random.Random
+import kotlin.random.nextInt
 
 class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero) {
 
@@ -113,6 +121,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         chosenBuilding = when (selectedBuildingType) {
             BuildingType.BALLISTA -> Ballista()
             BuildingType.MORTAR -> Mortar()
+            BuildingType.SUPPLY_BOX -> SupplyBox()
         }
     }
 
@@ -199,7 +208,8 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     enum class BuildingType(val buildingName: String, val cost: Int, val limit: Int, val buildingTimeInSeconds: Int){
         BALLISTA("<red>Ballista", 20, 2, 10),
-        MORTAR("<dark_red>Mortar", 300, 1, 13)
+        MORTAR("<dark_red>Mortar", 300, 1, 13),
+        SUPPLY_BOX("<light_purple>Supply Box", 10, 3, 3)
     }
 
     object BuilderListener : Listener {
@@ -243,7 +253,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
         protected var display: ItemDisplay? = null
 
-        private var meleeHitbox: Interaction? = null
+        protected var meleeHitbox: Interaction? = null
 
         private var arrowHitbox: ArmorStand? = null
 
@@ -414,6 +424,53 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             if (protectedBlocks.contains(e.blockPlaced.packCoordinates())) {
                 e.isCancelled = true
             }
+        }
+
+    }
+
+    private class SupplyBox(): Building(30) {
+
+        private val dwarfCooldowns = CooldownUtil(SUPPLY_COOLDOWN * 1000L)
+
+        companion object {
+            private const val SUPPLY_COOLDOWN = 25
+
+            private val availableSupplies: Array<ItemStack> = arrayOf(
+                ItemStack(Material.MILK_BUCKET),
+                ItemStack(Material.GOLDEN_APPLE, 3),
+                createItem<PotionMeta>(Material.POTION) {
+                    color = Color.RED
+
+                    addCustomEffect(PotionEffect(PotionEffectType.REGENERATION, 5 * 20, 3, false, false), true)
+                    customName("<b><light_purple>Healing Potion".mm())
+                },
+                ItemStack(Material.SPECTRAL_ARROW, 32)
+            )
+        }
+
+        override fun getBuildingConfig(): BuildingConfig = BuildingConfig(
+            ItemStack(Material.BARREL),
+            Matrix4f().scale(2f),
+            Vector(0.0,1.0,0.0),
+            HitboxDimensions(1.5f,1.5f),
+            Vector(0.0,-0.5,0.0),
+            Vector(0.0,1.5,0.0),
+            10,
+            "<light_purple><b>Supply Box"
+        )
+
+        private fun receiveRandomSupply(dwarf: Player) = dwarf.withCooldown(dwarfCooldowns) {
+            val randomIdx = Random.nextInt(0, availableSupplies.size)
+            inventory.addItem(availableSupplies[randomIdx])
+            playSound(location, Sound.BLOCK_BARREL_OPEN, 1f, 1f)
+        }
+
+        @EventHandler
+        fun onBoxClick(e: PlayerInteractEntityEvent) {
+            if (meleeHitbox == null) return
+            if (e.rightClicked != meleeHitbox) return
+
+            receiveRandomSupply(e.player)
         }
 
     }
