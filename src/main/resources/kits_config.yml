@@ -150,7 +150,39 @@ kits:
 
     attributes:
       - type: "MAX_HEALTH"
-        amount: 6.0
+        amount: 2.0
+
+    items:
+      - material: "IRON_HELMET"
+        name: "<gray><b>Builder's helmet"
+        lore:
+          - ""
+          - "Your head has never been heavier"
+        enchantments:
+          protection: 4
+          unbreaking: 3
+          feather_falling: 2
+          blast_protection: 1
+        trimMaterial: "copper"
+        trimPattern: "dune"
+
+      - material: "COPPER_CHESTPLATE"
+        name: "<b><green>Rusty plate"
+        enchantments:
+          unbreaking: 3
+          blast_protection: 1
+
+      - material: "COPPER_LEGGINGS"
+        name: "<green>Leggings"
+        enchantments:
+          unbreaking: 3
+          blast_protection: 1
+
+      - material: "COPPER_BOOTS"
+        name: "<green>Boots"
+        enchantments:
+          unbreaking: 3
+          blast_protection: 1
 
     kitAttributes:
       rampage: 1

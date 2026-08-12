@@ -12,7 +12,8 @@ builder:
   icon: IRON_PICKAXE
   name: <green>Builder
   description:
-    - <gray>Let's build
+    - <gray>You will arrive equipped with builder's hammer
+    - <gray>with which you can build and repair buildings.
 elf:
   icon: BIRCH_SAPLING
   name: <green>Elf

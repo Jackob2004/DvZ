@@ -83,7 +83,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
     }
 
     companion object {
-        private const val BUILDINGS_LIMIT = 10
+        private const val BUILDINGS_LIMIT = 3
         private const val HAMMER_PREFIX = "<aqua>Builder's Hammer - "
         private const val REPAIR_COST = 5
 
@@ -233,10 +233,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
     }
 
     enum class BuildingType(val buildingName: String, val cost: Int, val limit: Int, val buildingTimeInSeconds: Int) {
-        BALLISTA("<red>Ballista", 20, 2, 10),
-        MORTAR("<dark_red>Mortar", 300, 1, 13),
-        SUPPLY_BOX("<light_purple>Supply Box", 10, 3, 3),
-        MAGIC_DOORS("<dark_aqua>Magic Doors", 5, 10, 3);
+        BALLISTA("<red>Ballista", 150, 2, 10),
+        MORTAR("<dark_red>Mortar", 300, 1, 12),
+        SUPPLY_BOX("<light_purple>Supply Box", 80, 3, 6),
+        MAGIC_DOORS("<dark_aqua>Magic Doors", 100, 3, 8);
 
         private fun sanitizedName(): String {
             return buildingName.lowercase().replace('-', ' ')
@@ -517,7 +517,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     }
 
-    private class MagicDoors(removeCallback: () -> Unit) : Building(40, removeCallback) {
+    private class MagicDoors(removeCallback: () -> Unit) : Building(35, removeCallback) {
 
         private var unbreakableDoorDisplay: ItemDisplay? = null
 
@@ -528,11 +528,14 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         private var unbreakableDoorTeleportLocation: Location? = null
 
         companion object {
+            private const val MAX_DOOR_DISTANCE = 10
             private val doorType = Material.OXIDIZED_COPPER_DOOR
             private val doorItem = createItem(doorType) {
                 name = "<gray>Unbreakable Door"
                 description = """
-                    ?
+                    Place it to enable short distance teleportation.
+                    Could be useful as a way to swiftly cross walls.
+                    Max distance from the other door pair: <gray>$MAX_DOOR_DISTANCE
                 """
                 persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
             }
@@ -555,7 +558,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
 
         private fun canSpawnUnbreakableDoor(location: Location): Boolean {
-            if (location.distanceSquared(display!!.location) > 10 * 10) return false
+            if (location.distanceSquared(display!!.location) > MAX_DOOR_DISTANCE * MAX_DOOR_DISTANCE) return false
 
             val blockAbove = location.clone().add(0.0, 1.0, 0.0).block
             return location.block.type == doorType && blockAbove.type == doorType
@@ -629,7 +632,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
     }
 
-    private class SupplyBox(removeCallback: () -> Unit) : Building(30, removeCallback) {
+    private class SupplyBox(removeCallback: () -> Unit) : Building(35, removeCallback) {
 
         private val dwarfCooldowns = CooldownUtil(SUPPLY_COOLDOWN * 1000L)
 
@@ -678,7 +681,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     }
 
-    private class Ballista(removeCallback: () -> Unit) : Building(20, removeCallback) {
+    private class Ballista(removeCallback: () -> Unit) : Building(30, removeCallback) {
 
         private var shootingTask: BukkitTask? = null
 
@@ -741,7 +744,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     }
 
-    private class Mortar(removeCallback: () -> Unit) : Building(10, removeCallback) {
+    private class Mortar(removeCallback: () -> Unit) : Building(25, removeCallback) {
 
         private var shootingTask: BukkitTask? = null
 
