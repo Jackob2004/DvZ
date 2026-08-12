@@ -63,6 +63,7 @@ import org.joml.Quaternionf
 import org.joml.Vector3f
 import java.util.UUID
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.random.Random
 
 class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero) {
@@ -138,7 +139,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
     }
 
     private fun calcResources(player: Player): Int = player.inventory.contents
-        .filter { it != null && it.type == buildingResource}
+        .filter { it != null && it.type == buildingResource }
         .sumOf { it!!.amount }
 
     private fun hasMaxBuildings(): Boolean {
@@ -218,7 +219,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         startBuildingProcess(builderPlayer, location)
     }
 
-    enum class BuildingType(val buildingName: String, val cost: Int, val limit: Int, val buildingTimeInSeconds: Int){
+    enum class BuildingType(val buildingName: String, val cost: Int, val limit: Int, val buildingTimeInSeconds: Int) {
         BALLISTA("<red>Ballista", 20, 2, 10),
         MORTAR("<dark_red>Mortar", 300, 1, 13),
         SUPPLY_BOX("<light_purple>Supply Box", 10, 3, 3),
@@ -279,17 +280,20 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
         private var lastHit: Long = 0
 
+        private var lastRepair: Long = 0
+
         private val protectedBlocks: LongOpenHashSet = LongOpenHashSet()
 
         companion object {
             private const val HIT_INTERVAL = 800
+            private const val REPAIR_INTERVAL = 3000
             private const val PROTECTED_RADIUS = 2
         }
 
         fun isDestroyed(): Boolean = health == 0
 
         open fun canSpawn(playerLocation: Location): Boolean {
-            val centralLocation = playerLocation.clone().add(0.0,2.0,0.0)
+            val centralLocation = playerLocation.clone().add(0.0, 2.0, 0.0)
             val protectedCube = centralLocation.getCube(PROTECTED_RADIUS)
 
             centralLocation.subtract(0.0, 2.0, 0.0)
@@ -298,7 +302,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             val limit = getBuildingConfig().maxBlocksAboveBedrock
             while (block.type != Material.BEDROCK && blocksToBedrock < limit + 1) {
                 blocksToBedrock++
-                centralLocation.subtract(0.0, 1.0,0.0)
+                centralLocation.subtract(0.0, 1.0, 0.0)
                 block = centralLocation.block
             }
 
@@ -354,7 +358,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             }
 
             if (!config.customProtectedArea) {
-                spawnLocation.clone().add(0.0,2.0,0.0).getCube(PROTECTED_RADIUS).forEach {
+                spawnLocation.clone().add(0.0, 2.0, 0.0).getCube(PROTECTED_RADIUS).forEach {
                     protectedBlocks.add(it.packCoordinates())
                 }
             }
@@ -423,15 +427,32 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             }
         }
 
+        private fun repair(builderPlayer: Player) {
+            if (builderPlayer.inventory.itemInMainHand.type != hammerItem.type) return
+            if (health == maxHealth) return
+
+            val now = System.currentTimeMillis()
+            if (now - lastRepair < REPAIR_INTERVAL) return
+            lastRepair = now
+
+            health = min(health + 1, maxHealth)
+            healthBar!!.text(generateHealthBar().mm())
+            builderPlayer.playSound(builderPlayer.location, Sound.ENTITY_IRON_GOLEM_REPAIR, 1f, 1f)
+        }
+
         @EventHandler
         fun onMeleeDamage(e: EntityDamageByEntityEvent) {
             if (meleeHitbox == null) return
             val hitEntity = e.entity
             if (hitEntity != meleeHitbox && hitEntity != arrowHitbox) return
-            val damager = e.damager as? Player ?: return
-            if (GameManager.getPlayerTeam(damager) == TeamType.DWARF) return
+            val player = e.damager as? Player ?: return
+            val playerTeam = GameManager.getPlayerTeam(player)
 
-            takeDamage()
+            if (playerTeam == TeamType.ZOMBIE) {
+                takeDamage()
+            } else if (playerTeam == TeamType.DWARF && KitsManager.getKit(player) is Builder) {
+                repair(player)
+            }
 
             if (hitEntity == arrowHitbox) {
                 e.isCancelled = true
@@ -459,7 +480,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     }
 
-    private class MagicDoors(removeCallback: () -> Unit): Building(40, removeCallback) {
+    private class MagicDoors(removeCallback: () -> Unit) : Building(40, removeCallback) {
 
         private var unbreakableDoorDisplay: ItemDisplay? = null
 
@@ -482,11 +503,11 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
         override fun getBuildingConfig(): BuildingConfig = BuildingConfig(
             ItemStack(doorType),
-            Matrix4f().scale(1.5f,2f,1.5f),
-            Vector(0.0,1.0,0.0),
-            HitboxDimensions(1f,2f),
-            Vector(0.0,-1.0,0.0),
-            Vector(0.0,1.0,0.0),
+            Matrix4f().scale(1.5f, 2f, 1.5f),
+            Vector(0.0, 1.0, 0.0),
+            HitboxDimensions(1f, 2f),
+            Vector(0.0, -1.0, 0.0),
+            Vector(0.0, 1.0, 0.0),
             -1,
             "<dark_aqua><b>Magic Doors"
         )
@@ -571,7 +592,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
     }
 
-    private class SupplyBox(removeCallback: () -> Unit): Building(30, removeCallback) {
+    private class SupplyBox(removeCallback: () -> Unit) : Building(30, removeCallback) {
 
         private val dwarfCooldowns = CooldownUtil(SUPPLY_COOLDOWN * 1000L)
 
@@ -594,10 +615,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         override fun getBuildingConfig(): BuildingConfig = BuildingConfig(
             ItemStack(Material.BARREL),
             Matrix4f().scale(2f),
-            Vector(0.0,1.0,0.0),
-            HitboxDimensions(1.5f,1.5f),
-            Vector(0.0,-0.5,0.0),
-            Vector(0.0,1.5,0.0),
+            Vector(0.0, 1.0, 0.0),
+            HitboxDimensions(1.5f, 1.5f),
+            Vector(0.0, -0.5, 0.0),
+            Vector(0.0, 1.5, 0.0),
             10,
             "<light_purple><b>Supply Box"
         )
