@@ -9,15 +9,18 @@ import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.createItem
 import com.jackob.dvz.util.description
+import com.jackob.dvz.util.getCube
 import com.jackob.dvz.util.hasMoved
 import com.jackob.dvz.util.leftClickItem
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
+import com.jackob.dvz.util.packCoordinates
 import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
 import com.jackob.dvz.util.updateItem
 import io.papermc.paper.entity.LookAnchor
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import net.kyori.adventure.title.Title
 import org.bukkit.Color
 import org.bukkit.FireworkEffect
@@ -37,6 +40,7 @@ import org.bukkit.entity.TextDisplay
 import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
+import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerInteractEvent
@@ -194,7 +198,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
     }
 
     enum class BuildingType(val buildingName: String, val cost: Int, val limit: Int, val buildingTimeInSeconds: Int){
-        BALLISTA("<red>Ballista", 200, 1, 10),
+        BALLISTA("<red>Ballista", 20, 2, 10),
         MORTAR("<dark_red>Mortar", 300, 1, 13)
     }
 
@@ -231,6 +235,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         val hitboxDimensions: HitboxDimensions,
         val hitboxLocModifier: Vector,
         val healthBarLocModifier: Vector,
+        val maxHeight: Int,
         val name: String
     )
 
@@ -250,11 +255,29 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
         private var lastHit: Long = 0
 
+        private val protectedBlocks: LongOpenHashSet = LongOpenHashSet()
+
         companion object {
             private const val HIT_INTERVAL = 800
+            private const val PROTECTED_RADIUS = 2
         }
 
-        abstract fun canSpawn(playerLocation: Location): Boolean
+        fun canSpawn(playerLocation: Location): Boolean {
+            val centralLocation = playerLocation.clone().add(0.0,2.0,0.0)
+            val protectedCube = centralLocation.getCube(PROTECTED_RADIUS)
+
+            centralLocation.subtract(0.0, 2.0, 0.0)
+            var block = centralLocation.block
+            var blocksToBedrock = 0
+            val limit = getBuildingConfig().maxHeight
+            while (block.type != Material.BEDROCK && blocksToBedrock < limit + 1) {
+                blocksToBedrock++
+                centralLocation.subtract(0.0, 1.0,0.0)
+                block = centralLocation.block
+            }
+
+            return !protectedCube.any { it.block.type != Material.AIR } && blocksToBedrock <= limit
+        }
 
         protected abstract fun getBuildingConfig(): BuildingConfig
 
@@ -295,6 +318,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                 it.text(config.name.mm())
             }
 
+            spawnLocation.clone().add(0.0,2.0,0.0).getCube(PROTECTED_RADIUS).forEach {
+                protectedBlocks.add(it.packCoordinates())
+            }
+
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
 
             return true
@@ -315,6 +342,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
             name!!.remove()
             name = null
+            protectedBlocks.clear()
             HandlerList.unregisterAll(this)
         }
 
@@ -381,15 +409,18 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             shooter.playSound(shooter.location, Sound.ENTITY_ARROW_HIT_PLAYER, 1f, 1f)
         }
 
+        @EventHandler
+        fun onBlockPlace(e: BlockPlaceEvent) {
+            if (protectedBlocks.contains(e.blockPlaced.packCoordinates())) {
+                e.isCancelled = true
+            }
+        }
+
     }
 
     private class Ballista() : Building(20) {
 
         private var shootingTask: BukkitTask? = null
-
-        override fun canSpawn(playerLocation: Location): Boolean {
-            return true
-        }
 
         override fun remove() {
             shootingTask!!.cancel()
@@ -405,6 +436,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                 HitboxDimensions(3f, 1.5f),
                 Vector(0.0, -1.0, 0.0),
                 Vector(0.0, 1.0, 0.0),
+                15,
                 "<red><b>Ballista"
             )
         }
@@ -461,10 +493,6 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             private const val ROCKET_DAMAGE = 12.0
         }
 
-        override fun canSpawn(playerLocation: Location): Boolean {
-            return false
-        }
-
         override fun getBuildingConfig(): BuildingConfig {
             return BuildingConfig(
                 ItemStack(Material.LEATHER),
@@ -473,6 +501,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                 HitboxDimensions(1.5f, 1.5f),
                 Vector(0.0, 0.0, 0.0),
                 Vector(0.0, 2.0, 0.0),
+                5,
                 "<gold><b>Mortar"
             )
         }
