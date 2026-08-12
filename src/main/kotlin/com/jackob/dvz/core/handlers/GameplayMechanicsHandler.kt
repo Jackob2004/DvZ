@@ -35,6 +35,7 @@ import org.bukkit.event.entity.PotionSplashEvent
 import org.bukkit.event.inventory.CraftItemEvent
 import org.bukkit.event.inventory.PrepareAnvilEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerItemConsumeEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
@@ -74,6 +75,21 @@ class GameplayMechanicsHandler : CoreHandler {
 
     private fun handleObtainableItems(clickedBlock: Material): Pair<ItemStack, Sound>? {
         return obtainables[clickedBlock]
+    }
+
+    @EventHandler
+    fun onConsume(e: PlayerItemConsumeEvent) {
+        val item = e.item
+        if (item.type == Material.MILK_BUCKET) {
+            val player = e.player
+            player.removeItem(item, 1)
+
+            for (effect in negativeEffects) {
+                player.removePotionEffect(effect)
+            }
+
+            e.isCancelled = true
+        }
     }
 
     @EventHandler(priority = EventPriority.LOW)
