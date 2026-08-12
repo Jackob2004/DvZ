@@ -2,6 +2,7 @@ package com.jackob.dvz.kits.dwarf.base
 
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
+import com.jackob.dvz.core.handlers.GameplayMechanicsHandler.Companion.UNPLACEABLE_KEY
 import com.jackob.dvz.core.objects.AIZombieScheduler
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.KitsManager
@@ -16,6 +17,7 @@ import com.jackob.dvz.util.leftClickItem
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.name
 import com.jackob.dvz.util.packCoordinates
+import com.jackob.dvz.util.removeItem
 import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
 import com.jackob.dvz.util.toPlayer
@@ -31,6 +33,7 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Particle
 import org.bukkit.Sound
+import org.bukkit.World
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Display
 import org.bukkit.entity.Firework
@@ -44,12 +47,12 @@ import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
-import org.bukkit.event.entity.EntityInteractEvent
 import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.PotionMeta
+import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
@@ -61,7 +64,6 @@ import org.joml.Vector3f
 import java.util.UUID
 import kotlin.math.max
 import kotlin.random.Random
-import kotlin.random.nextInt
 
 class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero) {
 
@@ -80,7 +82,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
     }
 
     companion object {
-        private const val BUILDINGS_LIMIT = 3
+        private const val BUILDINGS_LIMIT = 10
         private const val HAMMER_PREFIX = "<aqua>Builder's Hammer - "
 
         private val buildingResource = Material.COBBLESTONE
@@ -122,6 +124,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             BuildingType.BALLISTA -> Ballista()
             BuildingType.MORTAR -> Mortar()
             BuildingType.SUPPLY_BOX -> SupplyBox()
+            BuildingType.MAGIC_DOORS -> MagicDoors()
         }
     }
 
@@ -209,7 +212,8 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
     enum class BuildingType(val buildingName: String, val cost: Int, val limit: Int, val buildingTimeInSeconds: Int){
         BALLISTA("<red>Ballista", 20, 2, 10),
         MORTAR("<dark_red>Mortar", 300, 1, 13),
-        SUPPLY_BOX("<light_purple>Supply Box", 10, 3, 3)
+        SUPPLY_BOX("<light_purple>Supply Box", 10, 3, 3),
+        MAGIC_DOORS("<dark_aqua>Magic Doors", 5, 10, 3)
     }
 
     object BuilderListener : Listener {
@@ -245,8 +249,9 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         val hitboxDimensions: HitboxDimensions,
         val hitboxLocModifier: Vector,
         val healthBarLocModifier: Vector,
-        val maxHeight: Int,
-        val name: String
+        val maxBlocksAboveBedrock: Int,
+        val name: String,
+        val customProtectedArea: Boolean = false
     )
 
     private abstract class Building(val maxHealth: Int) : Listener {
@@ -272,14 +277,14 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             private const val PROTECTED_RADIUS = 2
         }
 
-        fun canSpawn(playerLocation: Location): Boolean {
+        open fun canSpawn(playerLocation: Location): Boolean {
             val centralLocation = playerLocation.clone().add(0.0,2.0,0.0)
             val protectedCube = centralLocation.getCube(PROTECTED_RADIUS)
 
             centralLocation.subtract(0.0, 2.0, 0.0)
             var block = centralLocation.block
             var blocksToBedrock = 0
-            val limit = getBuildingConfig().maxHeight
+            val limit = getBuildingConfig().maxBlocksAboveBedrock
             while (block.type != Material.BEDROCK && blocksToBedrock < limit + 1) {
                 blocksToBedrock++
                 centralLocation.subtract(0.0, 1.0,0.0)
@@ -291,6 +296,22 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
         protected abstract fun getBuildingConfig(): BuildingConfig
 
+        protected fun spawnDisplay(world: World, loc: Location, config: BuildingConfig): ItemDisplay {
+            return world.spawn(loc, ItemDisplay::class.java) {
+                it.setItemStack(config.displayItem)
+                it.setTransformationMatrix(config.displayMatrix)
+            }
+        }
+
+        protected fun spawnHitbox(world: World, loc: Location, config: BuildingConfig): Interaction {
+            return world.spawn(loc.clone().add(config.hitboxLocModifier), Interaction::class.java) {
+                it.isResponsive = true
+                val dimensions = config.hitboxDimensions
+                it.interactionHeight = dimensions.height
+                it.interactionWidth = dimensions.width
+            }
+        }
+
         open fun spawn(builderPlayer: Player, spawnLocation: Location): Boolean {
             val world = spawnLocation.world
             val config = getBuildingConfig()
@@ -298,17 +319,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             val displayLoc = spawnLocation.clone().add(config.displayLocModifier)
             displayLoc.yaw = 0f
             displayLoc.pitch = 0f
-            display = world.spawn(displayLoc, ItemDisplay::class.java) {
-                it.setItemStack(config.displayItem)
-                it.setTransformationMatrix(config.displayMatrix)
-            }
 
-            meleeHitbox = world.spawn(displayLoc.clone().add(config.hitboxLocModifier), Interaction::class.java) {
-                it.isResponsive = true
-                val dimensions = config.hitboxDimensions
-                it.interactionHeight = dimensions.height
-                it.interactionWidth = dimensions.width
-            }
+            display = spawnDisplay(world, displayLoc, config)
+
+            meleeHitbox = spawnHitbox(world, displayLoc, config)
 
             arrowHitbox =
                 world.spawn(displayLoc.clone().add(config.hitboxLocModifier), ArmorStand::class.java) { stand ->
@@ -328,8 +342,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                 it.text(config.name.mm())
             }
 
-            spawnLocation.clone().add(0.0,2.0,0.0).getCube(PROTECTED_RADIUS).forEach {
-                protectedBlocks.add(it.packCoordinates())
+            if (!config.customProtectedArea) {
+                spawnLocation.clone().add(0.0,2.0,0.0).getCube(PROTECTED_RADIUS).forEach {
+                    protectedBlocks.add(it.packCoordinates())
+                }
             }
 
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
@@ -428,6 +444,118 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     }
 
+    private class MagicDoors(): Building(40) {
+
+        private var unbreakableDoorDisplay: ItemDisplay? = null
+
+        private var unbreakableDoorHitbox: Interaction? = null
+
+        private var doorTeleportLocation: Location? = null
+
+        private var unbreakableDoorTeleportLocation: Location? = null
+
+        companion object {
+            private val doorType = Material.OXIDIZED_COPPER_DOOR
+            private val doorItem = createItem(doorType) {
+                name = "<gray>Unbreakable Door"
+                description = """
+                    ?
+                """
+                persistentDataContainer.set(UNPLACEABLE_KEY, PersistentDataType.BOOLEAN, true)
+            }
+        }
+
+        override fun getBuildingConfig(): BuildingConfig = BuildingConfig(
+            ItemStack(doorType),
+            Matrix4f().scale(1.5f,2f,1.5f),
+            Vector(0.0,1.0,0.0),
+            HitboxDimensions(1f,2f),
+            Vector(0.0,-1.0,0.0),
+            Vector(0.0,1.0,0.0),
+            -1,
+            "<dark_aqua><b>Magic Doors"
+        )
+
+        override fun canSpawn(playerLocation: Location): Boolean {
+            val blockAbove = playerLocation.clone().add(0.0, 1.0, 0.0).block
+            return playerLocation.block.type == Material.AIR && blockAbove.type == Material.AIR
+        }
+
+        private fun canSpawnUnbreakableDoor(location: Location): Boolean {
+            if (location.distanceSquared(display!!.location) > 10 * 10) return false
+
+            val blockAbove = location.clone().add(0.0, 1.0, 0.0).block
+            return location.block.type == doorType && blockAbove.type == doorType
+        }
+
+        override fun remove() {
+            if (unbreakableDoorDisplay != null) {
+                unbreakableDoorDisplay!!.remove()
+                unbreakableDoorDisplay = null
+            }
+
+            if (unbreakableDoorHitbox != null) {
+                unbreakableDoorHitbox!!.remove()
+                unbreakableDoorHitbox = null
+            }
+
+            super.remove()
+        }
+
+        override fun spawn(builderPlayer: Player, spawnLocation: Location): Boolean {
+            if (!super.spawn(builderPlayer, spawnLocation)) return false
+
+            builderPlayer.inventory.addItem(doorItem)
+            doorTeleportLocation = spawnLocation
+            return true
+        }
+
+        @EventHandler
+        fun onDoorPlace(e: BlockPlaceEvent) {
+            if (unbreakableDoorDisplay != null) return
+            val item = e.itemInHand
+            if (item != doorItem) return
+
+            val player = e.player
+            val spawnLoc = e.blockPlaced.location
+            if (!canSpawnUnbreakableDoor(spawnLoc)) {
+                player.sendActionBar("<yellow>You cannot place it here!".mm())
+                return
+            }
+
+            player.removeItem(item, 1)
+            unbreakableDoorTeleportLocation = spawnLoc
+            val config = getBuildingConfig()
+
+            val displayLoc = spawnLoc.clone().add(config.displayLocModifier)
+            val world = spawnLoc.world
+            displayLoc.yaw = 0f
+            displayLoc.pitch = 0f
+            unbreakableDoorDisplay = spawnDisplay(world, displayLoc, config)
+            unbreakableDoorHitbox = spawnHitbox(world, displayLoc, config)
+        }
+
+
+        @EventHandler
+        fun onDoorClick(e: PlayerInteractEntityEvent) {
+            if (unbreakableDoorDisplay == null) return
+            val player = e.player
+            if (GameManager.getPlayerTeam(player) == TeamType.ZOMBIE) return
+
+            val clickedEntity = e.rightClicked
+            val teleportLocation = when (clickedEntity) {
+                unbreakableDoorHitbox -> doorTeleportLocation
+                meleeHitbox -> unbreakableDoorTeleportLocation
+                else -> null
+            }
+
+            if (teleportLocation != null) {
+                player.playSound(player.location, Sound.BLOCK_IRON_DOOR_OPEN, 1f, 1f)
+                player.teleport(teleportLocation)
+            }
+        }
+    }
+
     private class SupplyBox(): Building(30) {
 
         private val dwarfCooldowns = CooldownUtil(SUPPLY_COOLDOWN * 1000L)
@@ -469,8 +597,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         fun onBoxClick(e: PlayerInteractEntityEvent) {
             if (meleeHitbox == null) return
             if (e.rightClicked != meleeHitbox) return
+            val player = e.player
+            if (GameManager.getPlayerTeam(player) == TeamType.ZOMBIE) return
 
-            receiveRandomSupply(e.player)
+            receiveRandomSupply(player)
         }
 
     }
