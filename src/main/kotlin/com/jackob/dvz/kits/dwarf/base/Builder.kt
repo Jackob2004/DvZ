@@ -85,6 +85,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
     companion object {
         private const val BUILDINGS_LIMIT = 10
         private const val HAMMER_PREFIX = "<aqua>Builder's Hammer - "
+        private const val REPAIR_COST = 5
 
         private val buildingResource = Material.COBBLESTONE
 
@@ -101,6 +102,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                 <green>[Left + Shift] <white>- click to show buildings details.
             """
         }
+
+        private fun calcResources(player: Player): Int = player.inventory.contents
+            .filter { it != null && it.type == buildingResource }
+            .sumOf { it!!.amount }
 
     }
 
@@ -144,10 +149,6 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             BuildingType.MAGIC_DOORS -> MagicDoors(::removeDestroyedBuilding)
         }
     }
-
-    private fun calcResources(player: Player): Int = player.inventory.contents
-        .filter { it != null && it.type == buildingResource }
-        .sumOf { it!!.amount }
 
     private fun hasMaxBuildings(): Boolean {
         return buildings.count { it.first == selectedBuildingType } == selectedBuildingType.limit
@@ -459,6 +460,11 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
         private fun repair(builderPlayer: Player) {
             if (builderPlayer.inventory.itemInMainHand.type != hammerItem.type) return
+            if (calcResources(builderPlayer) < REPAIR_COST) {
+                builderPlayer.sendMessage("<yellow>Not enough resources to repair!")
+                return
+            }
+
             if (health == maxHealth) return
 
             val now = System.currentTimeMillis()
@@ -468,6 +474,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             health = min(health + 1, maxHealth)
             healthBar!!.text(generateHealthBar().mm())
             builderPlayer.playSound(builderPlayer.location, Sound.ENTITY_IRON_GOLEM_REPAIR, 1f, 1f)
+            builderPlayer.inventory.removeItem(ItemStack(Material.COBBLESTONE, REPAIR_COST))
         }
 
         @EventHandler
