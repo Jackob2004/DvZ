@@ -104,7 +104,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     override fun onDeactivate() {
         super.onDeactivate()
-        buildings.forEach { it.second.remove() }
+        buildings.forEach { it.second.remove(false) }
         buildings.clear()
         chosenBuilding = null
     }
@@ -119,12 +119,21 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         builderPlayer.playSound(builderPlayer.location, Sound.BLOCK_LEVER_CLICK, 1f, 1f)
     }
 
+    private fun removeDestroyedBuilding() {
+        val iter = buildings.iterator()
+        while (iter.hasNext()) {
+            if (iter.next().second.isDestroyed()) {
+                iter.remove()
+            }
+        }
+    }
+
     private fun chooseBuilding() {
         chosenBuilding = when (selectedBuildingType) {
-            BuildingType.BALLISTA -> Ballista()
-            BuildingType.MORTAR -> Mortar()
-            BuildingType.SUPPLY_BOX -> SupplyBox()
-            BuildingType.MAGIC_DOORS -> MagicDoors()
+            BuildingType.BALLISTA -> Ballista(::removeDestroyedBuilding)
+            BuildingType.MORTAR -> Mortar(::removeDestroyedBuilding)
+            BuildingType.SUPPLY_BOX -> SupplyBox(::removeDestroyedBuilding)
+            BuildingType.MAGIC_DOORS -> MagicDoors(::removeDestroyedBuilding)
         }
     }
 
@@ -254,7 +263,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         val customProtectedArea: Boolean = false
     )
 
-    private abstract class Building(val maxHealth: Int) : Listener {
+    private abstract class Building(val maxHealth: Int, val removeCallback: () -> Unit) : Listener {
 
         protected var display: ItemDisplay? = null
 
@@ -276,6 +285,8 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             private const val HIT_INTERVAL = 800
             private const val PROTECTED_RADIUS = 2
         }
+
+        fun isDestroyed(): Boolean = health == 0
 
         open fun canSpawn(playerLocation: Location): Boolean {
             val centralLocation = playerLocation.clone().add(0.0,2.0,0.0)
@@ -353,7 +364,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             return true
         }
 
-        open fun remove() {
+        open fun remove(calledItself: Boolean) {
             display!!.remove()
             display = null
 
@@ -370,6 +381,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             name = null
             protectedBlocks.clear()
             HandlerList.unregisterAll(this)
+
+            if (!calledItself) {
+                removeCallback()
+            }
         }
 
         private fun generateHealthBar(): String {
@@ -404,7 +419,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             healthBar!!.text(generateHealthBar().mm())
 
             if (health <= 0) {
-                remove()
+                remove(true)
             }
         }
 
@@ -444,7 +459,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     }
 
-    private class MagicDoors(): Building(40) {
+    private class MagicDoors(removeCallback: () -> Unit): Building(40, removeCallback) {
 
         private var unbreakableDoorDisplay: ItemDisplay? = null
 
@@ -488,7 +503,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             return location.block.type == doorType && blockAbove.type == doorType
         }
 
-        override fun remove() {
+        override fun remove(calledItself: Boolean) {
             if (unbreakableDoorDisplay != null) {
                 unbreakableDoorDisplay!!.remove()
                 unbreakableDoorDisplay = null
@@ -499,7 +514,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
                 unbreakableDoorHitbox = null
             }
 
-            super.remove()
+            super.remove(calledItself)
         }
 
         override fun spawn(builderPlayer: Player, spawnLocation: Location): Boolean {
@@ -556,7 +571,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
     }
 
-    private class SupplyBox(): Building(30) {
+    private class SupplyBox(removeCallback: () -> Unit): Building(30, removeCallback) {
 
         private val dwarfCooldowns = CooldownUtil(SUPPLY_COOLDOWN * 1000L)
 
@@ -605,14 +620,14 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     }
 
-    private class Ballista() : Building(20) {
+    private class Ballista(removeCallback: () -> Unit) : Building(20, removeCallback) {
 
         private var shootingTask: BukkitTask? = null
 
-        override fun remove() {
+        override fun remove(calledItself: Boolean) {
             shootingTask!!.cancel()
             shootingTask = null
-            super.remove()
+            super.remove(calledItself)
         }
 
         override fun getBuildingConfig(): BuildingConfig {
@@ -668,7 +683,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
     }
 
-    private class Mortar() : Building(10) {
+    private class Mortar(removeCallback: () -> Unit) : Building(10, removeCallback) {
 
         private var shootingTask: BukkitTask? = null
 
@@ -729,10 +744,10 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             return true
         }
 
-        override fun remove() {
+        override fun remove(calledItself: Boolean) {
             shootingTask!!.cancel()
             shootingTask = null
-            super.remove()
+            super.remove(calledItself)
         }
 
         private fun spawnFireworkExplosion(location: Location, shooter: Player) {
