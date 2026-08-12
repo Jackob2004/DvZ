@@ -1,5 +1,6 @@
 package com.jackob.dvz.core.states
 
+import com.destroystokyo.paper.MaterialTags
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
@@ -515,6 +516,7 @@ class AttackState(
         val player = e.player
         if (!isActiveDwarf(player)) return
         val item = e.leftClickItem ?: return
+        if (!MaterialTags.ARMOR.isTagged(item)) return
         val meta = item.itemMeta as? Damageable ?: return
 
         if (meta.damage <= 0) return
