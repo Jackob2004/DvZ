@@ -126,7 +126,7 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
     }
 
     private fun activateDisguiseAbility(player: Player) = player.withCooldown(disguiseCooldowns) {
-        if (disguiseTask != null) return
+        if (disguiseTask != null) return@withCooldown
 
         stopDisguise(this)
         startDisguise(this, forestDisguises[currDisguise])
@@ -197,8 +197,6 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
             playSound(lastLocation, Sound.BLOCK_ANVIL_USE, 1f, 1f)
         }
     }
-
-    fun Player.hasMoved(lastLocation: Location) = lastLocation.distanceSquared(location) > 1
 
     object ElfListener : Listener {
         init {

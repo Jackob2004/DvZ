@@ -4,6 +4,8 @@ import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.Registry
 import org.bukkit.Sound
 import org.bukkit.entity.Entity
@@ -78,3 +80,5 @@ inline fun Player.withCooldown(cooldown: CooldownUtil, action: Player.() -> Unit
         this.action()
     }
 }
+
+fun Player.hasMoved(lastLocation: Location) = lastLocation.distanceSquared(location) > 1
