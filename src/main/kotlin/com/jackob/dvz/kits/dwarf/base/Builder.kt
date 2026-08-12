@@ -7,10 +7,18 @@ import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.util.TimeUnit
+import com.jackob.dvz.util.createItem
+import com.jackob.dvz.util.description
+import com.jackob.dvz.util.hasMoved
+import com.jackob.dvz.util.leftClickItem
 import com.jackob.dvz.util.mm
+import com.jackob.dvz.util.name
 import com.jackob.dvz.util.rightClickItem
 import com.jackob.dvz.util.sync
+import com.jackob.dvz.util.toPlayer
+import com.jackob.dvz.util.updateItem
 import io.papermc.paper.entity.LookAnchor
+import net.kyori.adventure.title.Title
 import org.bukkit.Color
 import org.bukkit.FireworkEffect
 import org.bukkit.FluidCollisionMode
@@ -45,21 +53,149 @@ import kotlin.random.Random
 
 class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero) {
 
+    private val buildings: MutableList<Pair<BuildingType, Building>> = ArrayList(BUILDINGS_LIMIT)
+
+    private var selectedBuildingIdx = 0
+
+    private var selectedBuildingType = BuildingType.entries[selectedBuildingIdx]
+
+    private var chosenBuilding: Building? = null
+
+    private var buildingTask: BukkitTask? = null
+
     init {
         BuilderListener
     }
 
+    companion object {
+        private const val BUILDINGS_LIMIT = 3
+        private const val HAMMER_PREFIX = "<aqua>Builder's Hammer - "
+
+        private val buildingResource = Material.COBBLESTONE
+
+        private val hammerItem = createItem(Material.IRON_INGOT) {
+            name = HAMMER_PREFIX + BuildingType.entries[0].buildingName
+            description = """
+                ?    
+            """
+        }
+
+    }
+
     override fun onActivate() {
         super.onActivate()
+        val player = ownerId.toPlayer()!!
+        player.inventory.addItem(hammerItem)
     }
 
     override fun onDeactivate() {
         super.onDeactivate()
+        buildings.forEach { it.second.remove() }
+        buildings.clear()
+        chosenBuilding = null
     }
 
+    private fun selectNextBuilding(builderPlayer: Player, item: ItemStack) {
+        if (buildingTask != null) return
 
-    private fun buildTower(builderPlayer: Player) {
-        Mortar().spawn(builderPlayer.location, builderPlayer)
+        selectedBuildingIdx = (selectedBuildingIdx + 1) % BuildingType.entries.size
+        selectedBuildingType = BuildingType.entries[selectedBuildingIdx]
+
+        item.updateItem { name = HAMMER_PREFIX + selectedBuildingType.buildingName }
+        builderPlayer.playSound(builderPlayer.location, Sound.BLOCK_LEVER_CLICK, 1f, 1f)
+    }
+
+    private fun chooseBuilding() {
+        chosenBuilding = when (selectedBuildingType) {
+            BuildingType.BALLISTA -> Ballista()
+            BuildingType.MORTAR -> Mortar()
+        }
+    }
+
+    private fun calcResources(player: Player): Int = player.inventory.contents
+        .filter { it != null && it.type == buildingResource}
+        .sumOf { it!!.amount }
+
+    private fun hasMaxBuildings(): Boolean {
+        return buildings.count { it.first == selectedBuildingType } == selectedBuildingType.limit
+    }
+
+    private fun startBuildingProcess(builderPlayer: Player, location: Location) {
+        var counter = 0
+        val timeToBuild = selectedBuildingType.buildingTimeInSeconds
+        buildingTask = sync(period = TimeUnit.SECONDS(1)) {
+            if (builderPlayer.hasMoved(location)) {
+                builderPlayer.showTitle(Title.title("<yellow>Building interrupted!".mm(), "".mm()))
+                cancel()
+                buildingTask = null
+                return@sync
+            }
+
+            if (!builderPlayer.isOnline || builderPlayer.isDead) {
+                cancel()
+                buildingTask = null
+                return@sync
+            }
+
+            builderPlayer.showTitle(Title.title("<aqua>$counter/$timeToBuild".mm(), "<gray>building...".mm()))
+            builderPlayer.playSound(location, Sound.UI_STONECUTTER_TAKE_RESULT, 1f, 1f)
+
+            counter++
+            if (counter >= timeToBuild) {
+                chosenBuilding!!.spawn(builderPlayer, location)
+                buildings.add(Pair(selectedBuildingType, chosenBuilding!!))
+                chosenBuilding = null
+                builderPlayer.inventory.removeItem(ItemStack(Material.COBBLESTONE, selectedBuildingType.cost))
+
+                sync(delay = TimeUnit.SECONDS(1)) {
+                    builderPlayer.showTitle(Title.title("<green>Completed!".mm(), "".mm()))
+                }
+
+                cancel()
+                buildingTask = null
+            }
+        }
+    }
+
+    private fun build(builderPlayer: Player) {
+        if (buildingTask != null) return
+
+        if (buildings.size == BUILDINGS_LIMIT) {
+            builderPlayer.sendActionBar("<red>You reached limit of buildings".mm())
+            builderPlayer.playSound(builderPlayer.location, Sound.ENTITY_VILLAGER_NO, 1f, 1f)
+            return
+        }
+
+        if (hasMaxBuildings()) {
+            builderPlayer.sendActionBar("<red>You cannot build more buildings of this type".mm())
+            builderPlayer.playSound(builderPlayer.location, Sound.ENTITY_VILLAGER_NO, 1f, 1f)
+            return
+        }
+
+        val neededResources = selectedBuildingType.cost
+        val playerResources = calcResources(builderPlayer)
+        if (neededResources > playerResources) {
+            val gap = neededResources - playerResources
+            val name = selectedBuildingType.buildingName
+            builderPlayer.sendActionBar("<white>You need <gray>$gap<reset> more to build $name".mm())
+            builderPlayer.playSound(builderPlayer.location, Sound.ENTITY_VILLAGER_NO, 1f, 1f)
+            return
+        }
+
+        chooseBuilding()
+        val location = builderPlayer.location
+        if (!chosenBuilding!!.canSpawn(location)) {
+            builderPlayer.sendActionBar("<yellow>You cannot build it here!".mm())
+            builderPlayer.playSound(builderPlayer.location, Sound.ENTITY_VILLAGER_NO, 1f, 1f)
+            return
+        }
+
+        startBuildingProcess(builderPlayer, location)
+    }
+
+    enum class BuildingType(val buildingName: String, val cost: Int, val limit: Int, val buildingTimeInSeconds: Int){
+        BALLISTA("<red>Ballista", 200, 1, 10),
+        MORTAR("<dark_red>Mortar", 300, 1, 13)
     }
 
     object BuilderListener : Listener {
@@ -71,10 +207,18 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         fun onItemClick(event: PlayerInteractEvent) {
             val player = event.player
             val builderKit = KitsManager.getKit(player) as? Builder ?: return
-            val rightClicked = event.rightClickItem ?: return
-            if (rightClicked.type != Material.IRON_INGOT) return
 
-            builderKit.buildTower(player)
+            val rightClicked = event.rightClickItem
+            val leftClicked = event.leftClickItem
+
+            if (rightClicked?.type == hammerItem.type) {
+                builderKit.build(player)
+                event.isCancelled = true
+            } else if (leftClicked?.type == hammerItem.type) {
+                builderKit.selectNextBuilding(player, leftClicked)
+                event.isCancelled = true
+            }
+
         }
     }
 
@@ -110,17 +254,15 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             private const val HIT_INTERVAL = 800
         }
 
-        protected abstract fun canSpawn(playerLocation: Location): Boolean
+        abstract fun canSpawn(playerLocation: Location): Boolean
 
         protected abstract fun getBuildingConfig(): BuildingConfig
 
-        open fun spawn(playerLocation: Location, builderPlayer: Player): Boolean {
-            if (!canSpawn(playerLocation)) return false
-
-            val world = playerLocation.world
+        open fun spawn(builderPlayer: Player, spawnLocation: Location): Boolean {
+            val world = spawnLocation.world
             val config = getBuildingConfig()
 
-            val displayLoc = playerLocation.clone().add(config.displayLocModifier)
+            val displayLoc = spawnLocation.clone().add(config.displayLocModifier)
             displayLoc.yaw = 0f
             displayLoc.pitch = 0f
             display = world.spawn(displayLoc, ItemDisplay::class.java) {
@@ -268,8 +410,8 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
 
         @Suppress("UnstableApiUsage")
-        override fun spawn(playerLocation: Location, builderPlayer: Player): Boolean {
-            if (!super.spawn(playerLocation, builderPlayer)) return false
+        override fun spawn(builderPlayer: Player, spawnLocation: Location): Boolean {
+            if (!super.spawn(builderPlayer, spawnLocation)) return false
 
             val location = display!!.location
             val world = location.world
@@ -320,7 +462,7 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         }
 
         override fun canSpawn(playerLocation: Location): Boolean {
-            return true
+            return false
         }
 
         override fun getBuildingConfig(): BuildingConfig {
@@ -335,8 +477,8 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
             )
         }
 
-        override fun spawn(playerLocation: Location, builderPlayer: Player): Boolean {
-            if (!super.spawn(playerLocation, builderPlayer)) return false
+        override fun spawn(builderPlayer: Player, spawnLocation: Location): Boolean {
+            if (!super.spawn(builderPlayer, spawnLocation)) return false
 
             val maxTargets = 4
             val range = 15.0
