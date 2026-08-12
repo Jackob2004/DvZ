@@ -91,7 +91,14 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         private val hammerItem = createItem(Material.IRON_INGOT) {
             name = HAMMER_PREFIX + BuildingType.entries[0].buildingName
             description = """
-                ?    
+                
+                Let's you build and repair buildings for cobblestone.
+                Hit building with the hammer to repair it.
+                Building types:
+                 
+                <green>[Right] <white>- click to build.
+                <green>[Left] <white>- click to change building type.
+                <green>[Left + Shift] <white>- click to show buildings details.
             """
         }
 
@@ -219,11 +226,31 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
         startBuildingProcess(builderPlayer, location)
     }
 
+    private fun printBuildingsDescription(builderPlayer: Player) {
+        builderPlayer.sendMessage("<gray><b>Building types:".mm())
+        builderPlayer.sendMessage(BuildingType.getTypeDescription().mm())
+    }
+
     enum class BuildingType(val buildingName: String, val cost: Int, val limit: Int, val buildingTimeInSeconds: Int) {
         BALLISTA("<red>Ballista", 20, 2, 10),
         MORTAR("<dark_red>Mortar", 300, 1, 13),
         SUPPLY_BOX("<light_purple>Supply Box", 10, 3, 3),
-        MAGIC_DOORS("<dark_aqua>Magic Doors", 5, 10, 3)
+        MAGIC_DOORS("<dark_aqua>Magic Doors", 5, 10, 3);
+
+        private fun sanitizedName(): String {
+            return buildingName.lowercase().replace('-', ' ')
+        }
+
+        companion object {
+            fun getTypeDescription(): String {
+                val builder = StringBuilder()
+
+                for (e in BuildingType.entries) {
+                    builder.append(" <gray>- <i>${e.sanitizedName()}<reset> [cost: <gray>${e.cost}<reset>, limit: <gray>${e.limit}<reset>, building time: <gray>${e.buildingTimeInSeconds}<reset>s]\n")
+                }
+                return builder.toString()
+            }
+        }
     }
 
     object BuilderListener : Listener {
@@ -238,13 +265,16 @@ class Builder(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inte
 
             val rightClicked = event.rightClickItem
             val leftClicked = event.leftClickItem
+            val hammerType = hammerItem.type
 
-            if (rightClicked?.type == hammerItem.type) {
+            if (rightClicked?.type == hammerType) {
                 builderKit.build(player)
                 event.isCancelled = true
-            } else if (leftClicked?.type == hammerItem.type) {
+            } else if (leftClicked?.type == hammerType && !player.isSneaking) {
                 builderKit.selectNextBuilding(player, leftClicked)
                 event.isCancelled = true
+            } else if (leftClicked?.type == hammerType && player.isSneaking) {
+                builderKit.printBuildingsDescription(player)
             }
 
         }
