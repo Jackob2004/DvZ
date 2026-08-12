@@ -28,6 +28,24 @@ fun Location.getSphere(radius: Int, hollow: Boolean): MutableList<Location> {
     return circleBlocks
 }
 
+fun Location.getCube(radius: Int): List<Location> {
+    val locations = ArrayList<Location>()
+
+    val bx = blockX
+    val by = blockY
+    val bz = blockZ
+
+    for (x in bx - radius..bx + radius) {
+        for (y in by - radius..by + radius) {
+            for (z in bz - radius..bz + radius) {
+                locations.add(Location(world, x.toDouble(), y.toDouble(), z.toDouble()))
+            }
+        }
+    }
+
+    return locations
+}
+
 /**
  * Packs X, Y, and Z into a single 64-bit long.
  * X: 26 bits | Z: 26 bits | Y: 12 bits
