@@ -7,12 +7,11 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerItemHeldEvent
-import org.bukkit.inventory.ItemStack
 import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
 import kotlin.math.min
 
-class ManaUtil(val ownerId: UUID, val manaRegenRate: Int, val boundItem: ItemStack): Listener {
+class ManaUtil(private val ownerId: UUID, private val manaRegenRate: Int, private val boundItem: NamespacedKey): Listener {
 
     private var currMana = MAX_MANA
 
@@ -22,7 +21,7 @@ class ManaUtil(val ownerId: UUID, val manaRegenRate: Int, val boundItem: ItemSta
             regenMana()
         }
 
-        if (player != null && player.inventory.itemInMainHand == boundItem) {
+        if (player != null && player.inventory.itemInMainHand.persistentDataContainer.has(boundItem)) {
             updateUI(player)
         }
     }
@@ -34,9 +33,6 @@ class ManaUtil(val ownerId: UUID, val manaRegenRate: Int, val boundItem: ItemSta
     }
 
     init {
-        if (!boundItem.persistentDataContainer.has(MANA_ITEM)) {
-            throw IllegalArgumentException("boundItem must have $MANA_ITEM namespaced key on it")
-        }
         DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
     }
 
@@ -69,7 +65,7 @@ class ManaUtil(val ownerId: UUID, val manaRegenRate: Int, val boundItem: ItemSta
         if (player.uniqueId != ownerId) return
         val item = player.inventory.getItem(e.newSlot) ?: return
 
-        if (item == boundItem) {
+        if (item.persistentDataContainer.has(boundItem)) {
             updateUI(player)
         } else if (!item.persistentDataContainer.has(MANA_ITEM)) {
             player.exp = 0F
