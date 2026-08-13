@@ -5,6 +5,7 @@ import com.jackob.dvz.kits.dwarf.base.Archer
 import com.jackob.dvz.kits.dwarf.base.Builder
 import com.jackob.dvz.kits.dwarf.base.Warrior
 import com.jackob.dvz.kits.dwarf.hero.Elf
+import com.jackob.dvz.kits.dwarf.hero.Shaman
 import com.jackob.dvz.kits.zombie.base.Zombie
 import com.jackob.dvz.kits.zombie.special.Enderman
 import com.jackob.dvz.kits.zombie.base.Creeper
@@ -34,6 +35,7 @@ enum class KitType(
     ARCHER(Archer::class.java, TeamType.DWARF, false, KitDisplaysStorage.getKitDisplayData("archer")),
     BUILDER(Builder::class.java, TeamType.DWARF, false, KitDisplaysStorage.getKitDisplayData("builder")),
     ELF(Elf::class.java, TeamType.DWARF, true, KitDisplaysStorage.getKitDisplayData("elf")),
+    SHAMAN(Shaman::class.java, TeamType.DWARF, true, KitDisplaysStorage.getKitDisplayData("shaman")),
     ZOMBIE(Zombie::class.java, TeamType.ZOMBIE, false, KitDisplaysStorage.getKitDisplayData("zombie")),
     SUPER_CREEPER(SuperCreeper::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("super_creeper"), 0.3f),
     ENDERMAN(Enderman::class.java, TeamType.ZOMBIE, true, KitDisplaysStorage.getKitDisplayData("enderman"), 0.0f),

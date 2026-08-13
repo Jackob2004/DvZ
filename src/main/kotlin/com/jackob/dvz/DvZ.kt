@@ -51,6 +51,7 @@ class DvZ : JavaPlugin() {
         server.pluginManager.registerEvents(CustomMenuListener(), this)
         EquipmentRegister.initRegister()
         ConfigStorage.registerSkinIfNeeded(this, "elf", "elf.png")
+        ConfigStorage.registerSkinIfNeeded(this, "shaman", "shaman.png")
         logger.info("DvZ is enabled!")
     }
 

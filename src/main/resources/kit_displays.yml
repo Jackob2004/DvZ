@@ -19,6 +19,11 @@ elf:
   name: <green>Elf
   description:
     - <gray>Force of nature
+shaman:
+  icon: WOODEN_HOE
+  name: <dark_green>Shaman
+  description:
+    - <gray>Master of totems
 zombie:
   icon: ZOMBIE_HEAD
   name: <dark_green>Zombie

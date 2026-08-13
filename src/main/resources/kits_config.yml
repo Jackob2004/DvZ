@@ -289,6 +289,18 @@ kits:
     kitAttributes:
       rampage: 1
 
+  shaman:
+    activateMessage:
+      message: "<b><green>Shaman has arrived"
+      broadcast: true
+
+    attributes:
+      - type: "MAX_HEALTH"
+        amount: 20.0
+
+    kitAttributes:
+      rampage: 0
+
   zombie:
     activateMessage:
       message: "<green>You arrived to battle as a zombie"
