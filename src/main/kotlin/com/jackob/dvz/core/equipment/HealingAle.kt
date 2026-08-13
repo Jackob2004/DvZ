@@ -11,6 +11,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.inventory.ItemStack
+import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import java.util.*
@@ -30,6 +31,7 @@ class HealingAle : CustomItem(), Listener {
             Mana regenerates by $MANA_REGEN_RATE every second.
         """
         enchant(Enchantment.UNBREAKING, 10)
+        persistentDataContainer.set(ManaUtil.MANA_ITEM, PersistentDataType.BOOLEAN, true)
     }
 
     override val type: CustomItemType = CustomItemType.HEALING_ALE
@@ -45,10 +47,11 @@ class HealingAle : CustomItem(), Listener {
             for (id in manaMap.keys) {
                 val player = id.toPlayer() ?: continue
                 if (!player.isOnline) continue
-                if (!isCustomItem(player.inventory.itemInMainHand)) continue
-
                 addMana(id)
-                displayManaStatus(id, player)
+
+                if (isCustomItem(player.inventory.itemInMainHand)) {
+                    displayManaStatus(id, player)
+                }
             }
         }
     }
