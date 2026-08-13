@@ -81,4 +81,12 @@ inline fun Player.withCooldown(cooldown: CooldownUtil, action: Player.() -> Unit
     }
 }
 
+inline fun Player.withMana(manaBank: ManaUtil, manaCost: Int, action: Player.() -> Unit) {
+    if (manaBank.consumeMana(manaCost, this)) {
+        action()
+    } else {
+        playSound(location, Sound.BLOCK_ANVIL_LAND, 1f, 1f)
+    }
+}
+
 fun Player.hasMoved(lastLocation: Location) = lastLocation.distanceSquared(location) > 1
