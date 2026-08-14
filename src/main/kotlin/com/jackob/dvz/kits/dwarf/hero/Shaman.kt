@@ -4,43 +4,36 @@ import com.destroystokyo.paper.ParticleBuilder
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.objects.AIZombieScheduler
+import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.kits.BaseKit
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.TeamType
-import com.jackob.dvz.util.CombinationUtil
+import com.jackob.dvz.util.*
 import com.jackob.dvz.util.CombinationUtil.ClickType.*
 import com.jackob.dvz.util.CombinationUtil.Sequence
-import com.jackob.dvz.util.ManaUtil
-import com.jackob.dvz.util.TimeUnit
-import com.jackob.dvz.util.createItem
-import com.jackob.dvz.util.description
-import com.jackob.dvz.util.mm
-import com.jackob.dvz.util.name
-import com.jackob.dvz.util.playCircleEffect
-import com.jackob.dvz.util.sync
-import com.jackob.dvz.util.toPlayer
-import com.jackob.dvz.util.withMana
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
-import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.NamespacedKey
-import org.bukkit.Particle
+import org.bukkit.*
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Display
 import org.bukkit.entity.Player
 import org.bukkit.entity.TextDisplay
+import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
+import org.bukkit.event.Listener
+import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
-import java.util.UUID
+import org.bukkit.util.Vector
+import java.util.*
 import kotlin.math.sqrt
 
 class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
-    Disguisable<LivingWatcher> {
+    Disguisable<LivingWatcher>, Listener {
 
     override val disguiseTemplate: Disguise = createPlayerDisguise("shaman", "Shaman") {
         setItemStack(EquipmentSlot.HEAD, hiddenArmorPiece)
@@ -60,9 +53,16 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     private var totem: ArmorStand? = null
 
+
     private var totemInfoBar: TextDisplay? = null
 
     private var totemTickingTask: BukkitTask? = null
+
+    private var lastBaseSpellCast: Long = 0
+
+    init {
+        DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+    }
 
     companion object {
         private val hiddenArmorPiece = ItemStack(Material.AIR)
@@ -73,8 +73,10 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             description = """
                 ? 
             """
+
             persistentDataContainer.set(ManaUtil.MANA_ITEM, PersistentDataType.BOOLEAN, true)
             persistentDataContainer.set(SHAMAN_STAFF, PersistentDataType.BOOLEAN, true)
+            persistentDataContainer.set(DarknessManager.RADIANCE, PersistentDataType.BOOLEAN, true)
         }
 
         private val totemPositiveEffect = PotionEffect(PotionEffectType.REGENERATION, 2 * 20, 0, false, false)
@@ -85,6 +87,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private val pullParticles = Particle.SQUID_INK.builder().count(1).extra(0.0)
 
         private const val TOTEM_RANGE = 10.0
+        private const val BASE_SPELL_COOLDOWN = 500L
     }
 
     override fun onActivate() {
@@ -103,6 +106,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         removeTotem()
         manaBank.unregisterManaBank()
         staffCombinations.unregisterCombinations()
+        HandlerList.unregisterAll(this)
     }
 
     private fun removeTotem() {
@@ -166,6 +170,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             }
         }
 
+        playSound(location, Sound.ITEM_TOTEM_USE, 1f, 1f)
     }
 
     private fun leapTowardsTotem(shamanPlayer: Player) {
@@ -185,6 +190,8 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             val pullForce = 3.5 * percentage
             val vector = targetLocation.toVector().subtract(location.toVector()).normalize().multiply(pullForce)
             velocity = vector
+
+            playSound(location, Sound.ENTITY_GOAT_SCREAMING_LONG_JUMP, 1f, 1f)
         }
     }
 
@@ -233,6 +240,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                 }
             }
 
+            playSound(location, Sound.BLOCK_WATER_AMBIENT, 1f, 1f)
         }
     }
 
@@ -260,7 +268,66 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     cancel()
                 }
             }
+
+            playSound(location, Sound.ENTITY_SQUID_HURT, 1f, 1f)
         }
+    }
+
+    private fun dealDamage(location: Location, radius: Double, damageSource: Player) {
+        for (e in location.getNearbyLivingEntities(radius)) {
+            if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) continue
+            if (e !is Player && e.type != AIZombieScheduler.MOB_TYPE) continue
+
+            e.damage(2.0, damageSource)
+        }
+    }
+
+    private fun drawLine(range: Int, step: Double, dir: Vector, start: Location, particles: ParticleBuilder, player: Player) {
+        var i = 0.0
+        while (i < range) {
+            i += step
+            dir.multiply(i)
+            start.add(dir)
+            particles.location(start).receivers(10, true).spawn()
+            dealDamage(start, step, player)
+            start.subtract(dir)
+            dir.normalize()
+        }
+    }
+
+    private fun castBaseSpell(shamanPlayer: Player) {
+        val now = System.currentTimeMillis()
+        if (now - lastBaseSpellCast < BASE_SPELL_COOLDOWN) return
+        lastBaseSpellCast = now
+
+        val range = 10
+        val step = 0.5
+        val particles = Particle.ENCHANTED_HIT.builder().count(1).extra(0.0)
+
+        val start = shamanPlayer.eyeLocation
+        val dir = start.direction.normalize()
+        val angle = 15.0
+        val rightDir = dir.clone().rotateAroundY(Math.toRadians(angle)).normalize()
+        val leftDir = dir.clone().rotateAroundY(Math.toRadians(-angle)).normalize()
+
+        drawLine(range, step, dir, start, particles, shamanPlayer)
+        drawLine(range, step, rightDir, start, particles, shamanPlayer)
+        drawLine(range, step, leftDir, start, particles, shamanPlayer)
+
+        shamanPlayer.playSound(shamanPlayer.location, Sound.ENCHANT_THORNS_HIT, 1f, 1f)
+        shamanPlayer.setCooldown(shamanStaff.type,(BASE_SPELL_COOLDOWN / 1000.0 * 20).toInt())
+    }
+
+    @EventHandler
+    fun onStaffClick(e: PlayerInteractEvent) {
+        if (staffCombinations.hasActiveCombination()) return
+        val player = e.player
+        if (player.uniqueId != ownerId) return
+
+        val clickedItem = e.leftClickItem ?: return
+        if (!clickedItem.persistentDataContainer.has(SHAMAN_STAFF)) return
+
+        castBaseSpell(player)
     }
 
 }
