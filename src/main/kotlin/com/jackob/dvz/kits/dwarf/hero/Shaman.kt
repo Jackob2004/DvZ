@@ -36,6 +36,8 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
+import kotlin.math.max
+import kotlin.math.sqrt
 
 class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<LivingWatcher> {
@@ -183,8 +185,24 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     }
 
-    private fun leapTowardsTotem(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 300) {
-        sendMessage("Leaping towards totem")
+    private fun leapTowardsTotem(shamanPlayer: Player) {
+        if (totem == null) return
+
+        val targetLocation = totem!!.eyeLocation
+        val maxDistance = TOTEM_RANGE * 2
+        var distance = targetLocation.distanceSquared(shamanPlayer.location)
+        if (distance > maxDistance * maxDistance) return
+
+        val yModifier = if (totem!!.isOnGround) 3.0 else -2.0
+        targetLocation.add(0.0, yModifier, 0.0)
+        distance = sqrt(distance)
+
+        shamanPlayer.withMana(manaBank, 200) {
+            val percentage = distance * 100 / maxDistance / 100
+            val pullForce = 3.5 * percentage
+            val vector = targetLocation.toVector().subtract(location.toVector()).normalize().multiply(pullForce)
+            velocity = vector
+        }
     }
 
     private fun pushEnemies(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 200) {
