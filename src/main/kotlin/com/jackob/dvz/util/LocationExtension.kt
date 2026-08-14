@@ -1,9 +1,12 @@
 package com.jackob.dvz.util
 
+import com.destroystokyo.paper.ParticleBuilder
 import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.block.Block
+import kotlin.math.cos
+import kotlin.math.sin
 
 fun Location.getSphere(radius: Int, hollow: Boolean): MutableList<Location> {
     val circleBlocks = mutableListOf<Location>()
@@ -88,4 +91,15 @@ fun getRegionCenterLocation(world: World, region: ProtectedRegion): Location {
     val centerZ = (min.z() + max.z()) / 2.0
 
     return Location(world, centerX, centerY, centerZ)
+}
+
+fun Location.playCircleEffect(effect: ParticleBuilder, radius: Int, receiversRange: Int) {
+    for (degree in 0..359) {
+        val radians = Math.toRadians(degree.toDouble())
+        val x = cos(radians) * radius
+        val z = sin(radians) * radius
+        add(x, 0.0, z)
+        effect.location(this).receivers(receiversRange, true).spawn()
+        subtract(x, 0.0, z)
+    }
 }

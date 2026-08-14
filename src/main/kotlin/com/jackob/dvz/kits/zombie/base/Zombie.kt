@@ -320,7 +320,7 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                                     (t as LivingEntity).addPotionEffect(potionEffect)
                                 }
                             }
-                            playCircleEffect(particleBuilder, particleEffectLoc)
+                            particleEffectLoc.playCircleEffect(particleBuilder, 3, 12)
 
                             timer--
                             if (timer <= 0) {
@@ -495,18 +495,6 @@ class Zombie(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         init {
             DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
-        }
-
-        private fun playCircleEffect(effect: ParticleBuilder, loc: Location) {
-            val radius = 3
-            for (degree in 0..359) {
-                val radians = Math.toRadians(degree.toDouble())
-                val x = cos(radians) * radius
-                val z = sin(radians) * radius
-                loc.add(x, 0.0, z)
-                effect.location(loc).receivers(12, true).spawn()
-                loc.subtract(x, 0.0, z)
-            }
         }
 
         private fun playHammerEffect(player: Player, modifier: Double) {
