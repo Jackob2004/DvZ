@@ -21,12 +21,12 @@ import com.jackob.dvz.util.toPlayer
 import com.jackob.dvz.util.withMana
 import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.Particle
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Display
-import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.entity.TextDisplay
 import org.bukkit.inventory.EquipmentSlot
@@ -36,7 +36,6 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
-import kotlin.math.max
 import kotlin.math.sqrt
 
 class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
@@ -64,8 +63,6 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     private var totemTickingTask: BukkitTask? = null
 
-    private var totemState: TotemState? = null
-
     companion object {
         private val hiddenArmorPiece = ItemStack(Material.AIR)
         private val SHAMAN_STAFF = NamespacedKey(DvZ.INSTANCE, "shaman-staff-item")
@@ -81,6 +78,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         private val totemPositiveEffect =  PotionEffect(PotionEffectType.REGENERATION, 2 * 20, 0, false, false)
         private val defaultParticles = Particle.ENCHANT.builder().count(1).extra(0.0)
+        private val pushParticles = Particle.BUBBLE_POP.builder().count(1).extra(0.0)
 
         private const val TOTEM_RANGE = 10.0
     }
@@ -120,8 +118,9 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
     }
 
-    private fun handleDefaultState(nearbyEntities: Collection<LivingEntity>) {
-        for (entity in nearbyEntities) {
+    private fun onTotemTick() {
+        val location = totem!!.location
+        for (entity in location.getNearbyLivingEntities(TOTEM_RANGE)) {
             if (entity is Player && GameManager.getPlayerTeam(entity) == TeamType.DWARF) {
                 entity.addPotionEffect(totemPositiveEffect)
             } else if (entity.type == AIZombieScheduler.MOB_TYPE || (entity is Player && GameManager.getPlayerTeam(entity) == TeamType.ZOMBIE)) {
@@ -130,25 +129,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
 
         val effectRange = TOTEM_RANGE.toInt()
-        totem!!.location.add(0.0,0.8,0.0).playCircleEffect(defaultParticles, effectRange, effectRange + 5)
-    }
-
-    private fun handlePullState(nearbyEntities: Collection<LivingEntity>) {
-
-    }
-
-    private fun handlePushState(nearbyEntities: Collection<LivingEntity>) {
-
-    }
-
-    private fun onTotemTick() {
-        val entities = totem!!.location.getNearbyLivingEntities(TOTEM_RANGE)
-        when(totemState) {
-            TotemState.DEFAULT -> handleDefaultState(entities)
-            TotemState.PUSHING -> handlePushState(entities)
-            TotemState.PULLING -> handlePullState(entities)
-            else -> Unit
-        }
+        location.add(0.0,0.8,0.0).playCircleEffect(defaultParticles, effectRange, effectRange + 5)
     }
 
     private fun spawnTotem(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 500) {
@@ -170,8 +151,6 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             it.velocity = vector
             it.addPassenger(totemInfoBar!!)
         }
-
-        totemState = TotemState.DEFAULT
 
         totemTickingTask = sync(delay = TimeUnit.SECONDS(2), period = TimeUnit.SECONDS(1)) {
             onTotemTick()
@@ -205,18 +184,48 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
     }
 
-    private fun pushEnemies(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 200) {
-        sendMessage("Pushing enemies")
+    private fun playWaveEffect(location: Location) {
+        var counter = 1
+        val range = TOTEM_RANGE.toInt()
+        sync(period = TimeUnit.TICKS(3)) {
+            location.playCircleEffect(pushParticles, counter, range + 5)
+
+            counter++
+            if (counter == range) {
+                cancel()
+            }
+        }
+    }
+
+    private fun pushEnemies(shamanPlayer: Player) {
+        if (totem == null) return
+        shamanPlayer.withMana(manaBank, 200) {
+            val totemLoc = totem!!.location.add(0.0, 0.8, 0.0)
+            val totemVector = totemLoc.toVector()
+
+            var counter = 3
+            sync(period = TimeUnit.SECONDS(1)) {
+                for (e in totemLoc.getNearbyLivingEntities(TOTEM_RANGE)) {
+                    if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) continue
+                    if (e !is Player && e.type != AIZombieScheduler.MOB_TYPE) continue
+
+                    val vector = e.location.toVector().subtract(totemVector).normalize().multiply(3.0)
+                    vector.y = 1.1
+                    e.velocity = vector
+                }
+                playWaveEffect(totemLoc)
+
+                counter--
+                if (counter <= 0) {
+                    cancel()
+                }
+            }
+
+        }
     }
 
     private fun pullEnemies(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 100) {
         sendMessage("Pulling enemies")
-    }
-
-    enum class TotemState {
-        DEFAULT,
-        PULLING,
-        PUSHING,
     }
 
 }
