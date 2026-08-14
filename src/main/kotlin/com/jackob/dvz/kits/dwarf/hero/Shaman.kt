@@ -1,5 +1,6 @@
 package com.jackob.dvz.kits.dwarf.hero
 
+import com.destroystokyo.paper.ParticleBuilder
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.objects.AIZombieScheduler
@@ -76,9 +77,12 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             persistentDataContainer.set(SHAMAN_STAFF, PersistentDataType.BOOLEAN, true)
         }
 
-        private val totemPositiveEffect =  PotionEffect(PotionEffectType.REGENERATION, 2 * 20, 0, false, false)
+        private val totemPositiveEffect = PotionEffect(PotionEffectType.REGENERATION, 2 * 20, 0, false, false)
+        private val totemPullEffect = PotionEffect(PotionEffectType.SLOWNESS, 3 * 20, 1, false, false)
+
         private val defaultParticles = Particle.ENCHANT.builder().count(1).extra(0.0)
         private val pushParticles = Particle.BUBBLE_POP.builder().count(1).extra(0.0)
+        private val pullParticles = Particle.SQUID_INK.builder().count(1).extra(0.0)
 
         private const val TOTEM_RANGE = 10.0
     }
@@ -184,14 +188,21 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
     }
 
-    private fun playWaveEffect(location: Location) {
-        var counter = 1
-        val range = TOTEM_RANGE.toInt()
-        sync(period = TimeUnit.TICKS(3)) {
-            location.playCircleEffect(pushParticles, counter, range + 5)
+    enum class WaveDirection(val number: Int) {
+        IN(-1),
+        OUT(1)
+    }
 
-            counter++
-            if (counter == range) {
+    private fun playWaveEffect(location: Location, effect: ParticleBuilder, direction: WaveDirection) {
+        val range = TOTEM_RANGE.toInt()
+        var counter = if (direction == WaveDirection.IN) range else 1
+        val limit = if (direction == WaveDirection.IN) 0 else range
+
+        sync(period = TimeUnit.TICKS(3)) {
+            location.playCircleEffect(effect, counter, range * 2)
+
+            counter += direction.number
+            if (counter == limit) {
                 cancel()
             }
         }
@@ -199,7 +210,8 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     private fun pushEnemies(shamanPlayer: Player) {
         if (totem == null) return
-        shamanPlayer.withMana(manaBank, 200) {
+
+        shamanPlayer.withMana(manaBank, 300) {
             val totemLoc = totem!!.location.add(0.0, 0.8, 0.0)
             val totemVector = totemLoc.toVector()
 
@@ -213,7 +225,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     vector.y = 1.1
                     e.velocity = vector
                 }
-                playWaveEffect(totemLoc)
+                playWaveEffect(totemLoc, pushParticles, WaveDirection.OUT)
 
                 counter--
                 if (counter <= 0) {
@@ -224,8 +236,31 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
     }
 
-    private fun pullEnemies(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 100) {
-        sendMessage("Pulling enemies")
+    private fun pullEnemies(shamanPlayer: Player) {
+        if (totem == null) return
+
+        shamanPlayer.withMana(manaBank, 200) {
+            val totemLoc = totem!!.location.add(0.0, 0.1, 0.0)
+            val totemVector = totemLoc.toVector()
+            var counter = 5
+            sync(period = TimeUnit.SECONDS(1)) {
+                for (e in totemLoc.getNearbyLivingEntities(TOTEM_RANGE)) {
+                    if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) continue
+                    if (e !is Player && e.type != AIZombieScheduler.MOB_TYPE) continue
+
+                    val vector = totemVector.clone().subtract(e.location.toVector()).normalize().multiply(2.5)
+                    vector.y = -1.1
+                    e.velocity = vector
+                    e.addPotionEffect(totemPullEffect)
+                }
+                playWaveEffect(totemLoc, pullParticles, WaveDirection.IN)
+
+                counter--
+                if (counter <= 0) {
+                    cancel()
+                }
+            }
+        }
     }
 
 }
