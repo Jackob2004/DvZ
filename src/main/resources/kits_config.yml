@@ -331,6 +331,10 @@ kits:
       message: "<green>You arrived to battle as a zombie"
       broadcast: false
 
+    attributes:
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
+
     items:
       - material: "WOODEN_SWORD"
         name: "<b><dark_green>Rotten blade"
@@ -346,6 +350,10 @@ kits:
       message: "<green>You arrived to battle as a super creeper"
       broadcast: false
 
+    attributes:
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
+
     kitAttributes:
       rampageImmune: false
 
@@ -353,6 +361,10 @@ kits:
     activateMessage:
       message: "<dark_purple>Enderman the lord of shadows has arrived!"
       broadcast: true
+
+    attributes:
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
 
     potions:
       - type: "ABSORPTION"
@@ -389,6 +401,10 @@ kits:
       message: "<aqua>You arrived to battle as a skeleton"
       broadcast: false
 
+    attributes:
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
+
     items:
       - material: "BOW"
         name: "<b><aqua>Dusty Bow"
@@ -404,6 +420,10 @@ kits:
       message: "<green>You arrived to battle as a creeper"
       broadcast: false
 
+    attributes:
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
+
     kitAttributes:
       rampageImmune: false
 
@@ -411,6 +431,10 @@ kits:
     activateMessage:
       message: "<white>You arrived to battle as an Iron Golem"
       broadcast: false
+
+    attributes:
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
 
     potions:
       - type: "REGENERATION"
@@ -449,6 +473,10 @@ kits:
       message: "<green>You arrived to battle as a spider"
       broadcast: false
 
+    attributes:
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
+
     potions:
       - type: "ABSORPTION"
         durationSeconds: 1000000
@@ -482,6 +510,10 @@ kits:
     activateMessage:
       message: "<green>You arrived to battle as a witch"
       broadcast: false
+
+    attributes:
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
 
     potions:
       - type: "ABSORPTION"
