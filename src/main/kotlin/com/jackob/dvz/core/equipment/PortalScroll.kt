@@ -38,10 +38,10 @@ class PortalScroll: CustomItem(), Listener {
         val player = event.player
         if (GameManager.getPlayerTeam(player) != TeamType.ZOMBIE) return
 
-        val event = PortalTeleportEvent(player)
-        event.callEvent()
+        val portalEvent = PortalTeleportEvent(player)
+        portalEvent.callEvent()
 
-        if (event.isCancelled) {
+        if (portalEvent.isCancelled) {
             player.sendActionBar("<yellow>There is no active portal!".mm())
         } else {
             player.removeItem(item, 1)
