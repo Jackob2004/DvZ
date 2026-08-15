@@ -23,7 +23,10 @@ shaman:
   icon: WOODEN_HOE
   name: <dark_green>Shaman
   description:
-    - <gray>Master of totems
+    - <gray>The Shaman is one of the most powerful heroes in the game.
+    - <gray>He is the master of crowd control.
+    - <gray>He cannot be affected by Rampage, nor can he deal direct damage.
+    - <gray>Instead, his power lies in his staff, using it to cast spells centered around his totem.
 zombie:
   icon: ZOMBIE_HEAD
   name: <dark_green>Zombie

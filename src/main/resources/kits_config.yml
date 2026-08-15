@@ -294,9 +294,34 @@ kits:
       message: "<b><green>Shaman has arrived"
       broadcast: true
 
+    potions:
+      - type: "WEAKNESS"
+        durationSeconds: 1000000
+        amplifier: 9
+
     attributes:
       - type: "MAX_HEALTH"
-        amount: 20.0
+        amount: 26.0
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
+
+    items:
+      - material: "TURTLE_HELMET"
+        name: "<b><dark_green>Turtle's remains"
+        lore:
+          - ""
+          - "Poor turtle"
+        enchantments:
+          protection: 4
+          fire_protection: 3
+          unbreaking: 4
+        attributes:
+          - type: "ARMOR"
+            amount: 17
+            slot: "HEAD"
+          - type: "ARMOR_TOUGHNESS"
+            amount: 6
+            slot: "HEAD"
 
     kitAttributes:
       rampage: 0

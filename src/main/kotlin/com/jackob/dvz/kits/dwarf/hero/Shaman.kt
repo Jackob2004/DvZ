@@ -68,13 +68,30 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     }
 
     companion object {
+        private const val TOTEM_RANGE = 10.0
+        private const val BASE_SPELL_COOLDOWN = 500L
+
+        private const val SPAWN_TOTEM_COST = 300
+        private const val LEAP_COST = 200
+        private const val PUSH_ENEMIES_COST = 350
+        private const val PULL_ENEMIES_COST = 250
+
         private val hiddenArmorPiece = ItemStack(Material.AIR)
         private val SHAMAN_STAFF = NamespacedKey(DvZ.INSTANCE, "shaman-staff-item")
 
         private val shamanStaff = createItem(Material.WOODEN_HOE) {
             name = "<b><dark_green>Shaman Staff"
             description = """
-                ? 
+                A powerful item capable of casting spells.
+
+                Left-click to cast your primary attack.
+                Right-click to initiate spell combinations, draining from a <light_purple>[1000]<reset> mana bank.
+
+                <gray><u>Combinations:
+                <green>[RLR] <gray>-<white> Summon a totem <light_purple>[$SPAWN_TOTEM_COST]
+                <green>[RRR] <gray>-<white> Leap toward the totem <light_purple>[$LEAP_COST]
+                <green>[RLL] <gray>-<white> Push enemies away from the totem <light_purple>[$PUSH_ENEMIES_COST]
+                <green>[RRL] <gray>-<white> Pull enemies toward the totem <light_purple>[$PULL_ENEMIES_COST]
             """
 
             persistentDataContainer.set(ManaUtil.MANA_ITEM, PersistentDataType.BOOLEAN, true)
@@ -88,9 +105,6 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private val defaultParticles = Particle.ENCHANT.builder().count(1).extra(0.0)
         private val pushParticles = Particle.BUBBLE_POP.builder().count(1).extra(0.0)
         private val pullParticles = Particle.SQUID_INK.builder().count(1).extra(0.0)
-
-        private const val TOTEM_RANGE = 10.0
-        private const val BASE_SPELL_COOLDOWN = 500L
     }
 
     override fun onActivate() {
@@ -153,7 +167,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         location.add(0.0, 0.8, 0.0).playCircleEffect(defaultParticles, effectRange, effectRange + 5)
     }
 
-    private fun spawnTotem(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 300) {
+    private fun spawnTotem(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, SPAWN_TOTEM_COST) {
         removeTotem()
 
         val vector = shamanPlayer.eyeLocation.direction.normalize().multiply(1.2)
@@ -211,7 +225,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         targetLocation.add(0.0, yModifier, 0.0)
         distance = sqrt(distance)
 
-        shamanPlayer.withMana(manaBank, 200) {
+        shamanPlayer.withMana(manaBank, LEAP_COST) {
             val percentage = distance * 100 / maxDistance / 100
             val pullForce = 3.5 * percentage
             val vector = targetLocation.toVector().subtract(location.toVector()).normalize().multiply(pullForce)
@@ -244,7 +258,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     private fun pushEnemies(shamanPlayer: Player) {
         if (totem == null) return
 
-        shamanPlayer.withMana(manaBank, 350) {
+        shamanPlayer.withMana(manaBank, PUSH_ENEMIES_COST) {
             val totemLoc = totem!!.location.add(0.0, 0.8, 0.0)
             val totemVector = totemLoc.toVector()
 
@@ -273,7 +287,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     private fun pullEnemies(shamanPlayer: Player) {
         if (totem == null) return
 
-        shamanPlayer.withMana(manaBank, 250) {
+        shamanPlayer.withMana(manaBank, PULL_ENEMIES_COST) {
             val totemLoc = totem!!.location.add(0.0, 0.1, 0.0)
             val totemVector = totemLoc.toVector()
             var counter = 5
@@ -304,7 +318,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) continue
             if (e !is Player && e.type != AIZombieScheduler.MOB_TYPE) continue
 
-            e.damage(2.0, damageSource)
+            e.damage(3.0, damageSource)
         }
     }
 
