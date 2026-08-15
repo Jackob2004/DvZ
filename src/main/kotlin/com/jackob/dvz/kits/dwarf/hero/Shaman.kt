@@ -16,6 +16,7 @@ import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
 import org.bukkit.*
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Display
+import org.bukkit.entity.ItemDisplay
 import org.bukkit.entity.Player
 import org.bukkit.entity.TextDisplay
 import org.bukkit.event.EventHandler
@@ -29,6 +30,7 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
 import org.bukkit.util.Vector
+import org.joml.Matrix4f
 import java.util.*
 import kotlin.math.sqrt
 
@@ -42,9 +44,9 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         setItemStack(EquipmentSlot.FEET, hiddenArmorPiece)
     }
 
-    private val manaBank = ManaUtil(owner, 100, SHAMAN_STAFF)
+    private val manaBank = ManaUtil(owner, 40, SHAMAN_STAFF)
 
-    private val staffCombinations = CombinationUtil(owner, SHAMAN_STAFF).apply {
+    private val staffCombinations = CombinationUtil(owner, SHAMAN_STAFF, ::putOnCooldown).apply {
         registerAction(Sequence(RIGHT, LEFT, RIGHT), ::spawnTotem)
         registerAction(Sequence(RIGHT, RIGHT, RIGHT), ::leapTowardsTotem)
         registerAction(Sequence(RIGHT, LEFT, LEFT), ::pushEnemies)
@@ -53,6 +55,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     private var totem: ArmorStand? = null
 
+    private var totemModel: ItemDisplay? = null
 
     private var totemInfoBar: TextDisplay? = null
 
@@ -69,7 +72,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private val SHAMAN_STAFF = NamespacedKey(DvZ.INSTANCE, "shaman-staff-item")
 
         private val shamanStaff = createItem(Material.WOODEN_HOE) {
-            name = "<dark_green>Shaman Staff"
+            name = "<b><dark_green>Shaman Staff"
             description = """
                 ? 
             """
@@ -109,10 +112,20 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         HandlerList.unregisterAll(this)
     }
 
+    private fun putOnCooldown(player: Player, time: Long = System.currentTimeMillis()) {
+        lastBaseSpellCast = time
+        player.setCooldown(shamanStaff.type, (BASE_SPELL_COOLDOWN / 1000.0 * 20).toInt())
+    }
+
     private fun removeTotem() {
         if (totem != null) {
             totem!!.remove()
             totem = null
+        }
+
+        if (totemModel != null) {
+            totemModel!!.remove()
+            totemModel = null
         }
 
         if (totemInfoBar != null) {
@@ -137,10 +150,10 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
 
         val effectRange = TOTEM_RANGE.toInt()
-        location.add(0.0,0.8,0.0).playCircleEffect(defaultParticles, effectRange, effectRange + 5)
+        location.add(0.0, 0.8, 0.0).playCircleEffect(defaultParticles, effectRange, effectRange + 5)
     }
 
-    private fun spawnTotem(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 500) {
+    private fun spawnTotem(shamanPlayer: Player) = shamanPlayer.withMana(manaBank, 300) {
         removeTotem()
 
         val vector = shamanPlayer.eyeLocation.direction.normalize().multiply(1.2)
@@ -150,14 +163,27 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         var countDown = maxLifeTime
 
         totemInfoBar = world.spawn(eyeLocation, TextDisplay::class.java) {
+            val matrix = Matrix4f().translate(0f, 0.7f, 0f)
             it.billboard = Display.Billboard.CENTER
             it.text("<light_purple>⌛<gray> ${maxLifeTime}s".mm())
+            it.setTransformationMatrix(matrix)
+        }
+
+        val totemModelLoc = eyeLocation
+        totemModelLoc.pitch = 0f
+        totemModelLoc.yaw = 0f
+        totemModel = world.spawn(totemModelLoc, ItemDisplay::class.java) {
+            val matrix = Matrix4f().scale(2f).translate(0f, -0.2f, 0f)
+            it.setItemStack(ItemStack(Material.TOTEM_OF_UNDYING))
+            it.setTransformationMatrix(matrix)
+            it.addPassenger(totemInfoBar!!)
         }
 
         totem = world.spawn(location.add(0.0, 1.0, 0.0), ArmorStand::class.java) {
             it.isInvulnerable = true
+            it.isInvisible = true
             it.velocity = vector
-            it.addPassenger(totemInfoBar!!)
+            it.addPassenger(totemModel!!)
         }
 
         totemTickingTask = sync(delay = TimeUnit.SECONDS(2), period = TimeUnit.SECONDS(1)) {
@@ -218,7 +244,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     private fun pushEnemies(shamanPlayer: Player) {
         if (totem == null) return
 
-        shamanPlayer.withMana(manaBank, 300) {
+        shamanPlayer.withMana(manaBank, 350) {
             val totemLoc = totem!!.location.add(0.0, 0.8, 0.0)
             val totemVector = totemLoc.toVector()
 
@@ -247,7 +273,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     private fun pullEnemies(shamanPlayer: Player) {
         if (totem == null) return
 
-        shamanPlayer.withMana(manaBank, 200) {
+        shamanPlayer.withMana(manaBank, 250) {
             val totemLoc = totem!!.location.add(0.0, 0.1, 0.0)
             val totemVector = totemLoc.toVector()
             var counter = 5
@@ -282,7 +308,14 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
     }
 
-    private fun drawLine(range: Int, step: Double, dir: Vector, start: Location, particles: ParticleBuilder, player: Player) {
+    private fun drawLine(
+        range: Int,
+        step: Double,
+        dir: Vector,
+        start: Location,
+        particles: ParticleBuilder,
+        player: Player
+    ) {
         var i = 0.0
         while (i < range) {
             i += step
@@ -298,7 +331,6 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     private fun castBaseSpell(shamanPlayer: Player) {
         val now = System.currentTimeMillis()
         if (now - lastBaseSpellCast < BASE_SPELL_COOLDOWN) return
-        lastBaseSpellCast = now
 
         val range = 10
         val step = 0.5
@@ -315,7 +347,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         drawLine(range, step, leftDir, start, particles, shamanPlayer)
 
         shamanPlayer.playSound(shamanPlayer.location, Sound.ENCHANT_THORNS_HIT, 1f, 1f)
-        shamanPlayer.setCooldown(shamanStaff.type,(BASE_SPELL_COOLDOWN / 1000.0 * 20).toInt())
+        putOnCooldown(shamanPlayer, now)
     }
 
     @EventHandler

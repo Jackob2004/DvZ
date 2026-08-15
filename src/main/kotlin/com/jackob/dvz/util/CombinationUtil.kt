@@ -11,7 +11,11 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import java.util.UUID
 
-class CombinationUtil(private val ownerId: UUID, private val boundItem: NamespacedKey) : Listener {
+class CombinationUtil(
+    private val ownerId: UUID,
+    private val boundItem: NamespacedKey,
+    val onActionFire: (Player) -> Unit
+) : Listener {
 
     private val currCombination: Array<ClickType?> = arrayOfNulls<ClickType?>(COMBINATION_LENGTH)
 
@@ -41,6 +45,10 @@ class CombinationUtil(private val ownerId: UUID, private val boundItem: Namespac
         HandlerList.unregisterAll(this)
         combinationString.clear()
         actions.clear()
+    }
+
+    fun hasActiveCombination(): Boolean {
+        return index != 0
     }
 
     private fun exceededInterval(): Boolean {
@@ -85,7 +93,12 @@ class CombinationUtil(private val ownerId: UUID, private val boundItem: Namespac
 
     private fun fireAction(player: Player) {
         val sequence = Sequence(currCombination[0]!!, currCombination[1]!!, currCombination[2]!!)
-        actions[sequence]?.invoke(player)
+        val action = actions[sequence]
+
+        if (action != null) {
+            action(player)
+            onActionFire(player)
+        }
     }
 
 
