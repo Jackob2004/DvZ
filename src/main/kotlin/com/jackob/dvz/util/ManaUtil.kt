@@ -11,7 +11,14 @@ import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
 import kotlin.math.min
 
-class ManaUtil(private val ownerId: UUID, private val manaRegenRate: Int, private val boundItem: NamespacedKey): Listener {
+/**
+ * Helper class managing mana bank of a single player.
+ * The bank is associated with a single bound item.
+ *
+ * The unregisterManaBank method should be called once the object is no longer used.
+ */
+class ManaUtil(private val ownerId: UUID, private val manaRegenRate: Int, private val boundItemKey: NamespacedKey) :
+    Listener {
 
     private var currMana = MAX_MANA
 
@@ -21,7 +28,7 @@ class ManaUtil(private val ownerId: UUID, private val manaRegenRate: Int, privat
             regenMana()
         }
 
-        if (player != null && player.inventory.itemInMainHand.persistentDataContainer.has(boundItem)) {
+        if (player != null && player.holdsBoundItem()) {
             updateUI(player)
         }
     }
@@ -29,7 +36,11 @@ class ManaUtil(private val ownerId: UUID, private val manaRegenRate: Int, privat
     companion object {
         private const val MAX_MANA = 1000
 
-        val MANA_ITEM = NamespacedKey(DvZ.INSTANCE, "mana-item")
+        /**
+         * Key indicating that the item is bound to a specific mana bank.
+         * Mana items should be marked with this key for the mana ui level to be displayed correctly.
+         */
+        val MANA_ITEM = NamespacedKey(DvZ.INSTANCE, "dvz-mana-item")
     }
 
     init {
@@ -50,6 +61,10 @@ class ManaUtil(private val ownerId: UUID, private val manaRegenRate: Int, privat
         return true
     }
 
+    private fun Player.holdsBoundItem() : Boolean {
+        return this.inventory.itemInMainHand.persistentDataContainer.has(boundItemKey)
+    }
+
     private fun regenMana() {
         currMana = min(currMana + manaRegenRate, MAX_MANA)
     }
@@ -65,7 +80,7 @@ class ManaUtil(private val ownerId: UUID, private val manaRegenRate: Int, privat
         if (player.uniqueId != ownerId) return
         val item = player.inventory.getItem(e.newSlot) ?: return
 
-        if (item.persistentDataContainer.has(boundItem)) {
+        if (item.persistentDataContainer.has(boundItemKey)) {
             updateUI(player)
         } else if (!item.persistentDataContainer.has(MANA_ITEM)) {
             player.exp = 0F
