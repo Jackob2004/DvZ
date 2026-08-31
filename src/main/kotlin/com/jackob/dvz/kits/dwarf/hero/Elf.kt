@@ -11,7 +11,6 @@ import me.libraryaddict.disguise.disguisetypes.DisguiseType
 import me.libraryaddict.disguise.disguisetypes.MiscDisguise
 import me.libraryaddict.disguise.disguisetypes.watchers.FallingBlockWatcher
 import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
-import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.enchantments.Enchantment
@@ -20,7 +19,6 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
@@ -31,12 +29,7 @@ import java.util.*
 class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<LivingWatcher> {
 
-    override val disguiseTemplate: Disguise = createPlayerDisguise("elf", "Mirkwood Elf") {
-        setItemStack(EquipmentSlot.HEAD, hiddenArmorPiece)
-        setItemStack(EquipmentSlot.CHEST, hiddenArmorPiece)
-        setItemStack(EquipmentSlot.LEGS, hiddenArmorPiece)
-        setItemStack(EquipmentSlot.FEET, hiddenArmorPiece)
-    }
+    override val disguiseTemplate: Disguise = createPlayerDisguise("elf", "Mirkwood Elf") {}
 
     private var disguiseTask: BukkitTask? = null
 
@@ -52,8 +45,6 @@ class Elf(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internal
         private const val CRAFT_ARROWS_COOLDOWN = 4
 
         private val ELVEN_BLADE = Material.DIAMOND_PICKAXE
-
-        private val hiddenArmorPiece = ItemStack(Material.AIR)
 
         private val disguiseCooldowns = CooldownUtil(DISGUISE_COOLDOWN * 1000L)
 

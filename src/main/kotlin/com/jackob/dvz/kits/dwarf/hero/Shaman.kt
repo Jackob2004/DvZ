@@ -23,7 +23,6 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
@@ -37,12 +36,7 @@ import kotlin.math.sqrt
 class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
     Disguisable<LivingWatcher>, Listener {
 
-    override val disguiseTemplate: Disguise = createPlayerDisguise("shaman", "Shaman") {
-        setItemStack(EquipmentSlot.HEAD, hiddenArmorPiece)
-        setItemStack(EquipmentSlot.CHEST, hiddenArmorPiece)
-        setItemStack(EquipmentSlot.LEGS, hiddenArmorPiece)
-        setItemStack(EquipmentSlot.FEET, hiddenArmorPiece)
-    }
+    override val disguiseTemplate: Disguise = createPlayerDisguise("shaman", "Shaman") {}
 
     private val manaBank = ManaUtil(owner, 40, SHAMAN_STAFF)
 
@@ -76,7 +70,6 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private const val PUSH_ENEMIES_COST = 350
         private const val PULL_ENEMIES_COST = 250
 
-        private val hiddenArmorPiece = ItemStack(Material.AIR)
         private val SHAMAN_STAFF = NamespacedKey(DvZ.INSTANCE, "shaman-staff-item")
 
         private val shamanStaff = createItem(Material.WOODEN_HOE) {
@@ -105,6 +98,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private val defaultParticles = Particle.ENCHANT.builder().count(1).extra(0.0)
         private val pushParticles = Particle.BUBBLE_POP.builder().count(1).extra(0.0)
         private val pullParticles = Particle.SQUID_INK.builder().count(1).extra(0.0)
+        val baseSpellParticles = Particle.ENCHANTED_HIT.builder().count(1).extra(0.0)
     }
 
     override fun onActivate() {
@@ -348,7 +342,6 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         val range = 10
         val step = 0.5
-        val particles = Particle.ENCHANTED_HIT.builder().count(1).extra(0.0)
 
         val start = shamanPlayer.eyeLocation
         val dir = start.direction.normalize()
@@ -356,9 +349,9 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         val rightDir = dir.clone().rotateAroundY(Math.toRadians(angle)).normalize()
         val leftDir = dir.clone().rotateAroundY(Math.toRadians(-angle)).normalize()
 
-        drawLine(range, step, dir, start, particles, shamanPlayer)
-        drawLine(range, step, rightDir, start, particles, shamanPlayer)
-        drawLine(range, step, leftDir, start, particles, shamanPlayer)
+        drawLine(range, step, dir, start, baseSpellParticles, shamanPlayer)
+        drawLine(range, step, rightDir, start, baseSpellParticles, shamanPlayer)
+        drawLine(range, step, leftDir, start, baseSpellParticles, shamanPlayer)
 
         shamanPlayer.playSound(shamanPlayer.location, Sound.ENCHANT_THORNS_HIT, 1f, 1f)
         putOnCooldown(shamanPlayer, now)
