@@ -11,10 +11,17 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import java.util.UUID
 
+/**
+ * Helper class intercepting player mouse clicks to construct combination.
+ * Once the combination reaches its length(3) the register action is fired and the combination is cleared.
+ * Each click must happen in certain interval for it to be accounted.
+ *
+ * The unregisterCombinations method should be called once the object is no longer used.
+ */
 class CombinationUtil(
     private val ownerId: UUID,
-    private val boundItem: NamespacedKey,
-    val onActionFire: (Player) -> Unit
+    private val boundItemKey: NamespacedKey,
+    val onAnyAction: (Player) -> Unit
 ) : Listener {
 
     private val currCombination: Array<ClickType?> = arrayOfNulls<ClickType?>(COMBINATION_LENGTH)
@@ -97,10 +104,9 @@ class CombinationUtil(
 
         if (action != null) {
             action(player)
-            onActionFire(player)
+            onAnyAction(player)
         }
     }
-
 
     private fun registerMouseClick(clickType: ClickType, player: Player) {
         if (exceededInterval()) {
@@ -126,7 +132,7 @@ class CombinationUtil(
         val player = e.player
         if (player.uniqueId != ownerId) return
         val item = e.item ?: return
-        if (!item.persistentDataContainer.has(boundItem)) return
+        if (!item.persistentDataContainer.has(boundItemKey)) return
 
         val action = e.action
         val clickType = if (action.isRightClick) {
@@ -148,7 +154,7 @@ class CombinationUtil(
         if (player.uniqueId != ownerId) return
         val item = player.inventory.getItem(e.newSlot) ?: return
 
-        if (!item.persistentDataContainer.has(boundItem)) {
+        if (!item.persistentDataContainer.has(boundItemKey)) {
             resetCombination()
         }
     }
