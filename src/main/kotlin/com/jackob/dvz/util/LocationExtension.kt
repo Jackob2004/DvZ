@@ -103,3 +103,22 @@ fun Location.playCircleEffect(effect: ParticleBuilder, radius: Int, receiversRan
         subtract(x, 0.0, z)
     }
 }
+
+enum class WaveDirection(val number: Int) {
+    IN(-1),
+    OUT(1)
+}
+
+fun Location.playWaveEffect(range: Int, effect: ParticleBuilder, direction: WaveDirection, speedInTicks: Long = TimeUnit.TICKS(3)) {
+    var counter = if (direction == WaveDirection.IN) range else 1
+    val limit = if (direction == WaveDirection.IN) 0 else range
+
+    sync(period = speedInTicks) {
+        playCircleEffect(effect, counter, range * 2)
+
+        counter += direction.number
+        if (counter == limit) {
+            cancel()
+        }
+    }
+}

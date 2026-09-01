@@ -229,26 +229,6 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
     }
 
-    enum class WaveDirection(val number: Int) {
-        IN(-1),
-        OUT(1)
-    }
-
-    private fun playWaveEffect(location: Location, effect: ParticleBuilder, direction: WaveDirection) {
-        val range = TOTEM_RANGE.toInt()
-        var counter = if (direction == WaveDirection.IN) range else 1
-        val limit = if (direction == WaveDirection.IN) 0 else range
-
-        sync(period = TimeUnit.TICKS(3)) {
-            location.playCircleEffect(effect, counter, range * 2)
-
-            counter += direction.number
-            if (counter == limit) {
-                cancel()
-            }
-        }
-    }
-
     private fun pushEnemies(shamanPlayer: Player) {
         if (totem == null) return
 
@@ -266,7 +246,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     vector.y = 1.1
                     e.velocity = vector
                 }
-                playWaveEffect(totemLoc, pushParticles, WaveDirection.OUT)
+                totemLoc.playWaveEffect(TOTEM_RANGE.toInt(), pushParticles, WaveDirection.OUT)
 
                 counter--
                 if (counter <= 0) {
@@ -295,7 +275,7 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     e.velocity = vector
                     e.addPotionEffect(totemPullEffect)
                 }
-                playWaveEffect(totemLoc, pullParticles, WaveDirection.IN)
+                totemLoc.playWaveEffect(TOTEM_RANGE.toInt(), pullParticles, WaveDirection.IN)
 
                 counter--
                 if (counter <= 0) {
