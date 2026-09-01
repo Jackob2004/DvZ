@@ -27,6 +27,11 @@ shaman:
     - <gray>He is the master of crowd control.
     - <gray>He cannot be affected by Rampage, nor can he deal direct damage.
     - <gray>Instead, his power lies in his staff, using it to cast spells centered around his totem.
+wizard:
+  icon: LIGHT_GRAY_DYE
+  name: <aqua>Wizard
+  description:
+    - <gray>Magic..
 zombie:
   icon: ZOMBIE_HEAD
   name: <dark_green>Zombie

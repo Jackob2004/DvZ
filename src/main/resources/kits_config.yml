@@ -326,6 +326,25 @@ kits:
     kitAttributes:
       rampage: 0
 
+  wizard:
+    activateMessage:
+      message: "<b><aqua>Mighty Wizard has arrived"
+      broadcast: true
+
+    potions:
+      - type: "WEAKNESS"
+        durationSeconds: 1000000
+        amplifier: 9
+
+    attributes:
+      - type: "MAX_HEALTH"
+        amount: 22.0
+      - type: "FALL_DAMAGE_MULTIPLIER"
+        amount: -1.0
+
+    kitAttributes:
+      rampage: 0
+
   zombie:
     activateMessage:
       message: "<green>You arrived to battle as a zombie"
