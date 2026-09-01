@@ -15,6 +15,7 @@ import me.libraryaddict.disguise.disguisetypes.Disguise
 import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
 import org.bukkit.*
 import org.bukkit.entity.*
+import org.bukkit.entity.Display.Brightness
 import org.bukkit.event.Listener
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
@@ -32,15 +33,18 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     private val manaBank = ManaUtil(ownerId, 35, WIZARD_STAFF_KEY)
 
     private val staffCombinations = CombinationUtil(owner, WIZARD_STAFF_KEY, ::onAnySpell).apply {
-        registerAction(Sequence(RIGHT, LEFT, RIGHT), ::launchBoulder)
+        registerAction(Sequence(RIGHT, LEFT, LEFT), ::launchBoulder)
+        registerAction(Sequence(RIGHT, RIGHT, LEFT), ::spawnIceShards)
     }
 
     companion object {
         private val WIZARD_STAFF_KEY = NamespacedKey(DvZ.INSTANCE, "dvz-wizard-staff")
 
         private const val BOULDER_SPELL_COST = 100
+        private const val ICE_SHARDS_SPELL_COST = 100
 
         private const val BOULDER_WAVE_RADIUS = 15
+        private const val ICE_SHARDS = 16
 
         private val wizardStaff = createItem(Material.IRON_HOE) {
             name = "<b><aqua>Wizard Staff"
@@ -53,7 +57,12 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             persistentDataContainer.set(DarknessManager.RADIANCE, PersistentDataType.BOOLEAN, true)
         }
 
-        private val hitParticles = Particle.WAX_OFF.builder().count(1)
+        private val boulderHitParticles = Particle.WAX_OFF.builder().count(1)
+        private val iceShardHitParticles = Particle.BLOCK.builder()
+            .data(Material.LARGE_AMETHYST_BUD.createBlockData())
+            .offset(0.5, 0.5, 0.5)
+            .count(10)
+            .extra(0.0)
     }
 
     override fun onActivate() {
@@ -116,7 +125,7 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     }
 
     private fun damageEnemiesOnHit(location: Location, wizardPlayer: Player) {
-        val potionEffect = PotionEffect(PotionEffectType.NAUSEA, 6 * 20, 2,false, false)
+        val potionEffect = PotionEffect(PotionEffectType.NAUSEA, 6 * 20, 2, false, false)
         val locVector = location.toVector()
         for (e in location.getNearbyLivingEntities(BOULDER_WAVE_RADIUS.toDouble())) {
             if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) continue
@@ -154,7 +163,7 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         }
 
         location.add(Vector(0.0, 0.3, 0.0))
-            .playWaveEffect(BOULDER_WAVE_RADIUS, hitParticles, WaveDirection.OUT, TimeUnit.TICKS(2))
+            .playWaveEffect(BOULDER_WAVE_RADIUS, boulderHitParticles, WaveDirection.OUT, TimeUnit.TICKS(2))
         player.playSound(player.location, Sound.BLOCK_ANVIL_LAND, 1f, 1f)
     }
 
@@ -207,6 +216,84 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             playSound(this.location, Sound.BLOCK_STONE_BREAK, 1f, 1f)
         }
 
+    }
+
+    private fun iceShardHitEffect(location: Location, wizardPlayer: Player) {
+        for (e in location.getNearbyLivingEntities(1.5)) {
+            if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) continue
+            if (e !is Player && e.type != AIZombieScheduler.MOB_TYPE) continue
+
+            e.damage(2.0, wizardPlayer)
+            e.freezeTicks = 25 * 20
+        }
+
+        iceShardHitParticles.location(location).receivers(30, true).spawn()
+    }
+
+    private fun spawnShard(location: Location): Pair<BlockDisplay, Matrix4f> {
+        val randomAngle = Math.toRadians(Random.nextDouble(-90.0, 90.0)).toFloat()
+        val matrix = Matrix4f().rotateX(randomAngle)
+
+        val shard = location.world.spawn(location, BlockDisplay::class.java) {
+            it.block = Material.LARGE_AMETHYST_BUD.createBlockData()
+            it.interpolationDelay = 2
+            it.interpolationDuration = 5
+            it.setTransformationMatrix(matrix)
+            it.brightness = Brightness(15, 15)
+        }
+
+        sync(delay = TimeUnit.TICKS(2)) {
+            matrix.scale(0.8f, 10f, 0.8f)
+            shard.setTransformationMatrix(matrix)
+        }
+
+        return Pair(shard, matrix)
+    }
+
+    private fun spawnIceShards(player: Player) = player.withMana(manaBank, ICE_SHARDS_SPELL_COST) {
+        val vector = eyeLocation.direction.normalize()
+        vector.y = 0.0
+        val location = location.add(vector.clone().multiply(2)).subtract(Vector(0.0, 1.0, 0.0))
+        location.yaw = 0f
+        location.pitch = 0f
+
+        val shards: Deque<Pair<BlockDisplay, Matrix4f>> = LinkedList()
+
+        var counter = ICE_SHARDS
+        sync(period = TimeUnit.TICKS(2)) {
+            shards.addLast(spawnShard(location))
+            iceShardHitEffect(location.clone().add(Vector(0.0, 2.0, 0.0)), this@withMana)
+            location.add(vector)
+            world.playSound(location, Sound.BLOCK_GLASS_BREAK, 3f, 1f)
+
+            counter--
+            if (counter <= 0) {
+                cancel()
+                removeIceShards(shards)
+            }
+        }
+
+    }
+
+    private fun removeIceShards(spikes: Deque<Pair<BlockDisplay, Matrix4f>>) {
+        var counter = ICE_SHARDS
+        sync(period = TimeUnit.TICKS(10)) {
+            val shard = spikes.pollFirst()
+            val matrix = shard.second.scale(0.8f, 0.1f, 0.8f)
+            shard.first.interpolationDuration = 20
+            shard.first.interpolationDelay = 2
+            shard.first.setTransformationMatrix(matrix)
+            spikes.addLast(shard)
+
+            counter--
+            if (counter <= 0) {
+                cancel()
+                sync(delay = TimeUnit.SECONDS(2)) {
+                    spikes.forEach { it.first.remove() }
+                    spikes.clear()
+                }
+            }
+        }
     }
 
 }
