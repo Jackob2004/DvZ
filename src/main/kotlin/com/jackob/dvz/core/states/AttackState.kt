@@ -62,6 +62,8 @@ import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.inventory.InventoryOpenEvent
+import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
@@ -557,9 +559,19 @@ class AttackState(
     }
 
     @EventHandler
-    fun unItemPickUp(event: EntityPickupItemEvent) {
+    fun onItemPickUp(event: EntityPickupItemEvent) {
         val player = event.entity as? Player ?: return
         if (GameManager.getPlayerTeam(player) != TeamType.ZOMBIE) return
+
+        event.isCancelled = true
+    }
+
+    @EventHandler
+    fun onInventoryOpen(event: InventoryOpenEvent) {
+        if (event.inventory.type == InventoryType.PLAYER) return
+
+        val player = event.player as? Player ?: return
+        if (!isActiveZombie(player)) return
 
         event.isCancelled = true
     }
