@@ -31,7 +31,10 @@ wizard:
   icon: LIGHT_GRAY_DYE
   name: <aqua>Wizard
   description:
-    - <gray>Magic..
+    - <gray>The Wizard is capable of casting various spells through his staff.
+    - <gray>He cannot be affected by Rampage, nor can he deal direct damage.
+    - <gray>He is very versatile as his spells let him travel across the map, heal or damage enemies.
+    - <gray>Lack of armor makes him ironically even more powerful.
 zombie:
   icon: ZOMBIE_HEAD
   name: <dark_green>Zombie

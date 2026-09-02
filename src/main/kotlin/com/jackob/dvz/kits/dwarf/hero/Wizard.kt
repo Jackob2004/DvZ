@@ -53,10 +53,10 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     companion object {
         private val WIZARD_STAFF_KEY = NamespacedKey(DvZ.INSTANCE, "dvz-wizard-staff")
 
-        private const val BOULDER_SPELL_COST = 100
-        private const val ICE_SHARDS_SPELL_COST = 100
-        private const val TELEPORT_SPELL_COST = 100
-        private const val HEAL_SPELL_COST = 100
+        private const val BOULDER_SPELL_COST = 500
+        private const val ICE_SHARDS_SPELL_COST = 300
+        private const val TELEPORT_SPELL_COST = 250
+        private const val HEAL_SPELL_COST = 400
 
         private const val BASE_SPELL_COOLDOWN = 1400L
 
@@ -66,7 +66,16 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private val wizardStaff = createItem(Material.IRON_HOE) {
             name = "<b><aqua>Wizard Staff"
             description = """
-               ?  
+                A powerful item capable of casting spells.
+
+                Left-click to cast your primary attack.
+                Right-click to initiate spell combinations, draining from a <light_purple>[1000]<reset> mana bank.
+
+                <gray><u>Combinations:
+                <green>[RLR] <gray>-<white> Spawn healing aura <light_purple>[$HEAL_SPELL_COST]
+                <green>[RRR] <gray>-<white> Teleport setting on fire enemies <light_purple>[$TELEPORT_SPELL_COST]
+                <green>[RLL] <gray>-<white> Launch boulder <light_purple>[$BOULDER_SPELL_COST]
+                <green>[RRL] <gray>-<white> Spawn Ice Shards <light_purple>[$ICE_SHARDS_SPELL_COST]
             """
 
             persistentDataContainer.set(WIZARD_STAFF_KEY, PersistentDataType.BOOLEAN, true)
@@ -253,9 +262,11 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     }
 
     private fun iceShardHitEffect(location: Location, wizardPlayer: Player) {
+        val potionEffect = PotionEffect(PotionEffectType.SLOWNESS, 5 * 20, 2, false, false)
         location.areaEffect {
             it.damage(2.0, wizardPlayer)
             it.freezeTicks = 25 * 20
+            it.addPotionEffect(potionEffect)
         }
 
         iceShardHitParticles.location(location).receivers(30, true).spawn()

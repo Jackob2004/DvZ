@@ -335,6 +335,12 @@ kits:
       - type: "WEAKNESS"
         durationSeconds: 1000000
         amplifier: 9
+      - type: "RESISTANCE"
+        durationSeconds: 1000000
+        amplifier: 3
+      - type: "FIRE_RESISTANCE"
+        durationSeconds: 1000000
+        amplifier: 0
 
     attributes:
       - type: "MAX_HEALTH"
