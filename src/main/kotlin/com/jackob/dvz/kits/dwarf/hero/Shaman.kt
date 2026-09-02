@@ -70,12 +70,12 @@ class Shaman(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private const val PUSH_ENEMIES_COST = 350
         private const val PULL_ENEMIES_COST = 250
 
-        private val SHAMAN_STAFF = NamespacedKey(DvZ.INSTANCE, "shaman-staff-item")
+        private val SHAMAN_STAFF = NamespacedKey(DvZ.INSTANCE, "dvz-shaman-staff-item")
 
         private val shamanStaff = createItem(Material.WOODEN_HOE) {
             name = "<b><dark_green>Shaman Staff"
             description = """
-                A powerful item capable of casting spells.
+                A powerful item capable of casting spells that revolve around Totem.
 
                 Left-click to cast your primary attack.
                 Right-click to initiate spell combinations, draining from a <light_purple>[1000]<reset> mana bank.
