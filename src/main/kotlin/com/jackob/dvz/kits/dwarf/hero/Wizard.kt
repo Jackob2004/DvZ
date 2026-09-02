@@ -17,7 +17,10 @@ import me.libraryaddict.disguise.disguisetypes.watchers.LivingWatcher
 import org.bukkit.*
 import org.bukkit.entity.*
 import org.bukkit.entity.Display.Brightness
+import org.bukkit.event.EventHandler
+import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
+import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
@@ -36,7 +39,7 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     private val manaBank = ManaUtil(ownerId, 35, WIZARD_STAFF_KEY)
 
-    private val staffCombinations = CombinationUtil(owner, WIZARD_STAFF_KEY, ::onAnySpell).apply {
+    private val staffCombinations = CombinationUtil(owner, WIZARD_STAFF_KEY, ::putOnCooldown).apply {
         registerAction(Sequence(RIGHT, LEFT, LEFT), ::launchBoulder)
         registerAction(Sequence(RIGHT, RIGHT, LEFT), ::spawnIceShards)
         registerAction(Sequence(RIGHT, RIGHT, RIGHT), ::teleport)
@@ -45,6 +48,8 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     private var healTask: BukkitTask? = null
 
+    private var lastBaseSpellCast: Long = 0
+
     companion object {
         private val WIZARD_STAFF_KEY = NamespacedKey(DvZ.INSTANCE, "dvz-wizard-staff")
 
@@ -52,6 +57,8 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private const val ICE_SHARDS_SPELL_COST = 100
         private const val TELEPORT_SPELL_COST = 100
         private const val HEAL_SPELL_COST = 100
+
+        private const val BASE_SPELL_COOLDOWN = 1400L
 
         private const val BOULDER_WAVE_RADIUS = 15
         private const val ICE_SHARDS = 16
@@ -81,6 +88,7 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         val player = ownerId.toPlayer()!!
         startDisguise(player)
         player.inventory.addItem(wizardStaff)
+        DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
     }
 
     override fun onDeactivate() {
@@ -91,10 +99,12 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         staffCombinations.unregisterCombinations()
 
         healTask?.cancel()
+        HandlerList.unregisterAll(this)
     }
 
-    private fun onAnySpell(player: Player) {
-
+    private fun putOnCooldown(player: Player, time: Long = System.currentTimeMillis()) {
+        lastBaseSpellCast = time
+        player.setCooldown(wizardStaff.type, (BASE_SPELL_COOLDOWN / 1000.0 * 20).toInt())
     }
 
     private fun spawnBoulderFragment(location: Location, world: World, minSize: Double, maxSize: Double): BlockDisplay {
@@ -414,6 +424,53 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
             }
         }
 
+    }
+
+    private fun castBaseSpell(player: Player) {
+        val now = System.currentTimeMillis()
+        if (now - lastBaseSpellCast < BASE_SPELL_COOLDOWN) return
+
+        val red = Random.nextInt(256)
+        val green = Random.nextInt(256)
+        val blue = Random.nextInt(256)
+        val spellParticle = Particle.Spell(Color.fromRGB(red, green, blue), 1f)
+
+        val particles = Particle.INSTANT_EFFECT.builder().data(spellParticle).count(6)
+        val dir = player.eyeLocation.direction.normalize()
+        val start = player.eyeLocation
+        val range = 12
+        val step = 0.5
+
+        var i = 0.0
+        sync(period = TimeUnit.TICKS(2)) {
+            if (i > range) {
+                cancel()
+                return@sync
+            }
+
+            i += step
+            dir.multiply(i)
+            start.add(dir)
+            particles.location(start).receivers(range * 2, true).spawn()
+            start.areaEffect { it.damage(5.0, player) }
+            start.subtract(dir)
+            dir.normalize()
+        }
+
+        player.playSound(player.location, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1f, 1f)
+        putOnCooldown(player, now)
+    }
+
+    @EventHandler
+    fun onStaffClick(e: PlayerInteractEvent) {
+        if (staffCombinations.hasActiveCombination()) return
+        val player = e.player
+        if (player.uniqueId != ownerId) return
+
+        val clickedItem = e.leftClickItem ?: return
+        if (!clickedItem.persistentDataContainer.has(WIZARD_STAFF_KEY)) return
+
+        castBaseSpell(player)
     }
 
 }
