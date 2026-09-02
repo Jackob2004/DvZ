@@ -1,5 +1,6 @@
 package com.jackob.dvz.kits.dwarf.hero
 
+import com.destroystokyo.paper.ParticleBuilder
 import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.objects.AIZombieScheduler
@@ -20,9 +21,12 @@ import org.bukkit.event.Listener
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import org.bukkit.scheduler.BukkitTask
 import org.bukkit.util.Vector
 import org.joml.Matrix4f
 import java.util.*
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.random.Random
 
 class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(internalName, owner, isHero),
@@ -36,7 +40,10 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         registerAction(Sequence(RIGHT, LEFT, LEFT), ::launchBoulder)
         registerAction(Sequence(RIGHT, RIGHT, LEFT), ::spawnIceShards)
         registerAction(Sequence(RIGHT, RIGHT, RIGHT), ::teleport)
+        registerAction(Sequence(RIGHT, LEFT, RIGHT), ::heal)
     }
+
+    private var healTask: BukkitTask? = null
 
     companion object {
         private val WIZARD_STAFF_KEY = NamespacedKey(DvZ.INSTANCE, "dvz-wizard-staff")
@@ -44,6 +51,7 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         private const val BOULDER_SPELL_COST = 100
         private const val ICE_SHARDS_SPELL_COST = 100
         private const val TELEPORT_SPELL_COST = 100
+        private const val HEAL_SPELL_COST = 100
 
         private const val BOULDER_WAVE_RADIUS = 15
         private const val ICE_SHARDS = 16
@@ -81,6 +89,8 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         stopDisguise(ownerId.toPlayer()!!)
         manaBank.unregisterManaBank()
         staffCombinations.unregisterCombinations()
+
+        healTask?.cancel()
     }
 
     private fun onAnySpell(player: Player) {
@@ -331,6 +341,79 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
         sync(delay = TimeUnit.TICKS(1)) {
             teleport(destination)
         }
+    }
+
+    private fun playPartialCircleEffect(
+        angles: Array<IntRange>,
+        radius: Int,
+        loc: Location,
+        particles: ParticleBuilder
+    ) {
+        for (angle in angles) {
+            for (i in angle) {
+                val radians = Math.toRadians(i.toDouble())
+                val x = cos(radians) * radius
+                val z = sin(radians) * radius
+
+                loc.add(x, 0.0, z)
+                particles.location(loc).spawn()
+                loc.subtract(x, 0.0, z)
+            }
+        }
+    }
+
+    private fun playHealVisualEffect(location: Location) {
+        val loc = location.add(Vector(0.0, 0.2, 0.0))
+        val outwardParticles = Particle.BLOCK_CRUMBLE.builder().data(Material.PALE_OAK_WOOD.createBlockData())
+        val inwardParticles = Particle.DUST.builder().color(Color.LIME).count(1)
+        var radius = 1
+
+        val outwardAngles = arrayOf(30..60, 120..150, 210..240, 300..330)
+        val inwardAngles = arrayOf(61..119, 151..209, 241..299, 331..359, 0..29)
+
+        sync(period = TimeUnit.TICKS(2)) {
+            playPartialCircleEffect(outwardAngles, radius, loc, outwardParticles)
+
+            radius++
+            if (radius >= 5) {
+                cancel()
+
+                sync(delay = TimeUnit.TICKS(3), period = TimeUnit.TICKS(3)) {
+                    playPartialCircleEffect(inwardAngles, radius, loc, inwardParticles)
+
+                    radius--
+                    if (radius <= 0) {
+                        cancel()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun heal(player: Player) = player.withMana(manaBank, HEAL_SPELL_COST) {
+        healTask?.cancel()
+
+        var healPotionEffect = PotionEffect(PotionEffectType.REGENERATION, 2 * 20, 4, false, false)
+        var repetitions = 3
+        healTask = sync(period = TimeUnit.SECONDS(3)) {
+            addPotionEffect(healPotionEffect)
+            for (e in location.getNearbyLivingEntities(5.0)) {
+                if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) {
+                    e.addPotionEffect(healPotionEffect)
+                }
+            }
+            healPotionEffect = healPotionEffect.withAmplifier(healPotionEffect.amplifier - 1)
+                .withDuration(healPotionEffect.duration + 20)
+
+            playHealVisualEffect(location)
+
+            repetitions--
+            if (repetitions <= 0) {
+                cancel()
+                healTask = null
+            }
+        }
+
     }
 
 }
