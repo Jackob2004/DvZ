@@ -35,6 +35,7 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
     private val staffCombinations = CombinationUtil(owner, WIZARD_STAFF_KEY, ::onAnySpell).apply {
         registerAction(Sequence(RIGHT, LEFT, LEFT), ::launchBoulder)
         registerAction(Sequence(RIGHT, RIGHT, LEFT), ::spawnIceShards)
+        registerAction(Sequence(RIGHT, RIGHT, RIGHT), ::teleport)
     }
 
     companion object {
@@ -42,6 +43,7 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
         private const val BOULDER_SPELL_COST = 100
         private const val ICE_SHARDS_SPELL_COST = 100
+        private const val TELEPORT_SPELL_COST = 100
 
         private const val BOULDER_WAVE_RADIUS = 15
         private const val ICE_SHARDS = 16
@@ -218,13 +220,22 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
 
     }
 
-    private fun iceShardHitEffect(location: Location, wizardPlayer: Player) {
-        for (e in location.getNearbyLivingEntities(1.5)) {
+    /**
+     * Applies callback fn to Dwarf enemies in provided radius
+     */
+    private fun Location.areaEffect(radius: Double = 1.5, applyEffect: (LivingEntity) -> Unit) {
+        for (e in getNearbyLivingEntities(radius)) {
             if (e is Player && GameManager.getPlayerTeam(e) == TeamType.DWARF) continue
             if (e !is Player && e.type != AIZombieScheduler.MOB_TYPE) continue
 
-            e.damage(2.0, wizardPlayer)
-            e.freezeTicks = 25 * 20
+            applyEffect(e)
+        }
+    }
+
+    private fun iceShardHitEffect(location: Location, wizardPlayer: Player) {
+        location.areaEffect {
+            it.damage(2.0, wizardPlayer)
+            it.freezeTicks = 25 * 20
         }
 
         iceShardHitParticles.location(location).receivers(30, true).spawn()
@@ -293,6 +304,32 @@ class Wizard(internalName: String, owner: UUID, isHero: Boolean) : BaseKit(inter
                     spikes.clear()
                 }
             }
+        }
+    }
+
+    private fun teleport(player: Player) = player.withMana(manaBank, TELEPORT_SPELL_COST) {
+        val teleportRange = 15
+        val direction = eyeLocation.direction.normalize()
+        val destination = location
+
+        val particles = Particle.DRIPPING_LAVA.builder().count(5).offset(0.5, 0.2, 0.5)
+
+        var idx = 0
+        while (idx < teleportRange) {
+            destination.add(direction)
+            particles.location(destination).spawn()
+            destination.areaEffect { it.fireTicks = 8 * 20 }
+
+            if (!destination.block.isPassable) {
+                destination.subtract(direction)
+                break
+            }
+
+            idx++
+        }
+
+        sync(delay = TimeUnit.TICKS(1)) {
+            teleport(destination)
         }
     }
 
