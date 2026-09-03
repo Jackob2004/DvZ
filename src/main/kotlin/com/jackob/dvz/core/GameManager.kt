@@ -4,6 +4,7 @@ import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.states.GameState
 import com.jackob.dvz.core.states.PreparationState
 import com.jackob.dvz.core.states.RecruitingState
+import com.jackob.dvz.core.statistics.PlayerLevelManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
@@ -13,6 +14,8 @@ import kotlin.random.Random
 object GameManager {
 
     private var gameState: GameState
+
+    private val levelManager: PlayerLevelManager = PlayerLevelManager()
 
     init {
         gameState = RecruitingState(pickRandomMap(), LobbyStateHandler())
