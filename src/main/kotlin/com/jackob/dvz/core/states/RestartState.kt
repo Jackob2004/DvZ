@@ -2,6 +2,7 @@ package com.jackob.dvz.core.states
 
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.kits.TeamType
@@ -54,6 +55,8 @@ class RestartState(private val lobbyStateHandler: LobbyStateHandler, private val
 
         Bukkit.getOnlinePlayers().forEach { onlinePlayers.add(it) }
         gameStatusSidebar.sendSidebar(onlinePlayers)
+        GameManager.statistics.stopCountingStats()
+        GameManager.statistics.savePlayersData()
         countdownTask = startCountdown()
         // todo display game summary
 

@@ -400,8 +400,8 @@ class AttackState(
     private fun handleLastDwarfDeath(count: Int) {
         if (count != 0) return
 
-        //Bukkit.broadcast("<red>All dwarfs died!".mm())
-        //GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
+        Bukkit.broadcast("<red>All dwarfs died!".mm())
+        GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
     }
 
 

@@ -40,6 +40,15 @@ fun async(delay: Long = 0, period: Long, init: BukkitRunnable.() -> Unit): Bukki
     }.runTaskTimerAsynchronously(DvZ.INSTANCE, delay, period)
 }
 
+fun async(init: BukkitRunnable.() -> Unit): BukkitTask {
+    return object : BukkitRunnable() {
+        override fun run() {
+            init()
+        }
+
+    }.runTaskAsynchronously(DvZ.INSTANCE)
+}
+
 fun Long.toSeconds(): Long {
     return this / 1000
 }

@@ -5,6 +5,7 @@ import com.jackob.dvz.core.states.GameState
 import com.jackob.dvz.core.states.PreparationState
 import com.jackob.dvz.core.states.RecruitingState
 import com.jackob.dvz.core.statistics.PlayerLevelManager
+import com.jackob.dvz.core.statistics.StatisticsManager
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.GameMap
 import com.jackob.dvz.storage.MapStorage
@@ -16,6 +17,7 @@ object GameManager {
     private var gameState: GameState
 
     private val levelManager: PlayerLevelManager = PlayerLevelManager()
+    val statistics: StatisticsManager = StatisticsManager(levelManager)
 
     init {
         gameState = RecruitingState(pickRandomMap(), LobbyStateHandler())

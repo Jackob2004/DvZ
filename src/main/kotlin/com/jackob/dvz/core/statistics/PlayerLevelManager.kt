@@ -5,7 +5,6 @@ import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.events.DwarfDeathEvent
 import com.jackob.dvz.core.events.ShrineDamageEvent
 import com.jackob.dvz.core.events.ZombieDeathEvent
-import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.util.mm
 import io.papermc.paper.chat.ChatRenderer
 import io.papermc.paper.event.player.AsyncChatEvent
@@ -16,7 +15,6 @@ import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerJoinEvent
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -31,16 +29,15 @@ class PlayerLevelManager : Listener {
     }
 
     fun getPlayerLevel(player: Player): Int {
-        // todo: use fetchPlayerXP method if player has not been added to the map yet
         return playerExperiencePoints.getOrDefault(player.uniqueId, 0) / POINTS_PER_LEVEL
     }
 
-    fun savePlayerXP() {
-        TODO("Save player experience points using internal API")
+    fun getPlayerXP(uuid: UUID): Int {
+        return playerExperiencePoints.getOrDefault(uuid, 0)
     }
 
-    private fun fetchPlayerXP() {
-        TODO("Fetch player experience points from internal API")
+    fun savePlayerXPData(uuid: UUID, value: Int) {
+        playerExperiencePoints[uuid] = value
     }
 
     private fun addXP(player: Player, source: PointsSource) {
@@ -83,10 +80,10 @@ class PlayerLevelManager : Listener {
         }
     }
 
-    fun getPlayerNameColor(player: Player): NamedTextColor = when (GameManager.getPlayerTeam(player)) {
-        TeamType.DWARF -> NamedTextColor.GREEN
-        TeamType.ZOMBIE -> NamedTextColor.DARK_RED
-        else -> NamedTextColor.GRAY
+    fun getPlayerNameColor(player: Player): NamedTextColor {
+        val playerTeam = GameManager.getPlayerTeam(player) ?: return NamedTextColor.GRAY
+
+        return playerTeam.color
     }
 
     @EventHandler
@@ -98,15 +95,6 @@ class PlayerLevelManager : Listener {
 
             prefix.append(nameComponent).append("<reset>: ".mm()).append(message)
         })
-    }
-
-    @EventHandler
-    fun onPlayerJoin(event: PlayerJoinEvent) {
-        val playerId = event.player.uniqueId
-
-        if (!playerExperiencePoints.containsKey(playerId)) {
-            playerExperiencePoints[playerId] = 0 // todo: replace with call to fetchPlayerXP method
-        }
     }
 
     enum class PointsSource(val pointsAmount: Int) {

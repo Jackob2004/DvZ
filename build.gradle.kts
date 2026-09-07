@@ -36,6 +36,7 @@ dependencies {
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.16")
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.4.0")
     compileOnly("me.libraryaddict.disguises:libsdisguises:11.0.18")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 }
 
 tasks {
