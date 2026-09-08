@@ -6,6 +6,7 @@ import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.equipment.Compass
 import com.jackob.dvz.core.events.DwarfDeathEvent
+import com.jackob.dvz.core.events.GameOverEvent
 import com.jackob.dvz.core.events.ShrineFallEvent
 import com.jackob.dvz.core.events.ShrineTrespassEvent
 import com.jackob.dvz.core.events.ZombieDeathEvent
@@ -108,6 +109,8 @@ class AttackState(
 
     private val spectators = mutableSetOf<Player>()
 
+    private val timeElapsed = AtomicInteger(0)
+
     private var counterTask: BukkitTask? = null
 
     private val zombieScheduler = AIZombieScheduler(onlinePlayers, regionManager)
@@ -126,15 +129,14 @@ class AttackState(
     private val wavesScheduler = WavesScheduler(dwarfTeam)
 
     private fun startCounter(): BukkitTask {
-        var timeElapsed = 0
         return async(period = TimeUnit.SECONDS(1)) {
-            timeElapsed++
+            val time = timeElapsed.incrementAndGet()
             with(gameStatusSidebar) {
                 updateLine(5, " <white>${goldVault.getGoldAmount()}")
                 updateLine(4, " <white>${dwarfTeam.getOnlineCount()}")
                 updateLine(3, " <white>${zombieTeam.getOnlineCount()}")
                 updateLine(2, " <white>${killedMonsters.get()}")
-                updateLine(1, " <white>$timeElapsed")
+                updateLine(1, " <white>$time")
                 sendSideBarUpdate(onlinePlayers)
             }
         }
@@ -400,6 +402,7 @@ class AttackState(
     private fun handleLastDwarfDeath(count: Int) {
         if (count != 0) return
 
+        GameOverEvent(timeElapsed.get()).callEvent()
         Bukkit.broadcast("<red>All dwarfs died!".mm())
         GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
     }
@@ -452,11 +455,11 @@ class AttackState(
         val causingPlayer = event.damageSource.causingEntity as? Player
 
         if (isActiveDwarf(player)) {
+            val killer = if (causingPlayer != null && isActiveZombie(causingPlayer)) causingPlayer else null
+            Bukkit.getPluginManager().callEvent(DwarfDeathEvent(killer, player, timeElapsed.get()))
+
             dwarfTeam.removeMember(player)
             zombieTeam.addMember(player)
-
-            val killer = if (causingPlayer != null && isActiveZombie(causingPlayer)) causingPlayer else null
-            Bukkit.getPluginManager().callEvent(DwarfDeathEvent(killer, player))
         } else if (isActiveZombie(player)) {
             killedMonsters.incrementAndGet()
 
@@ -487,6 +490,7 @@ class AttackState(
         if (shrineManager.activateNextShrine()) {
             currentZombieSpawn = gameMap.shrines[event.shrineNumber]
         } else {
+            GameOverEvent(timeElapsed.get()).callEvent()
             Bukkit.broadcast("<dark_red><b> Zombies destroyed all shines the age of dwarves is over!!!!".mm())
             GameManager.setGameState(RestartState(lobbyStateHandler, lobbyRulesHandler))
         }

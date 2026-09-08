@@ -1,6 +1,7 @@
 package com.jackob.dvz.core.objects
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.events.DwarfRampageEvent
 import com.jackob.dvz.core.events.ZombieDeathEvent
 import com.jackob.dvz.kits.KitsManager
 import com.jackob.dvz.util.CooldownUtil
@@ -65,7 +66,9 @@ class RampageManager : Listener {
             visualEffectRecipients.add(dwarf.uniqueId)
         }
 
+        val onStreak = activeRampageMap.isOnCooldownSafe(dwarf)
         activeRampageMap.putOnCooldown(dwarf)
+        DwarfRampageEvent(dwarf, onStreak).callEvent()
     }
 
     @EventHandler
