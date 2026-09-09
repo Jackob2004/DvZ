@@ -18,35 +18,53 @@ object APIClient {
         .connectTimeout(java.time.Duration.ofSeconds(5))
         .build()
 
-    fun <T> get(url: String, serializer: KSerializer<T>): Result<T?> = runCatching {
-        val request = HttpRequest.newBuilder()
-            .uri(URI(url))
-            .header("Accept", "application/json")
-            .GET()
-            .build()
+    fun <T> get(url: String, serializer: KSerializer<T>): CallResult<T> {
+        try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI(url))
+                .header("Accept", "application/json")
+                .GET()
+                .build()
 
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
 
-        when (val status = response.statusCode()) {
-            in 200..299 -> json.decodeFromString(serializer, response.body())
-            404 -> null
-            else -> throw Exception("Unexpected get error, $url returned: $status")
+            return when (val status = response.statusCode()) {
+                in 200..299 -> CallResult.Success(json.decodeFromString(serializer, response.body()))
+                404 -> CallResult.NotFound
+                else -> CallResult.Failure(Exception("Unexpected GET error, $url status code: $status"))
+            }
+        } catch (e: Exception) {
+            return CallResult.Failure(e)
         }
     }
 
-    fun <T> put(url: String, serializer: KSerializer<T>, body: T): Result<Unit> = runCatching {
-        val jsonBody = json.encodeToString(serializer, body)
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Accept", "application/json")
-            .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
-            .build()
+    fun <T> put(url: String, serializer: KSerializer<T>, body: T): CallResult<Unit> {
+        try {
+            val jsonBody = json.encodeToString(serializer, body)
 
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Accept", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build()
 
-        if (response.statusCode() !in 200..299) {
-            throw Exception("Unexpected post error, $url returned: ${response.statusCode()}")
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+
+            if (response.statusCode() !in 200..299) {
+                return CallResult.Failure(Exception("Unexpected post error, $url returned: ${response.statusCode()}"))
+            }
+
+        } catch (e: Exception) {
+            return CallResult.Failure(e)
         }
+
+        return CallResult.Success(Unit)
+    }
+
+    sealed class CallResult<out T> {
+        data class Success<T>(val data: T) : CallResult<T>()
+        data class Failure(val error: Throwable) : CallResult<Nothing>()
+        object NotFound : CallResult<Nothing>()
     }
 
 }
