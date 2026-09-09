@@ -28,3 +28,10 @@ fun String.toSound(): Sound? {
     if (sound == null) DvZ.INSTANCE.logger.warning("Sound not found for key: '$key'")
     return sound
 }
+
+fun Long.formatSeconds(): String {
+    val hh = this / 3600
+    val mm = (this % 3600) / 60
+    val ss = this % 60
+    return String.format("%02d:%02d:%02d", hh, mm, ss)
+}

@@ -6,6 +6,7 @@ import com.jackob.dvz.command.MapRerollCommand
 import com.jackob.dvz.command.MapSetCommand
 import com.jackob.dvz.command.SaveLobbyCommand
 import com.jackob.dvz.command.SetupMapCommand
+import com.jackob.dvz.command.ShowPlayerStatsCommand
 import com.jackob.dvz.command.TestCommand
 import com.jackob.dvz.command.ZombieReleaseCommand
 import com.jackob.dvz.core.GameManager
@@ -46,6 +47,7 @@ class DvZ : JavaPlugin() {
         registerCommand("dvz-map-reroll", MapRerollCommand())
         registerCommand("dvz-map-set", MapSetCommand())
         registerCommand("dvz-release-zombie", ZombieReleaseCommand())
+        registerCommand("stats", ShowPlayerStatsCommand())
         registerCommand("dvz-test", TestCommand())
 
         server.pluginManager.registerEvents(CustomMenuListener(), this)
