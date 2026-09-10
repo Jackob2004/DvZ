@@ -4,7 +4,7 @@ import com.github.retrooper.packetevents.PacketEvents
 import com.jackob.dvz.command.DeleteMapCommand
 import com.jackob.dvz.command.MapRerollCommand
 import com.jackob.dvz.command.MapSetCommand
-import com.jackob.dvz.command.SaveLobbyCommand
+import com.jackob.dvz.command.SetLobbyLocCommand
 import com.jackob.dvz.command.SetupMapCommand
 import com.jackob.dvz.command.ShowPlayerStatsCommand
 import com.jackob.dvz.command.TestCommand
@@ -41,7 +41,7 @@ class DvZ : JavaPlugin() {
         KitDisplaysStorage
         KitConfigsCache
 
-        registerCommand("dvz-set-lobby", SaveLobbyCommand())
+        registerCommand("dvz-set-lobby-loc", SetLobbyLocCommand())
         registerCommand("dvz-setup-map", SetupMapCommand())
         registerCommand("dvz-delete-map", DeleteMapCommand())
         registerCommand("dvz-map-reroll", MapRerollCommand())

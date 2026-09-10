@@ -31,6 +31,7 @@ import kotlin.math.max
 
 private const val FETCH_URL = "http://127.0.0.1:9698/api/player/"
 private const val SAVE_URL = "http://127.0.0.1:9698/api/players/update"
+private const val LEADERBOARD_URL = "http://127.0.0.1:9698/api/players/leaderboard"
 
 class StatisticsManager(private val levelManager: PlayerLevelManager) : Listener {
 
@@ -75,6 +76,20 @@ class StatisticsManager(private val levelManager: PlayerLevelManager) : Listener
                 else -> Unit
             }
         }
+    }
+
+
+    fun getLeaderboard(): CompletableFuture<List<LeaderboardRow>?> {
+        return CompletableFuture.supplyAsync({
+            when (val res = APIClient.get(LEADERBOARD_URL, ListSerializer(LeaderboardRow.serializer()))) {
+                is CallResult.Success -> res.data
+                is CallResult.NotFound -> listOf()
+                is CallResult.Failure -> {
+                    logger.error("Leaderboard data could not be loaded, error: ${res.error}")
+                    null
+                }
+            }
+        }, { task -> Bukkit.getScheduler().runTaskAsynchronously(DvZ.INSTANCE, task) })
     }
 
     fun getPlayerStats(playerUUID: UUID): CompletableFuture<CallResult<PlayerStatistics>> {

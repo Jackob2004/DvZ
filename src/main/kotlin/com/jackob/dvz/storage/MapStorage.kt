@@ -13,7 +13,6 @@ private const val MAP_TEMPLATE_SUFFIX = "-template"
 
 object MapStorage {
 
-    private const val LOBBY_PATH = "lobby-spawn"
     private const val MAPS_PATH = "maps"
 
     init {
@@ -28,7 +27,8 @@ object MapStorage {
 
     private val config = YamlConfiguration.loadConfiguration(file)
 
-    val LOBBY_SPAWN: Location? = config.getLocation(LOBBY_PATH)
+    val LOBBY_SPAWN: Location? = config.getLocation(LobbyLocation.SPAWN.path)
+    val LEADERBOARD_SPAWN: Location? = config.getLocation(LobbyLocation.LEADERBOARD.path)
 
     private fun copyWorld(source: File, target: File) {
         source.copyRecursively(target, overwrite = true)
@@ -114,16 +114,6 @@ object MapStorage {
         return copiedWorld
     }
 
-    fun saveLobby(lobbyLocation: Location): Boolean {
-        config.set(LOBBY_PATH, lobbyLocation)
-        try {
-            config.save(file)
-        } catch (_: IOException) {
-            return false
-        }
-
-        return true
-    }
 
     fun saveMap(mapDraft: GameMapDraft): Boolean {
         val worldName = mapDraft.dwarfSpawn!!.world.name
@@ -223,4 +213,21 @@ object MapStorage {
     }
 
     class MapLoadException(mapName: String, message: String) : Exception("[$mapName] $message")
+
+    enum class LobbyLocation(val path: String, val locationName: String) {
+        SPAWN("lobby-spawn", "spawn"),
+        LEADERBOARD("lobby-leaderboard", "leaderboard");
+
+        fun saveLobbyLocation(location: Location): Boolean {
+            config.set(this.path, location)
+            try {
+                config.save(file)
+            } catch (_: IOException) {
+                return false
+            }
+
+            return true
+        }
+
+    }
 }

@@ -46,3 +46,11 @@ data class PlayerStatistics(
     @SerialName("bow_hits")
     var bowHits: Int = 0
 )
+
+@Serializable
+data class LeaderboardRow(
+    @SerialName("username")
+    val name: String,
+
+    val level: Int,
+)
