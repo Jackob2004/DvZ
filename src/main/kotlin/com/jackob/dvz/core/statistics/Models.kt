@@ -54,3 +54,17 @@ data class LeaderboardRow(
 
     val level: Int,
 )
+
+@Serializable
+data class GameInfo(
+    val gamePhase: String,
+    val time: Int,
+    val playersToStart: Int? = null,
+    val dwarves: Int? = null,
+    val zombies: Int? = null,
+    val shrines: Int? = null,
+    val currShrine: Int? = null,
+    val shrineHealth: Int? = null,
+    val shrineMaxHealth: Int? = null,
+    val shrineShielded: Boolean? = null,
+)

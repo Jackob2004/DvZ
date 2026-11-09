@@ -24,6 +24,9 @@ import org.bukkit.event.entity.ProjectileHitEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import com.jackob.dvz.core.statistics.APIClient.CallResult
+import com.jackob.dvz.util.TimeUnit
+import com.jackob.dvz.util.sync
+import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -32,6 +35,7 @@ import kotlin.math.max
 private const val FETCH_URL = "http://127.0.0.1:9698/api/player/"
 private const val SAVE_URL = "http://127.0.0.1:9698/api/players/update"
 private const val LEADERBOARD_URL = "http://127.0.0.1:9698/api/players/leaderboard"
+private const val GAME_INFO_URL = "http://127.0.0.1:9698/api/livegame/update"
 
 class StatisticsManager(private val levelManager: PlayerLevelManager) : Listener {
 
@@ -48,8 +52,23 @@ class StatisticsManager(private val levelManager: PlayerLevelManager) : Listener
 
     private val logger = DvZ.INSTANCE.slF4JLogger
 
+    private var gameInfoTask: BukkitTask? = null
+
     init {
         DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
+    }
+
+    fun startSendingGameInfo(producer: () -> StatisticsProducer) {
+        gameInfoTask = async(delay = TimeUnit.SECONDS(1), period = TimeUnit.SECONDS(1)) {
+            APIClient.put(GAME_INFO_URL, GameInfo.serializer(), producer.invoke().produceGameInfo())
+        }
+    }
+
+    fun stopSendingGameInfo() {
+        gameInfoTask?.cancel()
+        sync {
+            APIClient.put(GAME_INFO_URL, GameInfo.serializer(), GameInfo("End", 0))
+        }
     }
 
     fun stopCountingStats() {

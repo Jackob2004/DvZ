@@ -13,7 +13,7 @@ import org.bukkit.entity.Player
 import kotlin.random.Random
 
 object GameManager {
-
+    @Volatile
     private var gameState: GameState
 
     private val levelManager: PlayerLevelManager = PlayerLevelManager()
@@ -23,6 +23,7 @@ object GameManager {
         gameState = RecruitingState(pickRandomMap(), LobbyStateHandler())
         gameState.onEnter()
         HotspotManager.addHotspot(MapStorage.LOBBY_SPAWN!!)
+        statistics.startSendingGameInfo { gameState}
     }
 
     private fun pickRandomMap(): GameMap {

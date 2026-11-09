@@ -5,12 +5,13 @@ import com.jackob.dvz.DvZ
 import com.jackob.dvz.core.GameManager
 import com.jackob.dvz.core.handlers.LobbyRulesHandler
 import com.jackob.dvz.core.handlers.LobbyStateHandler
+import com.jackob.dvz.core.statistics.GameInfo
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
-import com.jackob.dvz.storage.MapStorage
 import com.jackob.dvz.ui.Sidebar
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.async
+import com.jackob.dvz.util.formatSeconds
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.sync
 import org.bukkit.Bukkit
@@ -23,7 +24,6 @@ import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.scheduler.BukkitTask
 import java.util.concurrent.CopyOnWriteArraySet
 
@@ -47,6 +47,9 @@ class RestartState(private val lobbyStateHandler: LobbyStateHandler, private val
         }
 
     private var countdownTask: BukkitTask? = null
+
+    @Volatile
+    var countdownTimer = ConfigStorage.RESTART_COUNTDOWN
 
     override fun onEnter() {
         lobbyStateHandler.registerHandler(DvZ.INSTANCE)
@@ -74,6 +77,7 @@ class RestartState(private val lobbyStateHandler: LobbyStateHandler, private val
 
         countdownTask = null
         onlinePlayers.clear()
+        GameManager.statistics.stopSendingGameInfo()
 
         super.onLeave()
         Bukkit.shutdown() // todo later change it to restart
@@ -84,15 +88,14 @@ class RestartState(private val lobbyStateHandler: LobbyStateHandler, private val
     private fun startCountdown(): BukkitTask {
         check(countdownTask == null) { "You cannot start final countdown twice!" }
 
-        var counter = ConfigStorage.RESTART_COUNTDOWN
         return async(period = TimeUnit.SECONDS(1)) {
             with(gameStatusSidebar) {
-                updateLine(1, " <white>$counter")
+                updateLine(1, " <white>${countdownTimer.formatSeconds()}")
                 sendSideBarUpdate(onlinePlayers)
             }
 
-            counter--
-            if (counter <= 0) {
+            countdownTimer--
+            if (countdownTimer <= 0) {
                 cancel()
                 sync {
                     onLeave()
@@ -152,6 +155,10 @@ class RestartState(private val lobbyStateHandler: LobbyStateHandler, private val
     @EventHandler
     fun onPlayerPostRespawn(event: PlayerPostRespawnEvent) {
         lobbyStateHandler.refreshToLobbyState(event.player)
+    }
+
+    override fun produceGameInfo(): GameInfo {
+        return GameInfo("Restart",countdownTimer)
     }
 
 }

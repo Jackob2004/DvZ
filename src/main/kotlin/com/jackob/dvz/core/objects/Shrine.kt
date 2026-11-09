@@ -36,11 +36,13 @@ class Shrine(
 
     private var currentState: ShrineState = if (shrineNumber == 0) ShrineState.ACTIVE else ShrineState.INACTIVE
 
+    @Volatile
     private var currentShield: Int = maxShield
         set(value) {
             field = value.coerceIn(0, maxShield)
         }
 
+    @Volatile
     private var currentHealth: Int = maxHealth
         set(value) {
             field = value.coerceIn(0, maxHealth)

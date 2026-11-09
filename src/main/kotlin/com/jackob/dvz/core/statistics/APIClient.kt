@@ -44,11 +44,12 @@ object APIClient {
 
             val request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
+                .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build()
 
-            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val response = client.send(request, HttpResponse.BodyHandlers.discarding())
 
             if (response.statusCode() !in 200..299) {
                 return CallResult.Failure(Exception("Unexpected post error, $url returned: ${response.statusCode()}"))

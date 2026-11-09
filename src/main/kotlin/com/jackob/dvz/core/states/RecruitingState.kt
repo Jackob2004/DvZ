@@ -9,6 +9,7 @@ import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.HeroPricker
+import com.jackob.dvz.core.statistics.GameInfo
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.TeamType
 import com.jackob.dvz.storage.ConfigStorage
@@ -70,7 +71,11 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
 
     private var heroPicker: HeroPricker? = null
 
+    @Volatile
     private var countdownTimer = ConfigStorage.RECRUITING_COUNTDOWN
+
+    @Volatile
+    private var waitingPlayersCount: Int = 0
 
     var wasMapRerolled = false
 
@@ -354,6 +359,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
 
         refreshPlayer(player)
         playersWaiting.add(player)
+        waitingPlayersCount = playersWaiting.size
         handleCountdownStart()
         updateInfoBar()
     }
@@ -363,6 +369,7 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
         val player = event.player
 
         playersWaiting.remove(player)
+        waitingPlayersCount = playersWaiting.size
         gameInfoBar.removeViewer(player)
         handleCountdownCancel()
         updateInfoBar()
@@ -403,6 +410,10 @@ class RecruitingState(var gameMap: GameMap, private val lobbyStateHandler: Lobby
     @EventHandler
     fun onFoodLevelChange(event: FoodLevelChangeEvent) {
         event.foodLevel = 20
+    }
+
+    override fun produceGameInfo(): GameInfo {
+        return GameInfo("Recruiting", countdownTimer, ConfigStorage.REQUIRED_PLAYERS, waitingPlayersCount)
     }
 
 }

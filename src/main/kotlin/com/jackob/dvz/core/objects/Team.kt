@@ -17,7 +17,8 @@ class Team(teamType: TeamType, var onMemberQuit: ((Int) -> Unit)? = null) {
         color(teamType.color)
     }
 
-    private val onlineMembers = AtomicInteger()
+    @Volatile
+    private var onlineMembers: Int = 0
 
     companion object {
         private val customBoard = Bukkit.getScoreboardManager().newScoreboard
@@ -30,7 +31,7 @@ class Team(teamType: TeamType, var onMemberQuit: ((Int) -> Unit)? = null) {
     fun addMember(player: Player) {
         player.scoreboard = customBoard
         team.addPlayer(player)
-        onlineMembers.incrementAndGet()
+        onlineMembers++
     }
 
     fun removeMember(player: Player) {
@@ -40,17 +41,17 @@ class Team(teamType: TeamType, var onMemberQuit: ((Int) -> Unit)? = null) {
 
     fun recalculateOnlineCount() {
         val count = Bukkit.getOnlinePlayers().count { hasMember(it) }
-        onlineMembers.set(count)
+        onlineMembers = count
     }
 
     fun hasMember(player: Player): Boolean = team.hasPlayer(player)
 
-    fun increaseOnlineCount() = onlineMembers.incrementAndGet()
+    fun increaseOnlineCount() = onlineMembers++
 
     fun decreaseOnlineCount() {
-        onlineMembers.decrementAndGet()
+        onlineMembers--
         onMemberQuit?.invoke(getOnlineCount())
     }
 
-    fun getOnlineCount(): Int = onlineMembers.get()
+    fun getOnlineCount(): Int = onlineMembers
 }

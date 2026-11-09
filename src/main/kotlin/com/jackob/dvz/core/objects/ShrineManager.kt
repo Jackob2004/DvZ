@@ -21,6 +21,7 @@ class ShrineManager(
         Shrine(100, 400, 1 + idx, numberOfShrines + idx, idx, regions)
     }
 
+    @Volatile
     private var currentShrine = 0
 
     private var updateTask: BukkitTask? = null
@@ -88,5 +89,19 @@ class ShrineManager(
     fun addViewer(player: Player) {
         shrineInfoBar.addViewer(player)
     }
+
+    fun getShrinesData(): ShrinesData {
+        val shrineData = shrines[currentShrine].getShrineData()
+        return ShrinesData(numberOfShrines, currentShrine, shrineData.health, shrineData.maxHealth, shrineData.shielded)
+    }
+
+
+    data class ShrinesData(
+        val shrines: Int,
+        val currShrine: Int,
+        val health: Int,
+        val maxHealth: Int,
+        val shielded: Boolean
+    )
 
 }

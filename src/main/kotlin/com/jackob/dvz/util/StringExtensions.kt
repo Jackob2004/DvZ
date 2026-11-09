@@ -35,3 +35,10 @@ fun Long.formatSeconds(): String {
     val ss = this % 60
     return String.format("%02d:%02d:%02d", hh, mm, ss)
 }
+
+fun Int.formatSeconds(): String {
+    val hh = this / 3600
+    val mm = (this % 3600) / 60
+    val ss = this % 60
+    return String.format("%02d:%02d:%02d", hh, mm, ss)
+}

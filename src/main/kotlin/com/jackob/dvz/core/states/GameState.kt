@@ -1,12 +1,13 @@
 package com.jackob.dvz.core.states
 
 import com.jackob.dvz.DvZ
+import com.jackob.dvz.core.statistics.StatisticsProducer
 import com.jackob.dvz.kits.TeamType
 import org.bukkit.entity.Player
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 
-sealed interface GameState : Listener {
+sealed interface GameState : Listener, StatisticsProducer {
     fun onEnter() {
         DvZ.INSTANCE.server.pluginManager.registerEvents(this, DvZ.INSTANCE)
     }

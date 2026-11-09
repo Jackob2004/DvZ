@@ -9,6 +9,7 @@ import com.jackob.dvz.core.handlers.LobbyStateHandler
 import com.jackob.dvz.core.objects.DarknessManager
 import com.jackob.dvz.core.objects.GoldVault
 import com.jackob.dvz.core.objects.Team
+import com.jackob.dvz.core.statistics.GameInfo
 import com.jackob.dvz.kits.Disguisable
 import com.jackob.dvz.kits.KitType
 import com.jackob.dvz.kits.KitsManager
@@ -19,6 +20,7 @@ import com.jackob.dvz.ui.PagerMenu
 import com.jackob.dvz.ui.Sidebar
 import com.jackob.dvz.util.TimeUnit
 import com.jackob.dvz.util.async
+import com.jackob.dvz.util.formatSeconds
 import com.jackob.dvz.util.mm
 import com.jackob.dvz.util.resetAll
 import com.jackob.dvz.util.sync
@@ -68,18 +70,20 @@ class PreparationState(
 
     private var countdownTask: BukkitTask? = null
 
+    @Volatile
+    private var countdownTimer: Int = ConfigStorage.PREPARATION_COUNTDOWN
+
     private fun startCountdown(): BukkitTask {
-        var timer = ConfigStorage.PREPARATION_COUNTDOWN
         return async(period = TimeUnit.SECONDS(1)) {
             with(gameStatusSidebar) {
                 updateLine(3, " <white>${goldVault.getGoldAmount()}")
                 updateLine(2, " <white>${dwarfTeam.getOnlineCount()}")
-                updateLine(1, " <white>$timer")
+                updateLine(1, " <white>${countdownTimer.formatSeconds()}")
                 sendSideBarUpdate(onlinePlayers)
             }
 
-            timer--
-            if (timer < 0) {
+            countdownTimer--
+            if (countdownTimer < 0) {
                 sync {
                     startNextPhase()
                 }
@@ -264,6 +268,10 @@ class PreparationState(
     @EventHandler
     fun onFoodLevelChange(event: FoodLevelChangeEvent) {
         event.foodLevel = 20
+    }
+
+    override fun produceGameInfo(): GameInfo {
+        return GameInfo("Preparation", countdownTimer, null, dwarfTeam.getOnlineCount())
     }
 
 }
