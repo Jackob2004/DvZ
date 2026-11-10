@@ -8,6 +8,7 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.Damageable
 import org.bukkit.inventory.meta.ItemMeta
+import kotlin.math.max
 
 fun createItem(material: Material, amount: Int = 1, init: ItemMeta.() -> Unit): ItemStack {
     val item = ItemStack(material, amount)
@@ -67,7 +68,7 @@ fun ItemStack.repair(percentage: Int): Boolean {
     val meta = itemMeta as? Damageable ?: return false
 
     val maxDurability = type.maxDurability
-    val repairValue = (10 * 100.0 / maxDurability).toInt()
+    val repairValue = max(1, maxDurability * percentage / 100)
     val updatedDamage = (meta.damage - repairValue).coerceIn(0, maxDurability.toInt())
     meta.damage = updatedDamage
     itemMeta = meta
